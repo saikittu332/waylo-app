@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import PrimaryButton from "../components/PrimaryButton";
 import { colors, radii, screen, shadows, spacing, typography } from "../constants/theme";
 import { setMockPremium } from "../services/subscriptionService";
@@ -27,7 +28,7 @@ export default function PaywallScreen({ navigation }) {
           />
         </View>
         <PrimaryButton title={upgraded ? "Premium Enabled" : "Upgrade to Premium"} onPress={upgrade} />
-        <PrimaryButton title="Back to Trip" variant="secondary" onPress={() => navigation.goBack()} />
+        <PrimaryButton title="Back to Waylo" variant="secondary" onPress={() => navigation.goBack()} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -39,7 +40,10 @@ function PlanCard({ title, price, items, featured }) {
       <Text style={[styles.planTitle, featured && styles.featuredText]}>{title}</Text>
       <Text style={[styles.price, featured && styles.featuredText]}>{price}</Text>
       {items.map((item) => (
-        <Text key={item} style={[styles.item, featured && styles.featuredItem]}>{item}</Text>
+        <View key={item} style={styles.itemRow}>
+          <Ionicons color={featured ? colors.surface : colors.green} name="checkmark-circle" size={17} />
+          <Text style={[styles.item, featured && styles.featuredItem]}>{item}</Text>
+        </View>
       ))}
     </View>
   );
@@ -93,8 +97,14 @@ const styles = StyleSheet.create({
   },
   item: {
     color: colors.muted,
+    flex: 1,
     fontSize: 14,
     lineHeight: 20
+  },
+  itemRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm
   },
   featuredItem: {
     color: "#D9E6F8"

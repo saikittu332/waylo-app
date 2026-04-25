@@ -1,5 +1,6 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, radii, shadows, spacing } from "../constants/theme";
 
 const typeLabels = {
@@ -9,12 +10,19 @@ const typeLabels = {
   scenic: "Scenic"
 };
 
+const typeIcons = {
+  fuel: "pricetag-outline",
+  food: "restaurant-outline",
+  rest: "bed-outline",
+  scenic: "camera-outline"
+};
+
 export default function StopCard({ stop, onPress }) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       <View style={styles.header}>
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>{(typeLabels[stop.type] || "S").slice(0, 1)}</Text>
+          <Ionicons color={colors.blue} name={typeIcons[stop.type] || "location-outline"} size={19} />
         </View>
         <View style={styles.titleBlock}>
         <Text style={styles.name}>{stop.name}</Text>
@@ -53,10 +61,6 @@ const styles = StyleSheet.create({
     height: 36,
     justifyContent: "center",
     width: 36
-  },
-  badgeText: {
-    color: colors.orange,
-    fontWeight: "900"
   },
   titleBlock: {
     flex: 1

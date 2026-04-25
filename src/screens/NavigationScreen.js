@@ -1,6 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import PremiumCard from "../components/PremiumCard";
 import StatItem from "../components/StatItem";
 import { colors, radii, screen, shadows, spacing } from "../constants/theme";
@@ -40,11 +41,11 @@ export default function NavigationScreen({ navigation, route }) {
           </View>
 
           <PremiumCard style={styles.bottomCard}>
-            <SmartRow color={colors.orange} title="Next Fuel Stop" value={firstFuelStop?.name || "Chevron"} meta="120 mi | 1h 45m" />
+            <SmartRow color={colors.blue} icon="pricetag-outline" title="Next Fuel Stop" value={firstFuelStop?.name || "Chevron"} meta="120 mi | 1h 45m" />
             <View style={styles.dividerLine} />
-            <SmartRow color={colors.orange} title="Take a break" value="Recommended in 1h 45m" meta="" />
+            <SmartRow color={colors.skyBlue} icon="bed-outline" title="Take a break" value="Recommended in 1h 45m" meta="" />
             <View style={styles.dividerLine} />
-            <SmartRow color={colors.green} title="Cheaper fuel ahead" value="Save $6 in 30 miles" meta="" />
+            <SmartRow color={colors.green} icon="trending-down-outline" title="Cheaper fuel ahead" value="Save $6 in 30 miles" meta="" />
 
             <View style={styles.tripStats}>
               <StatItem compact label="arrival" value="6:45" />
@@ -70,11 +71,11 @@ function FloatingControl({ label, sublabel }) {
   );
 }
 
-function SmartRow({ color, title, value, meta }) {
+function SmartRow({ color, icon, title, value, meta }) {
   return (
     <View style={styles.smartRow}>
       <View style={[styles.smartIcon, { backgroundColor: color }]}>
-        <Text style={styles.smartIconText}>{title.slice(0, 1)}</Text>
+        <Ionicons color={colors.surface} name={icon} size={17} />
       </View>
       <View style={styles.smartBody}>
         <Text style={styles.smartTitle}>{title}</Text>
@@ -227,10 +228,6 @@ const styles = StyleSheet.create({
     height: 34,
     justifyContent: "center",
     width: 34
-  },
-  smartIconText: {
-    color: colors.surface,
-    fontWeight: "900"
   },
   smartBody: {
     flex: 1

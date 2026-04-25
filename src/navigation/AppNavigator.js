@@ -32,7 +32,7 @@ export default function AppNavigator() {
       <Stack.Screen
         name="VehicleSetup"
         component={VehicleSetupScreen}
-        options={{ title: "Vehicle", headerBackVisible: false, headerLeft: () => null, gestureEnabled: false }}
+        options={{ headerShown: false, gestureEnabled: false }}
       />
       <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
       <Stack.Screen name="TripResults" component={TripResultsScreen} options={{ title: "AI Trip Plan" }} />

@@ -21,7 +21,8 @@ export default function SplashScreen({ navigation }) {
       <SafeAreaView style={styles.safe}>
         <View style={styles.container}>
           <View style={styles.logoBlock}>
-            <Logo size="lg" image />
+            <Logo size="lg" />
+            <Text style={styles.tagline}>Drive smart. Spend less.</Text>
           </View>
 
           <View style={styles.glassCard}>
@@ -143,9 +144,9 @@ const styles = StyleSheet.create({
   },
   tagline: {
     color: colors.navy,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "800",
-    marginTop: spacing.xs
+    marginTop: spacing.sm
   },
   glassCard: {
     alignSelf: "center",

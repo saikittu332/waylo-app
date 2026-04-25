@@ -2,29 +2,52 @@ import React, { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CommonActions } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
 import StatItem from "../components/StatItem";
-import { colors, radii, screen, shadows, spacing, typography } from "../constants/theme";
+import { colors, radii, screen, spacing, typography } from "../constants/theme";
 import { defaultVehicle, vehicleSuggestions } from "../data/mockVehicleSpecs";
 
 const fuelTypes = ["gas", "diesel", "hybrid", "EV"];
 
 export default function VehicleSetupScreen({ navigation, route }) {
   const assistantName = route.params?.assistantName || "Waylo";
-  const initialVehicle = route.params?.vehicle || defaultVehicle;
+  const isNewVehicle = route.params?.mode === "new";
+  const emptyVehicle = { vehicleName: "", fuelType: "gas", cityMpg: "", highwayMpg: "", tankCapacity: "" };
+  const initialVehicle = isNewVehicle ? emptyVehicle : route.params?.vehicle || defaultVehicle;
+  const existingVehicles = route.params?.vehicles || [route.params?.vehicle || defaultVehicle];
   const [vehicle, setVehicle] = useState(initialVehicle);
-  const [search, setSearch] = useState(initialVehicle.vehicleName || "Toyota Camry 2021");
+  const [search, setSearch] = useState(initialVehicle.vehicleName || "");
+  const [errors, setErrors] = useState({});
 
   function updateField(key, value) {
     setVehicle((current) => ({ ...current, [key]: value }));
   }
 
+  function updateNumericField(key, value) {
+    updateField(key, value.replace(/[^\d.]/g, ""));
+  }
+
+  function validateVehicle() {
+    const nextErrors = {};
+    if (vehicle.vehicleName.trim().length < 2) nextErrors.vehicleName = "Enter a vehicle name.";
+    if (!Number(vehicle.cityMpg) && vehicle.fuelType !== "EV") nextErrors.cityMpg = "Enter a city MPG number.";
+    if (!Number(vehicle.highwayMpg) && vehicle.fuelType !== "EV") nextErrors.highwayMpg = "Enter a highway MPG number.";
+    if (!Number(vehicle.tankCapacity) && vehicle.fuelType !== "EV") nextErrors.tankCapacity = "Enter tank capacity.";
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  }
+
   function saveVehicle() {
+    if (!validateVehicle()) return;
+    const nextVehicles = existingVehicles.some((item) => item.vehicleName === vehicle.vehicleName)
+      ? existingVehicles.map((item) => (item.vehicleName === vehicle.vehicleName ? vehicle : item))
+      : [...existingVehicles, vehicle];
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
-        routes: [{ name: "Home", params: { assistantName, vehicle } }]
+        routes: [{ name: "Home", params: { assistantName, vehicle, vehicles: nextVehicles } }]
       })
     );
   }
@@ -33,7 +56,7 @@ export default function VehicleSetupScreen({ navigation, route }) {
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
-        routes: [{ name: "Home", params: { assistantName, vehicle: initialVehicle } }]
+        routes: [{ name: "Home", params: { assistantName, vehicle: initialVehicle.vehicleName ? initialVehicle : existingVehicles[0], vehicles: existingVehicles } }]
       })
     );
   }
@@ -41,15 +64,23 @@ export default function VehicleSetupScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <Text style={styles.heading}>Let's add your vehicle</Text>
+        <View style={styles.topRow}>
+          <View>
+            <Text style={styles.heading}>{isNewVehicle ? "Add a vehicle" : "Edit vehicle"}</Text>
+            <Text style={styles.subheading}>Waylo uses these specs to estimate range and cost.</Text>
+          </View>
+          <Pressable onPress={cancelEdit} hitSlop={8} style={styles.closeButton}>
+            <Ionicons color={colors.navy} name="close" size={24} />
+          </Pressable>
+        </View>
 
         <View>
           <Text style={styles.label}>Search your vehicle</Text>
           <View style={styles.searchBox}>
-            <Text style={styles.searchIcon}>Q</Text>
+            <Ionicons color={colors.muted} name="search" size={17} style={styles.searchIcon} />
             <TextInput value={search} onChangeText={setSearch} style={styles.searchInput} />
             <Pressable onPress={() => setSearch("")} hitSlop={8}>
-              <Text style={styles.clear}>x</Text>
+              <Ionicons color={colors.mutedLight} name="close-circle-outline" size={18} />
             </Pressable>
           </View>
         </View>
@@ -57,16 +88,10 @@ export default function VehicleSetupScreen({ navigation, route }) {
         <PremiumCard style={styles.vehicleCard}>
           <View style={styles.carImage}>
             <View style={styles.carRoad} />
-            <View style={styles.carShadow} />
-            <View style={styles.carBody} />
-            <View style={styles.carCabin} />
-            <View style={styles.carWindowLeft} />
-            <View style={styles.carWindowRight} />
-            <View style={styles.headLight} />
-            <View style={[styles.wheel, styles.wheelLeft]} />
-            <View style={[styles.wheel, styles.wheelRight]} />
+            <View style={styles.carGlow} />
+            <Ionicons color={colors.blue} name="car-sport" size={76} />
           </View>
-          <Text style={styles.vehicleName}>{vehicle.vehicleName}</Text>
+          <Text style={styles.vehicleName}>{vehicle.vehicleName || "Choose or add your vehicle"}</Text>
           <Text style={styles.verified}>Verified mock specs</Text>
           <View style={styles.statsRow}>
             <StatItem label="City MPG" value={String(vehicle.cityMpg)} />
@@ -87,14 +112,14 @@ export default function VehicleSetupScreen({ navigation, route }) {
         </View>
 
         <Text style={styles.helper}>You can edit values if needed</Text>
-        <EditableField label="Vehicle Name" value={vehicle.vehicleName} onChangeText={(v) => updateField("vehicleName", v)} />
-        <EditableField label="City MPG" keyboardType="numeric" value={String(vehicle.cityMpg)} onChangeText={(v) => updateField("cityMpg", v)} />
-        <EditableField label="Highway MPG" keyboardType="numeric" value={String(vehicle.highwayMpg)} onChangeText={(v) => updateField("highwayMpg", v)} />
-        <EditableField label="Tank Capacity (gal)" keyboardType="numeric" value={String(vehicle.tankCapacity)} onChangeText={(v) => updateField("tankCapacity", v)} />
+        <EditableField label="Vehicle Name" value={vehicle.vehicleName} error={errors.vehicleName} onChangeText={(v) => updateField("vehicleName", v)} />
+        <EditableField label="City MPG" keyboardType="numeric" value={String(vehicle.cityMpg)} error={errors.cityMpg} onChangeText={(v) => updateNumericField("cityMpg", v)} />
+        <EditableField label="Highway MPG" keyboardType="numeric" value={String(vehicle.highwayMpg)} error={errors.highwayMpg} onChangeText={(v) => updateNumericField("highwayMpg", v)} />
+        <EditableField label="Tank Capacity (gal)" keyboardType="numeric" value={String(vehicle.tankCapacity)} error={errors.tankCapacity} onChangeText={(v) => updateNumericField("tankCapacity", v)} />
 
         <View style={styles.suggestions}>
           {vehicleSuggestions.slice(0, 2).map((item) => (
-            <Pressable key={item.vehicleName} onPress={() => setVehicle(item)} style={styles.suggestion}>
+            <Pressable key={item.vehicleName} onPress={() => { setVehicle(item); setSearch(item.vehicleName); setErrors({}); }} style={styles.suggestion}>
               <Text style={styles.suggestionName}>{item.vehicleName}</Text>
               <Text style={styles.suggestionMeta}>{item.highwayMpg || "EV"} highway MPG</Text>
             </Pressable>
@@ -108,11 +133,12 @@ export default function VehicleSetupScreen({ navigation, route }) {
   );
 }
 
-function EditableField({ label, value, onChangeText, keyboardType = "default" }) {
+function EditableField({ label, value, onChangeText, error, keyboardType = "default" }) {
   return (
     <View style={styles.fieldRow}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <TextInput keyboardType={keyboardType} onChangeText={onChangeText} style={styles.fieldInput} value={value} />
+      <TextInput keyboardType={keyboardType} onChangeText={onChangeText} style={[styles.fieldInput, !!error && styles.invalidInput]} value={value} />
+      {!!error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
 }
@@ -130,7 +156,31 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl * 2,
     width: "100%"
   },
+  topRow: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: spacing.md
+  },
   heading: typography.heading,
+  subheading: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: "700",
+    lineHeight: 18,
+    marginTop: spacing.xs
+  },
+  closeButton: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    height: 42,
+    justifyContent: "center",
+    outlineStyle: "none",
+    width: 42
+  },
   label: {
     color: colors.text,
     fontSize: 13,
@@ -148,8 +198,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md
   },
   searchIcon: {
-    color: colors.muted,
-    fontWeight: "900",
     marginRight: spacing.sm
   },
   searchInput: {
@@ -157,98 +205,31 @@ const styles = StyleSheet.create({
     flex: 1,
     fontWeight: "800"
   },
-  clear: {
-    color: colors.mutedLight,
-    fontWeight: "900"
-  },
   vehicleCard: {
     gap: spacing.sm
   },
   carImage: {
     alignItems: "center",
-    backgroundColor: "#DCEEFF",
+    backgroundColor: colors.paleBlue,
     borderRadius: radii.md,
     height: 150,
     justifyContent: "center",
     overflow: "hidden"
   },
   carRoad: {
-    backgroundColor: "#C6D4E3",
+    backgroundColor: "rgba(23,74,124,0.08)",
     borderRadius: 120,
     bottom: -60,
     height: 110,
     position: "absolute",
     width: 340
   },
-  carShadow: {
-    backgroundColor: "rgba(7,30,61,0.18)",
+  carGlow: {
+    backgroundColor: "rgba(35,132,244,0.12)",
     borderRadius: 999,
-    bottom: 38,
-    height: 18,
+    height: 118,
     position: "absolute",
-    width: 210
-  },
-  carBody: {
-    backgroundColor: "#EEF3F8",
-    borderColor: "#B8C7D7",
-    borderRadius: 22,
-    borderWidth: 1,
-    height: 42,
-    width: 226,
-    ...shadows.soft
-  },
-  carCabin: {
-    backgroundColor: "#F7FBFF",
-    borderColor: "#B8C0CC",
-    borderRadius: 18,
-    borderWidth: 1,
-    height: 48,
-    position: "absolute",
-    top: 44,
-    width: 112
-  },
-  carWindowLeft: {
-    backgroundColor: "#BFDDF7",
-    borderRadius: 8,
-    height: 22,
-    left: "40%",
-    position: "absolute",
-    top: 57,
-    transform: [{ skewX: "-14deg" }],
-    width: 38
-  },
-  carWindowRight: {
-    backgroundColor: "#BFDDF7",
-    borderRadius: 8,
-    height: 22,
-    position: "absolute",
-    right: "40%",
-    top: 57,
-    transform: [{ skewX: "14deg" }],
-    width: 38
-  },
-  headLight: {
-    backgroundColor: colors.orange,
-    borderRadius: 5,
-    height: 10,
-    position: "absolute",
-    right: 93,
-    top: 89,
-    width: 16
-  },
-  wheel: {
-    backgroundColor: colors.navy,
-    borderRadius: 14,
-    bottom: 37,
-    height: 28,
-    position: "absolute",
-    width: 28
-  },
-  wheelLeft: {
-    left: 94
-  },
-  wheelRight: {
-    right: 94
+    width: 118
   },
   vehicleName: {
     color: colors.text,
@@ -315,6 +296,14 @@ const styles = StyleSheet.create({
     color: colors.text,
     minHeight: 42,
     paddingHorizontal: spacing.md
+  },
+  invalidInput: {
+    borderColor: colors.red
+  },
+  errorText: {
+    color: colors.red,
+    fontSize: 12,
+    fontWeight: "700"
   },
   suggestions: {
     gap: spacing.sm

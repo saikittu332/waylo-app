@@ -1,13 +1,15 @@
 import React, { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
 import TripModeChip from "../components/TripModeChip";
 import { colors, radii, screen, spacing } from "../constants/theme";
 import { mockTripRequest } from "../data/mockTrip";
 import { defaultVehicle } from "../data/mockVehicleSpecs";
+import { getSubscriptionState } from "../services/subscriptionService";
 
 const modes = ["Fastest", "Cheapest", "Scenic", "Comfort"];
 const tabs = [
@@ -20,10 +22,28 @@ const tabs = [
 export default function HomeScreen({ navigation, route }) {
   const assistantName = route.params?.assistantName || "Waylo";
   const vehicle = route.params?.vehicle || defaultVehicle;
+  const initialVehicles = route.params?.vehicles || [vehicle];
   const [activeTab, setActiveTab] = useState("Home");
   const [from, setFrom] = useState("Current Location");
   const [to, setTo] = useState(mockTripRequest.to);
   const [mode, setMode] = useState(mockTripRequest.mode);
+  const [vehicles, setVehicles] = useState(initialVehicles);
+  const [selectedVehicle, setSelectedVehicle] = useState(vehicle);
+  const [showVehiclePicker, setShowVehiclePicker] = useState(false);
+  const [subscription, setSubscription] = useState(getSubscriptionState());
+
+  useFocusEffect(
+    React.useCallback(() => {
+      setSubscription(getSubscriptionState());
+      if (route.params?.vehicle) {
+        setVehicles((current) => {
+          const exists = current.some((item) => item.vehicleName === route.params.vehicle.vehicleName);
+          return exists ? current.map((item) => (item.vehicleName === route.params.vehicle.vehicleName ? route.params.vehicle : item)) : [...current, route.params.vehicle];
+        });
+        setSelectedVehicle(route.params.vehicle);
+      }
+    }, [route.params?.vehicle])
+  );
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -39,7 +59,8 @@ export default function HomeScreen({ navigation, route }) {
         {activeTab === "Home" && (
           <PlanTripContent
             assistantName={assistantName}
-            vehicle={vehicle}
+            vehicle={selectedVehicle}
+            vehicles={vehicles}
             navigation={navigation}
             from={from}
             setFrom={setFrom}
@@ -47,12 +68,15 @@ export default function HomeScreen({ navigation, route }) {
             setTo={setTo}
             mode={mode}
             setMode={setMode}
+            showVehiclePicker={showVehiclePicker}
+            setShowVehiclePicker={setShowVehiclePicker}
+            setSelectedVehicle={setSelectedVehicle}
           />
         )}
         {activeTab === "Trips" && (
           <TripsContent
             assistantName={assistantName}
-            vehicle={vehicle}
+            vehicle={selectedVehicle}
             navigation={navigation}
             from={from}
             to={to}
@@ -62,11 +86,12 @@ export default function HomeScreen({ navigation, route }) {
         {activeTab === "Vehicle" && (
           <VehicleContent
             assistantName={assistantName}
-            vehicle={vehicle}
+            vehicles={vehicles}
+            selectedVehicle={selectedVehicle}
             navigation={navigation}
           />
         )}
-        {activeTab === "Profile" && <ProfileContent assistantName={assistantName} navigation={navigation} />}
+        {activeTab === "Profile" && <ProfileContent assistantName={assistantName} navigation={navigation} subscription={subscription} setSubscription={setSubscription} />}
       </ScrollView>
 
       <View style={styles.tabBar}>
@@ -89,7 +114,11 @@ export default function HomeScreen({ navigation, route }) {
   );
 }
 
-function PlanTripContent({ assistantName, vehicle, navigation, from, setFrom, to, setTo, mode, setMode }) {
+function PlanTripContent({ assistantName, vehicle, vehicles, navigation, from, setFrom, to, setTo, mode, setMode, showVehiclePicker, setShowVehiclePicker, setSelectedVehicle }) {
+  function continuePlan() {
+    navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from, to, mode } });
+  }
+
   return (
     <>
       <PremiumCard style={styles.tripCard}>
@@ -102,9 +131,44 @@ function PlanTripContent({ assistantName, vehicle, navigation, from, setFrom, to
             <TripModeChip key={item} label={item} selected={mode === item} onPress={() => setMode(item)} />
           ))}
         </View>
+        <Pressable onPress={() => setShowVehiclePicker(true)} style={styles.selectedVehicleCard}>
+          <View style={styles.vehicleIconMini}>
+            <Ionicons color={colors.blue} name="car-sport-outline" size={20} />
+          </View>
+          <View style={styles.selectedVehicleText}>
+            <Text style={styles.selectedVehicleLabel}>Vehicle</Text>
+            <Text style={styles.selectedVehicleName}>{vehicle.vehicleName}</Text>
+          </View>
+          <Ionicons color={colors.muted} name="chevron-down" size={20} />
+        </Pressable>
+        {showVehiclePicker && (
+          <View style={styles.vehiclePicker}>
+            <Text style={styles.label}>Choose vehicle for this trip</Text>
+            {vehicles.map((item) => (
+              <Pressable
+                key={item.vehicleName}
+                onPress={() => {
+                  setSelectedVehicle(item);
+                  setShowVehiclePicker(false);
+                }}
+                style={styles.vehicleOption}
+              >
+                <Ionicons color={colors.blue} name="car-sport-outline" size={19} />
+                <View style={styles.selectedVehicleText}>
+                  <Text style={styles.vehicleOptionName}>{item.vehicleName}</Text>
+                  <Text style={styles.vehicleOptionMeta}>{item.highwayMpg} highway MPG | {item.tankCapacity} gal</Text>
+                </View>
+              </Pressable>
+            ))}
+            <Pressable onPress={() => navigation.navigate("VehicleSetup", { assistantName, mode: "new", vehicles })} style={styles.addVehicleInline}>
+              <Ionicons color={colors.blue} name="add-circle-outline" size={19} />
+              <Text style={styles.addVehicleText}>Add new vehicle</Text>
+            </Pressable>
+          </View>
+        )}
         <PrimaryButton
-          title="Plan Smart Trip"
-          onPress={() => navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from, to, mode } })}
+          title={showVehiclePicker ? "Continue with Vehicle" : "Plan Smart Trip"}
+          onPress={showVehiclePicker ? continuePlan : () => setShowVehiclePicker(true)}
         />
       </PremiumCard>
       <TripsContent assistantName={assistantName} vehicle={vehicle} navigation={navigation} from={from} to={to} mode={mode} compact />
@@ -130,38 +194,76 @@ function TripsContent({ assistantName, vehicle, navigation, from, to, mode, comp
   );
 }
 
-function VehicleContent({ assistantName, vehicle, navigation }) {
+function VehicleContent({ assistantName, vehicles, selectedVehicle, navigation }) {
   return (
     <>
-      <Text style={styles.sectionTitle}>Your Vehicles</Text>
-      <PremiumCard style={styles.profileCard}>
-        <Text style={styles.cardTitle}>{vehicle.vehicleName}</Text>
-        <Text style={styles.profileMeta}>{vehicle.fuelType.toUpperCase()} | {vehicle.cityMpg} city MPG | {vehicle.highwayMpg} highway MPG</Text>
-        <Text style={styles.profileMeta}>Tank capacity: {vehicle.tankCapacity} gal</Text>
-        <PrimaryButton title="Edit Vehicle" onPress={() => navigation.navigate("VehicleSetup", { assistantName, vehicle })} />
-      </PremiumCard>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Your Vehicles</Text>
+        <Pressable onPress={() => navigation.navigate("VehicleSetup", { assistantName, mode: "new", vehicles })} hitSlop={8} style={styles.textAction}>
+          <Text style={styles.viewAll}>Add vehicle</Text>
+        </Pressable>
+      </View>
+      {vehicles.map((item) => (
+        <PremiumCard key={item.vehicleName} style={styles.vehicleListCard}>
+          <View style={styles.vehiclePhoto}>
+            <View style={styles.vehiclePhotoRoad} />
+            <Ionicons color={colors.blue} name="car-sport" size={56} />
+          </View>
+          <Text style={styles.cardTitle}>{item.vehicleName}</Text>
+          <Text style={styles.profileMeta}>{item.fuelType.toUpperCase()} | {item.cityMpg} city MPG | {item.highwayMpg} highway MPG</Text>
+          <Text style={styles.profileMeta}>Tank capacity: {item.tankCapacity} gal</Text>
+          {selectedVehicle.vehicleName === item.vehicleName && <Text style={styles.currentVehicle}>Selected for trips</Text>}
+          <PrimaryButton title="Edit Vehicle" onPress={() => navigation.navigate("VehicleSetup", { assistantName, vehicle: item, vehicles })} />
+        </PremiumCard>
+      ))}
     </>
   );
 }
 
-function ProfileContent({ assistantName, navigation }) {
+function ProfileContent({ assistantName, navigation, subscription, setSubscription }) {
   const [profileName, setProfileName] = useState("Sai");
   const [phone, setPhone] = useState("+1 (555) 123-4567");
   const [editing, setEditing] = useState(false);
+  const [phoneError, setPhoneError] = useState("");
+  const [nameError, setNameError] = useState("");
+  const [fuelAlerts, setFuelAlerts] = useState(true);
+  const [restReminders, setRestReminders] = useState(true);
+
+  function toggleEditing() {
+    if (!editing) {
+      setEditing(true);
+      return;
+    }
+    const validName = profileName.trim().length >= 2;
+    const validPhone = /^\+1 \(\d{3}\) \d{3}-\d{4}$/.test(phone.trim());
+    setNameError(validName ? "" : "Enter at least 2 characters.");
+    setPhoneError(validPhone ? "" : "Use format +1 (555) 123-4567.");
+    if (validName && validPhone) setEditing(false);
+  }
+
+  function formatPhoneInput(value) {
+    const digits = value.replace(/\D/g, "").replace(/^1/, "").slice(0, 10);
+    const area = digits.slice(0, 3);
+    const prefix = digits.slice(3, 6);
+    const line = digits.slice(6, 10);
+    if (digits.length <= 3) return `+1 (${area}`;
+    if (digits.length <= 6) return `+1 (${area}) ${prefix}`;
+    return `+1 (${area}) ${prefix}-${line}`;
+  }
 
   return (
     <>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Profile</Text>
-        <Pressable onPress={() => setEditing((value) => !value)} hitSlop={8} style={styles.textAction}>
+        <Pressable onPress={toggleEditing} hitSlop={8} style={styles.textAction}>
           <Text style={styles.viewAll}>{editing ? "Done" : "Edit profile"}</Text>
         </Pressable>
       </View>
       <PremiumCard style={styles.profileCard}>
         {editing ? (
           <>
-            <ProfileInput label="Name" value={profileName} onChangeText={setProfileName} />
-            <ProfileInput label="Phone" value={phone} onChangeText={setPhone} />
+            <ProfileInput label="Name" value={profileName} onChangeText={setProfileName} error={nameError} />
+            <ProfileInput label="Phone" value={phone} onChangeText={(value) => setPhone(formatPhoneInput(value))} error={phoneError} keyboardType="phone-pad" />
           </>
         ) : (
           <>
@@ -175,36 +277,51 @@ function ProfileContent({ assistantName, navigation }) {
       <PremiumCard style={styles.subscriptionCard}>
         <View style={styles.planHeader}>
           <View>
-            <Text style={styles.cardTitle}>Waylo Free</Text>
+            <Text style={styles.cardTitle}>Waylo {subscription.planName}</Text>
             <Text style={styles.profileMeta}>Current plan</Text>
           </View>
           <View style={styles.planBadge}>
-            <Text style={styles.planBadgeText}>Free</Text>
+            <Text style={styles.planBadgeText}>{subscription.planName}</Text>
           </View>
         </View>
-        <Text style={styles.profileMeta}>Basic route planning and 1 fuel suggestion per trip.</Text>
+        <Text style={styles.profileMeta}>{subscription.isPremium ? "Full AI optimization, smart stops, and savings insights are enabled." : "Basic route planning and 1 fuel suggestion per trip."}</Text>
         <View style={styles.planRows}>
           <PlanLine label="Basic route" included />
           <PlanLine label="1 fuel suggestion" included />
-          <PlanLine label="Full AI fuel optimization" />
-          <PlanLine label="Multiple smart stops" />
+          <PlanLine label="Full AI fuel optimization" included={subscription.isPremium} />
+          <PlanLine label="Multiple smart stops" included={subscription.isPremium} />
         </View>
-        <PrimaryButton title="View Premium Plan" variant="secondary" onPress={() => navigation.navigate("Paywall")} />
+        <PrimaryButton title={subscription.isPremium ? "Manage Premium" : "View Premium Plan"} variant="secondary" onPress={() => navigation.navigate("Paywall")} />
       </PremiumCard>
       <PremiumCard style={styles.profileCard}>
         <Text style={styles.cardTitle}>Preferences</Text>
-        <Text style={styles.profileMeta}>Fuel savings alerts enabled</Text>
-        <Text style={styles.profileMeta}>Rest reminders every 2.5-3 hours</Text>
+        <PreferenceRow label="Fuel savings alerts" value={fuelAlerts} onValueChange={setFuelAlerts} />
+        <PreferenceRow label="Rest reminders every 2.5-3 hours" value={restReminders} onValueChange={setRestReminders} />
       </PremiumCard>
     </>
   );
 }
 
-function ProfileInput({ label, value, onChangeText }) {
+function ProfileInput({ label, value, onChangeText, error, keyboardType = "default" }) {
   return (
     <View style={styles.profileInputWrap}>
       <Text style={styles.label}>{label}</Text>
-      <TextInput value={value} onChangeText={onChangeText} style={styles.profileInput} />
+      <TextInput keyboardType={keyboardType} value={value} onChangeText={onChangeText} style={[styles.profileInput, !!error && styles.invalidInput]} />
+      {!!error && <Text style={styles.errorText}>{error}</Text>}
+    </View>
+  );
+}
+
+function PreferenceRow({ label, value, onValueChange }) {
+  return (
+    <View style={styles.preferenceRow}>
+      <Text style={styles.profileMeta}>{label}</Text>
+      <Switch
+        onValueChange={onValueChange}
+        thumbColor={colors.surface}
+        trackColor={{ false: colors.border, true: colors.green }}
+        value={value}
+      />
     </View>
   );
 }
@@ -254,10 +371,10 @@ const styles = StyleSheet.create({
     paddingBottom: 0
   },
   navyHeader: {
-    backgroundColor: colors.navy,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    minHeight: 112,
+    backgroundColor: colors.headerBlue,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    minHeight: 92,
     paddingHorizontal: screen.padding,
     paddingTop: spacing.sm
   },
@@ -268,9 +385,9 @@ const styles = StyleSheet.create({
   },
   greeting: {
     color: colors.surface,
-    fontSize: 21,
+    fontSize: 19,
     fontWeight: "900",
-    marginTop: spacing.sm
+    marginTop: spacing.xs
   },
   assistant: {
     color: "#B9C7D9",
@@ -281,7 +398,7 @@ const styles = StyleSheet.create({
   bell: {
     position: "absolute",
     right: 4,
-    top: spacing.sm
+    top: spacing.xs
   },
   container: {
     alignSelf: "center",
@@ -352,7 +469,7 @@ const styles = StyleSheet.create({
     fontWeight: "900"
   },
   viewAll: {
-    color: "#367CFF",
+    color: colors.blue,
     fontSize: 13,
     fontWeight: "800"
   },
@@ -415,6 +532,105 @@ const styles = StyleSheet.create({
   profileCard: {
     gap: spacing.md
   },
+  selectedVehicleCard: {
+    alignItems: "center",
+    backgroundColor: colors.paleBlue,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    minHeight: 58,
+    outlineStyle: "none",
+    padding: spacing.sm
+  },
+  vehicleIconMini: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderRadius: radii.pill,
+    height: 38,
+    justifyContent: "center",
+    width: 38
+  },
+  selectedVehicleText: {
+    flex: 1
+  },
+  selectedVehicleLabel: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "800"
+  },
+  selectedVehicleName: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "900",
+    marginTop: 2
+  },
+  vehiclePicker: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.sm
+  },
+  vehicleOption: {
+    alignItems: "center",
+    borderRadius: radii.sm,
+    flexDirection: "row",
+    gap: spacing.sm,
+    outlineStyle: "none",
+    padding: spacing.sm
+  },
+  vehicleOptionName: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "900"
+  },
+  vehicleOptionMeta: {
+    color: colors.muted,
+    fontSize: 12,
+    marginTop: 2
+  },
+  addVehicleInline: {
+    alignItems: "center",
+    borderColor: colors.border,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    outlineStyle: "none",
+    padding: spacing.sm
+  },
+  addVehicleText: {
+    color: colors.blue,
+    fontSize: 13,
+    fontWeight: "900"
+  },
+  vehicleListCard: {
+    gap: spacing.md
+  },
+  vehiclePhoto: {
+    alignItems: "center",
+    backgroundColor: colors.paleBlue,
+    borderRadius: radii.md,
+    height: 128,
+    justifyContent: "center",
+    overflow: "hidden"
+  },
+  vehiclePhotoRoad: {
+    backgroundColor: "rgba(11,45,92,0.08)",
+    borderRadius: 999,
+    bottom: -34,
+    height: 86,
+    position: "absolute",
+    width: 320
+  },
+  currentVehicle: {
+    color: colors.green,
+    fontSize: 13,
+    fontWeight: "900"
+  },
   subscriptionCard: {
     gap: spacing.md
   },
@@ -458,6 +674,19 @@ const styles = StyleSheet.create({
     color: colors.text,
     minHeight: 44,
     paddingHorizontal: spacing.md
+  },
+  invalidInput: {
+    borderColor: colors.red
+  },
+  errorText: {
+    color: colors.red,
+    fontSize: 12,
+    fontWeight: "700"
+  },
+  preferenceRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between"
   },
   profileMeta: {
     color: colors.muted,

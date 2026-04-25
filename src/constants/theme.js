@@ -1,8 +1,9 @@
 export const colors = {
-  navy: "#0B2D5C",
-  navyDeep: "#061E42",
-  navySoft: "#245181",
-  blue: "#1478F2",
+  navy: "#174A7C",
+  navyDeep: "#0B2D5C",
+  navySoft: "#3E75A8",
+  headerBlue: "#175C9E",
+  blue: "#2384F4",
   skyBlue: "#12A8F6",
   orange: "#08A5F5",
   orangeDark: "#1478F2",

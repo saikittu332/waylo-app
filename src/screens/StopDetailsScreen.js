@@ -1,6 +1,7 @@
 import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
 import { colors, radii, screen, shadows, spacing, typography } from "../constants/theme";
@@ -29,10 +30,10 @@ export default function StopDetailsScreen({ navigation, route }) {
           <Text style={styles.rating}>{stop.rating || "4.3"} rating (266 reviews)</Text>
 
           <View style={styles.features}>
-            <Feature label="Fuel Price" value={`$${stop.fuelPrice || "3.49"}/gal`} />
-            <Feature label="Restrooms" value="Clean" />
-            <Feature label="Food" value="Yes" />
-            <Feature label="Store" value="Yes" />
+            <Feature icon="pricetag-outline" label="Fuel Price" value={`$${stop.fuelPrice || "3.49"}/gal`} />
+            <Feature icon="water-outline" label="Restrooms" value="Clean" />
+            <Feature icon="restaurant-outline" label="Food" value="Yes" />
+            <Feature icon="storefront-outline" label="Store" value="Yes" />
           </View>
 
           <Text style={styles.sectionTitle}>Why we recommend this stop?</Text>
@@ -49,10 +50,12 @@ export default function StopDetailsScreen({ navigation, route }) {
   );
 }
 
-function Feature({ label, value }) {
+function Feature({ icon, label, value }) {
   return (
     <View style={styles.feature}>
-      <View style={styles.featureIcon} />
+      <View style={styles.featureIcon}>
+        <Ionicons color={colors.blue} name={icon} size={16} />
+      </View>
       <Text style={styles.featureLabel}>{label}</Text>
       <Text style={styles.featureValue}>{value}</Text>
     </View>
@@ -63,7 +66,7 @@ function Checklist({ text }) {
   return (
     <View style={styles.checkRow}>
       <View style={styles.checkDot}>
-        <Text style={styles.checkText}>v</Text>
+        <Ionicons color={colors.surface} name="checkmark" size={12} />
       </View>
       <Text style={styles.checkLabel}>{text}</Text>
     </View>
@@ -156,9 +159,11 @@ const styles = StyleSheet.create({
     gap: 4
   },
   featureIcon: {
+    alignItems: "center",
     backgroundColor: colors.paleBlue,
     borderRadius: radii.pill,
     height: 24,
+    justifyContent: "center",
     width: 24
   },
   featureLabel: {
@@ -191,11 +196,6 @@ const styles = StyleSheet.create({
     height: 18,
     justifyContent: "center",
     width: 18
-  },
-  checkText: {
-    color: colors.surface,
-    fontSize: 11,
-    fontWeight: "900"
   },
   checkLabel: {
     color: colors.text,
