@@ -1,5 +1,6 @@
 import React from "react";
-import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
 import { colors, radii, screen, spacing, typography } from "../constants/theme";
@@ -90,7 +91,7 @@ const styles = StyleSheet.create({
     marginTop: -64,
     maxWidth: screen.maxWidth,
     padding: screen.padding,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xl * 2,
     width: "100%"
   },
   summaryCard: {

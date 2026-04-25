@@ -1,7 +1,7 @@
 import React from "react";
-import { SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import PremiumCard from "../components/PremiumCard";
-import PrimaryButton from "../components/PrimaryButton";
 import StatItem from "../components/StatItem";
 import { colors, radii, screen, shadows, spacing } from "../constants/theme";
 import { formatHours } from "../utils/tripCalculator";
@@ -50,7 +50,9 @@ export default function NavigationScreen({ navigation, route }) {
               <StatItem compact label="arrival" value="6:45" />
               <StatItem compact label="hrs" value={formatHours(routeSummary?.durationHours || 6.75)} />
               <StatItem compact label="mi" value={`${routeSummary?.distanceMiles || 383}`} />
-              <PrimaryButton title="End" variant="danger" onPress={() => navigation.navigate("TripSummary", { tripPlan })} />
+              <Pressable onPress={() => navigation.navigate("TripSummary", { tripPlan })} style={styles.endButton}>
+                <Text style={styles.endButtonText}>End</Text>
+              </Pressable>
             </View>
           </PremiumCard>
         </View>
@@ -186,7 +188,7 @@ const styles = StyleSheet.create({
   },
   controls: {
     gap: spacing.sm,
-    marginTop: 230,
+    marginTop: "auto",
     width: 60
   },
   floatControl: {
@@ -262,5 +264,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.sm,
     marginTop: spacing.sm
+  },
+  endButton: {
+    alignItems: "center",
+    backgroundColor: colors.red,
+    borderRadius: radii.md,
+    height: 54,
+    justifyContent: "center",
+    width: 64
+  },
+  endButtonText: {
+    color: colors.surface,
+    fontWeight: "900"
   }
 });

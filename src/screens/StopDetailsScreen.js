@@ -1,5 +1,6 @@
 import React from "react";
-import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
 import { colors, radii, screen, shadows, spacing, typography } from "../constants/theme";
@@ -78,7 +79,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     gap: spacing.md,
     maxWidth: screen.maxWidth,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xl * 2,
     width: "100%"
   },
   hero: {

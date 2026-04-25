@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { SafeAreaView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Logo from "../components/Logo";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
@@ -27,7 +28,7 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Logo size="md" />
         <View style={styles.header}>
           <Text style={styles.heading}>Welcome back!</Text>
@@ -65,7 +66,7 @@ export default function LoginScreen({ navigation }) {
         <Text style={styles.terms}>
           By continuing, you agree to our Terms of Service and Privacy Policy
         </Text>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -77,9 +78,9 @@ const styles = StyleSheet.create({
   },
   container: {
     alignSelf: "center",
-    flex: 1,
     gap: spacing.lg,
     maxWidth: screen.maxWidth,
+    minHeight: "100%",
     padding: screen.padding,
     width: "100%"
   },
@@ -149,7 +150,7 @@ const styles = StyleSheet.create({
     color: colors.mutedLight,
     fontSize: 12,
     lineHeight: 18,
-    marginTop: "auto",
+    marginTop: spacing.xl,
     textAlign: "center"
   }
 });

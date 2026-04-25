@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import InsightCard from "../components/InsightCard";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
 import StatItem from "../components/StatItem";
+import StopCard from "../components/StopCard";
 import { colors, radii, screen, shadows, spacing } from "../constants/theme";
 import { defaultVehicle } from "../data/mockVehicleSpecs";
 import { planTrip } from "../services/api";
@@ -28,7 +30,7 @@ export default function TripResultsScreen({ navigation, route }) {
     );
   }
 
-  const { route: plannedRoute, ruleBasedPlan, insights } = tripPlan;
+  const { route: plannedRoute, ruleBasedPlan, insights, stops } = tripPlan;
   const destination = plannedRoute.to || "Los Angeles, CA";
   const routeLabel = `${plannedRoute.from === "Current Location" ? "San Francisco" : plannedRoute.from} -> ${destination.replace(", CA", "")}`;
 
@@ -64,6 +66,13 @@ export default function TripResultsScreen({ navigation, route }) {
           </View>
         </PremiumCard>
 
+        <PremiumCard style={styles.stopsCard}>
+          <Text style={styles.stopsTitle}>Recommended Stops</Text>
+          {stops.map((stop) => (
+            <StopCard key={stop.id} stop={stop} onPress={() => navigation.navigate("StopDetails", { stop })} />
+          ))}
+        </PremiumCard>
+
         <PremiumCard style={styles.summaryBar}>
           <StatItem label="Distance" value={`${plannedRoute.distanceMiles} mi`} />
           <View style={styles.divider} />
@@ -97,7 +106,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     maxWidth: screen.maxWidth,
     padding: screen.padding,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xl * 2,
     width: "100%"
   },
   loading: {
@@ -180,8 +189,7 @@ const styles = StyleSheet.create({
   planCard: {
     alignSelf: "flex-end",
     gap: 2,
-    marginTop: -322,
-    width: "52%"
+    width: "100%"
   },
   planTitle: {
     color: colors.text,
@@ -224,6 +232,14 @@ const styles = StyleSheet.create({
   summaryBar: {
     alignItems: "center",
     flexDirection: "row"
+  },
+  stopsCard: {
+    gap: spacing.md
+  },
+  stopsTitle: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: "900"
   },
   divider: {
     backgroundColor: colors.border,

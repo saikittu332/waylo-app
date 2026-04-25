@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import PrimaryButton from "../components/PrimaryButton";
 import { colors, radii, spacing, typography } from "../constants/theme";
 
@@ -16,7 +17,7 @@ export default function AssistantNameScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <Text style={styles.heading}>What would you like to call your assistant?</Text>
         <Text style={styles.copy}>You can personalize the assistant, and Waylo stays as the backup name.</Text>
         <TextInput
@@ -38,18 +39,23 @@ export default function AssistantNameScreen({ navigation }) {
           ))}
         </View>
         <PrimaryButton title="Save Assistant Name" onPress={saveName} />
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: {
+    backgroundColor: colors.appBackground,
     flex: 1
   },
   container: {
+    alignSelf: "center",
     gap: spacing.md,
-    padding: spacing.lg
+    maxWidth: 430,
+    minHeight: "100%",
+    padding: spacing.lg,
+    width: "100%"
   },
   heading: {
     ...typography.heading,
