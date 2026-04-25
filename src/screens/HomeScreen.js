@@ -235,6 +235,7 @@ function ProfileContent({ assistantName, navigation, subscription, setSubscripti
   const [nameError, setNameError] = useState("");
   const [fuelAlerts, setFuelAlerts] = useState(true);
   const [restReminders, setRestReminders] = useState(true);
+  const [restInterval, setRestInterval] = useState("2.5 hours");
 
   function toggleEditing() {
     if (!editing) {
@@ -303,7 +304,12 @@ function ProfileContent({ assistantName, navigation, subscription, setSubscripti
       <PremiumCard style={styles.profileCard}>
         <Text style={styles.cardTitle}>Preferences</Text>
         <PreferenceRow label="Fuel savings alerts" value={fuelAlerts} onValueChange={setFuelAlerts} />
-        <PreferenceRow label="Rest reminders every 2.5-3 hours" value={restReminders} onValueChange={setRestReminders} />
+        <ReminderPreference
+          enabled={restReminders}
+          interval={restInterval}
+          onIntervalChange={setRestInterval}
+          onToggle={setRestReminders}
+        />
       </PremiumCard>
     </>
   );
@@ -329,6 +335,45 @@ function PreferenceRow({ label, value, onValueChange }) {
         trackColor={{ false: colors.border, true: colors.green }}
         value={value}
       />
+    </View>
+  );
+}
+
+function ReminderPreference({ enabled, interval, onIntervalChange, onToggle }) {
+  const options = ["2 hours", "2.5 hours", "3 hours", "4 hours"];
+
+  return (
+    <View style={styles.reminderBlock}>
+      <View style={styles.preferenceRow}>
+        <View style={styles.preferenceText}>
+          <Text style={styles.profileMeta}>Rest break timing</Text>
+          <Text style={styles.preferenceSub}>{enabled ? `Every ${interval}` : "Paused"}</Text>
+        </View>
+        <Switch
+          onValueChange={onToggle}
+          thumbColor={colors.surface}
+          trackColor={{ false: colors.border, true: colors.green }}
+          value={enabled}
+        />
+      </View>
+      {enabled && (
+        <View style={styles.intervalChips}>
+          {options.map((option) => {
+            const selected = option === interval;
+            return (
+              <Pressable
+                key={option}
+                onPress={() => onIntervalChange(option)}
+                style={[styles.intervalChip, selected && styles.intervalChipActive]}
+              >
+                <Text style={[styles.intervalChipText, selected && styles.intervalChipTextActive]}>
+                  {option.replace(" hours", "h")}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
     </View>
   );
 }
@@ -411,7 +456,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     maxWidth: screen.maxWidth,
     paddingHorizontal: screen.padding,
-    paddingBottom: spacing.lg,
+    paddingBottom: 112,
     paddingTop: spacing.sm,
     width: "100%"
   },
@@ -703,6 +748,48 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between"
+  },
+  preferenceText: {
+    flex: 1,
+    paddingRight: spacing.sm
+  },
+  preferenceSub: {
+    color: colors.mutedLight,
+    fontSize: 12,
+    fontWeight: "700",
+    marginTop: 2
+  },
+  reminderBlock: {
+    gap: spacing.sm
+  },
+  intervalChips: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm
+  },
+  intervalChip: {
+    alignItems: "center",
+    backgroundColor: colors.appBackground,
+    borderColor: colors.border,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    flex: 1,
+    minHeight: 38,
+    justifyContent: "center",
+    outlineStyle: "none",
+    paddingHorizontal: spacing.sm
+  },
+  intervalChipActive: {
+    backgroundColor: colors.navy,
+    borderColor: colors.navy
+  },
+  intervalChipText: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  intervalChipTextActive: {
+    color: colors.surface
   },
   profileMeta: {
     color: colors.muted,
