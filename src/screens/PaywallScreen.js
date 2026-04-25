@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import PrimaryButton from "../components/PrimaryButton";
-import { colors, radii, shadows, spacing, typography } from "../constants/theme";
+import { colors, radii, screen, shadows, spacing, typography } from "../constants/theme";
 import { setMockPremium } from "../services/subscriptionService";
 
 export default function PaywallScreen({ navigation }) {
@@ -14,7 +15,7 @@ export default function PaywallScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <Text style={styles.heading}>Upgrade to Waylo Premium</Text>
         <View style={styles.planRow}>
           <PlanCard title="Free" price="$0" items={["Basic route", "1 fuel suggestion"]} />
@@ -27,7 +28,7 @@ export default function PaywallScreen({ navigation }) {
         </View>
         <PrimaryButton title={upgraded ? "Premium Enabled" : "Upgrade to Premium"} onPress={upgrade} />
         <PrimaryButton title="Back to Trip" variant="secondary" onPress={() => navigation.goBack()} />
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -46,21 +47,29 @@ function PlanCard({ title, price, items, featured }) {
 
 const styles = StyleSheet.create({
   safe: {
+    backgroundColor: colors.appBackground,
     flex: 1
   },
   container: {
+    alignSelf: "center",
     gap: spacing.lg,
-    padding: spacing.lg
+    maxWidth: screen.maxWidth,
+    minHeight: "100%",
+    padding: spacing.lg,
+    paddingBottom: spacing.xl * 2,
+    width: "100%"
   },
   heading: typography.heading,
   planRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.md
   },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
-    flex: 1,
+    flexBasis: 150,
+    flexGrow: 1,
     gap: spacing.sm,
     minHeight: 280,
     padding: spacing.md,

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
 import StatItem from "../components/StatItem";
@@ -23,7 +24,7 @@ export default function VehicleSetupScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Text style={styles.heading}>Let's add your vehicle</Text>
 
         <View>
@@ -31,7 +32,9 @@ export default function VehicleSetupScreen({ navigation, route }) {
           <View style={styles.searchBox}>
             <Text style={styles.searchIcon}>Q</Text>
             <TextInput value={search} onChangeText={setSearch} style={styles.searchInput} />
-            <Text style={styles.clear}>x</Text>
+            <Pressable onPress={() => setSearch("")} hitSlop={8}>
+              <Text style={styles.clear}>x</Text>
+            </Pressable>
           </View>
         </View>
 
@@ -102,7 +105,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     maxWidth: screen.maxWidth,
     padding: screen.padding,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xl * 2,
     width: "100%"
   },
   heading: typography.heading,

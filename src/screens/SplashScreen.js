@@ -1,5 +1,6 @@
 import React from "react";
-import { SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Logo from "../components/Logo";
 import PrimaryButton from "../components/PrimaryButton";
 import { colors, radii, screen, spacing } from "../constants/theme";
@@ -27,7 +28,9 @@ export default function SplashScreen({ navigation }) {
 
           <View style={styles.actions}>
             <PrimaryButton title="Get Started" onPress={() => navigation.navigate("Login")} />
-            <Text style={styles.loginText}>Login / Sign up</Text>
+            <Pressable onPress={() => navigation.navigate("Login")} style={styles.loginLink}>
+              <Text style={styles.loginText}>Login / Sign up</Text>
+            </Pressable>
           </View>
         </View>
       </SafeAreaView>
@@ -151,5 +154,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "800",
     textAlign: "center"
+  },
+  loginLink: {
+    alignItems: "center",
+    minHeight: 36,
+    justifyContent: "center"
   }
 });

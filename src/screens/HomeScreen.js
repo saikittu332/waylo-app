@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
 import TripModeChip from "../components/TripModeChip";
@@ -26,7 +27,7 @@ export default function HomeScreen({ navigation, route }) {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <PremiumCard style={styles.tripCard}>
           <Text style={styles.cardTitle}>Plan Your Trip</Text>
           <TripField label="From" value={from} onChangeText={setFrom} pinColor="#367CFF" />
@@ -45,18 +46,29 @@ export default function HomeScreen({ navigation, route }) {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Trips</Text>
-          <Text style={styles.viewAll}>View all</Text>
+          <Pressable onPress={() => navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from, to, mode } })} hitSlop={8}>
+            <Text style={styles.viewAll}>View all</Text>
+          </Pressable>
         </View>
         <PremiumCard style={styles.recentCard}>
-          <RecentTrip title="San Francisco -> Yosemite" date="May 20, 2024" />
+          <RecentTrip title="San Francisco -> Yosemite" date="May 20, 2024" onPress={() => navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from: "San Francisco", to: "Yosemite, CA", mode: "Scenic" } })} />
           <View style={styles.listDivider} />
-          <RecentTrip title="Las Vegas -> Grand Canyon" date="May 18, 2024" />
+          <RecentTrip title="Las Vegas -> Grand Canyon" date="May 18, 2024" onPress={() => navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from: "Las Vegas", to: "Grand Canyon, AZ", mode: "Comfort" } })} />
         </PremiumCard>
       </ScrollView>
 
       <View style={styles.tabBar}>
         {["Home", "Trips", "Vehicle", "Profile"].map((item) => (
-          <Pressable key={item} style={styles.tabItem}>
+          <Pressable
+            key={item}
+            onPress={() => {
+              if (item === "Home") navigation.navigate("Home", { assistantName, vehicle });
+              if (item === "Trips") navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from, to, mode } });
+              if (item === "Vehicle") navigation.navigate("VehicleSetup", { assistantName });
+              if (item === "Profile") navigation.navigate("Paywall");
+            }}
+            style={styles.tabItem}
+          >
             <Text style={[styles.tabIcon, item === "Home" && styles.activeTab]}>*</Text>
             <Text style={[styles.tabLabel, item === "Home" && styles.activeTab]}>{item}</Text>
           </Pressable>
@@ -79,22 +91,23 @@ function TripField({ label, value, onChangeText, pinColor }) {
   );
 }
 
-function RecentTrip({ title, date }) {
+function RecentTrip({ title, date, onPress }) {
   return (
-    <View style={styles.recentTrip}>
+    <Pressable onPress={onPress} style={styles.recentTrip}>
       <View>
         <Text style={styles.recentTitle}>{title}</Text>
         <Text style={styles.recentDate}>{date}</Text>
       </View>
       <Text style={styles.chevron}>{">"}</Text>
-    </View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   safe: {
     backgroundColor: colors.appBackground,
-    flex: 1
+    flex: 1,
+    paddingBottom: 0
   },
   navyHeader: {
     backgroundColor: colors.navy,
@@ -134,7 +147,7 @@ const styles = StyleSheet.create({
     marginTop: -108,
     maxWidth: screen.maxWidth,
     padding: screen.padding,
-    paddingBottom: 110,
+    paddingBottom: spacing.lg,
     width: "100%"
   },
   tripCard: {
@@ -234,13 +247,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopColor: colors.border,
     borderTopWidth: 1,
-    bottom: 0,
     flexDirection: "row",
     justifyContent: "space-around",
     maxWidth: screen.maxWidth,
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.md,
     paddingTop: spacing.sm,
-    position: "absolute",
     width: "100%"
   },
   tabItem: {

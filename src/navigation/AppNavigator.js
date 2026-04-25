@@ -20,10 +20,10 @@ export default function AppNavigator() {
       initialRouteName="Splash"
       screenOptions={{
         headerShadowVisible: false,
-        headerStyle: { backgroundColor: colors.background },
+        headerStyle: { backgroundColor: colors.appBackground },
         headerTintColor: colors.navy,
         headerTitleStyle: { fontWeight: "800" },
-        contentStyle: { backgroundColor: colors.background }
+        contentStyle: { backgroundColor: colors.appBackground }
       }}
     >
       <Stack.Screen name="Splash" component={SplashScreen} options={{ headerShown: false }} />
