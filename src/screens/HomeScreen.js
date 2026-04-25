@@ -31,7 +31,7 @@ export default function HomeScreen({ navigation, route }) {
         <View style={styles.headerContent}>
           <Text style={styles.greeting}>Good Morning, Sai</Text>
           <Text style={styles.assistant}>{assistantName} is ready to save your next mile.</Text>
-          <Text style={styles.bell}>o</Text>
+          <Ionicons color={colors.surface} name="notifications-outline" size={22} style={styles.bell} />
         </View>
       </View>
 
@@ -220,8 +220,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs
   },
   bell: {
-    color: colors.surface,
-    fontSize: 20,
     position: "absolute",
     right: 4,
     top: spacing.sm
@@ -341,7 +339,8 @@ const styles = StyleSheet.create({
   },
   tabItem: {
     alignItems: "center",
-    gap: 3
+    gap: 3,
+    outlineStyle: "none"
   },
   tabLabel: {
     color: colors.muted,

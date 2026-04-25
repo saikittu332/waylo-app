@@ -1,6 +1,7 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import Logo from "../components/Logo";
 import PrimaryButton from "../components/PrimaryButton";
 import { colors, radii, screen, spacing } from "../constants/theme";
@@ -8,29 +9,29 @@ import { colors, radii, screen, spacing } from "../constants/theme";
 export default function SplashScreen({ navigation }) {
   return (
     <View style={styles.root}>
-      <View style={styles.sky} />
-      <View style={styles.mountains} />
-      <View style={styles.road}>
-        <View style={styles.line} />
+      <View style={styles.blueHalo} />
+      <View style={styles.tealHalo} />
+      <View style={styles.routeRoad}>
+        <View style={styles.roadStripeOne} />
+        <View style={styles.roadStripeTwo} />
+      </View>
+      <View style={styles.destinationPin}>
+        <View style={styles.destinationPinHole} />
       </View>
       <SafeAreaView style={styles.safe}>
         <View style={styles.container}>
           <View style={styles.logoBlock}>
-            <Logo size="lg" light />
-            <Text style={styles.tagline}>Drive smart. Spend less.</Text>
+            <Logo size="lg" image />
           </View>
 
           <View style={styles.glassCard}>
-            <Feature title="Smart fuel stops" detail="Find the best fuel prices" />
-            <Feature title="Lower trip cost" detail="Save more on every mile" />
-            <Feature title="Better road trips" detail="Comfort, safety and fun" />
+            <Feature icon="pricetag-outline" title="Smart fuel stops" detail="Find the best fuel prices" />
+            <Feature icon="trending-down-outline" title="Lower trip cost" detail="Save more on every mile" />
+            <Feature icon="navigate-outline" title="Better road trips" detail="Comfort, safety and fun" />
           </View>
 
           <View style={styles.actions}>
             <PrimaryButton title="Get Started" onPress={() => navigation.navigate("Login")} />
-            <Pressable onPress={() => navigation.navigate("Login")} style={styles.loginLink}>
-              <Text style={styles.loginText}>Login / Sign up</Text>
-            </Pressable>
           </View>
         </View>
       </SafeAreaView>
@@ -38,11 +39,11 @@ export default function SplashScreen({ navigation }) {
   );
 }
 
-function Feature({ title, detail }) {
+function Feature({ icon, title, detail }) {
   return (
     <View style={styles.feature}>
       <View style={styles.featureIcon}>
-        <Text style={styles.featureIconText}>{title.slice(0, 1)}</Text>
+        <Ionicons color={colors.surface} name={icon} size={16} />
       </View>
       <View>
         <Text style={styles.featureTitle}>{title}</Text>
@@ -54,38 +55,76 @@ function Feature({ title, detail }) {
 
 const styles = StyleSheet.create({
   root: {
-    backgroundColor: colors.navy,
+    backgroundColor: colors.surface,
     flex: 1,
     overflow: "hidden"
   },
-  sky: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.navy
-  },
-  mountains: {
-    backgroundColor: "rgba(24, 184, 117, 0.28)",
-    borderTopLeftRadius: 260,
-    height: 260,
-    left: -80,
+  blueHalo: {
+    backgroundColor: "rgba(8,103,242,0.08)",
+    borderRadius: 260,
+    height: 420,
+    left: -190,
     position: "absolute",
-    right: -70,
-    top: 330,
-    transform: [{ rotate: "-8deg" }]
+    top: 180,
+    width: 420
   },
-  road: {
-    backgroundColor: "#2F3338",
-    bottom: -70,
-    height: 250,
-    left: 42,
+  tealHalo: {
+    backgroundColor: "rgba(20,199,154,0.12)",
+    borderRadius: 260,
+    height: 360,
     position: "absolute",
-    right: 42,
-    transform: [{ perspective: 500 }, { rotateX: "56deg" }]
+    right: -170,
+    top: 70,
+    width: 360
   },
-  line: {
-    alignSelf: "center",
-    backgroundColor: colors.orange,
-    height: "100%",
-    width: 5
+  routeRoad: {
+    backgroundColor: colors.navySoft,
+    borderBottomLeftRadius: 26,
+    borderBottomRightRadius: 16,
+    borderTopLeftRadius: 999,
+    borderTopRightRadius: 999,
+    bottom: -36,
+    height: 390,
+    overflow: "hidden",
+    position: "absolute",
+    right: -8,
+    transform: [{ rotate: "26deg" }],
+    width: 160
+  },
+  roadStripeOne: {
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    height: 54,
+    left: 70,
+    position: "absolute",
+    top: 110,
+    width: 12
+  },
+  roadStripeTwo: {
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    height: 54,
+    left: 70,
+    position: "absolute",
+    top: 210,
+    width: 12
+  },
+  destinationPin: {
+    alignItems: "center",
+    backgroundColor: colors.green,
+    borderRadius: 42,
+    height: 84,
+    justifyContent: "center",
+    position: "absolute",
+    right: 76,
+    top: 106,
+    width: 84
+  },
+  destinationPinHole: {
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    height: 36,
+    width: 36
   },
   safe: {
     flex: 1
@@ -100,23 +139,27 @@ const styles = StyleSheet.create({
   },
   logoBlock: {
     alignItems: "center",
-    marginTop: 52
+    marginTop: 44
   },
   tagline: {
-    color: colors.surface,
+    color: colors.navy,
     fontSize: 18,
     fontWeight: "800",
     marginTop: spacing.xs
   },
   glassCard: {
     alignSelf: "center",
-    backgroundColor: "rgba(255,255,255,0.18)",
-    borderColor: "rgba(255,255,255,0.18)",
+    backgroundColor: "rgba(255,255,255,0.86)",
+    borderColor: "rgba(8,103,242,0.12)",
     borderRadius: radii.lg,
     borderWidth: 1,
     gap: spacing.md,
     padding: spacing.md,
-    width: "78%"
+    shadowColor: colors.navy,
+    shadowOpacity: 0.08,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 12 },
+    width: "82%"
   },
   feature: {
     alignItems: "center",
@@ -131,33 +174,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 28
   },
-  featureIconText: {
-    color: colors.surface,
-    fontWeight: "900"
-  },
   featureTitle: {
-    color: colors.surface,
+    color: colors.navy,
     fontSize: 14,
     fontWeight: "900"
   },
   featureDetail: {
-    color: "#DDE7F5",
+    color: colors.muted,
     fontSize: 12,
     marginTop: 2
   },
   actions: {
-    gap: spacing.sm,
-    marginBottom: spacing.lg
-  },
-  loginText: {
-    color: colors.surface,
-    fontSize: 15,
-    fontWeight: "800",
-    textAlign: "center"
-  },
-  loginLink: {
-    alignItems: "center",
-    minHeight: 36,
-    justifyContent: "center"
+    marginBottom: spacing.xl
   }
 });

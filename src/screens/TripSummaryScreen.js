@@ -88,7 +88,6 @@ const styles = StyleSheet.create({
   container: {
     alignSelf: "center",
     gap: spacing.md,
-    marginTop: -64,
     maxWidth: screen.maxWidth,
     padding: screen.padding,
     paddingBottom: spacing.xl * 2,

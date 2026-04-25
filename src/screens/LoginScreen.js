@@ -29,7 +29,7 @@ export default function LoginScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <Logo size="md" />
+        <Logo size="md" image />
         <View style={styles.header}>
           <Text style={styles.heading}>Welcome back!</Text>
           <Text style={styles.copy}>Login to continue your journey</Text>

@@ -18,6 +18,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     borderWidth: 1,
     minWidth: 78,
+    outlineStyle: "none",
     paddingHorizontal: spacing.md,
     paddingVertical: 10
   },
