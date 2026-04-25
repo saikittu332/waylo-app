@@ -66,7 +66,7 @@ export default function HomeScreen({ navigation, route }) {
             navigation={navigation}
           />
         )}
-        {activeTab === "Profile" && <ProfileContent assistantName={assistantName} />}
+        {activeTab === "Profile" && <ProfileContent assistantName={assistantName} navigation={navigation} />}
       </ScrollView>
 
       <View style={styles.tabBar}>
@@ -144,15 +144,52 @@ function VehicleContent({ assistantName, vehicle, navigation }) {
   );
 }
 
-function ProfileContent({ assistantName }) {
+function ProfileContent({ assistantName, navigation }) {
+  const [profileName, setProfileName] = useState("Sai");
+  const [phone, setPhone] = useState("+1 (555) 123-4567");
+  const [editing, setEditing] = useState(false);
+
   return (
     <>
-      <Text style={styles.sectionTitle}>Profile</Text>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Profile</Text>
+        <Pressable onPress={() => setEditing((value) => !value)} hitSlop={8} style={styles.textAction}>
+          <Text style={styles.viewAll}>{editing ? "Done" : "Edit profile"}</Text>
+        </Pressable>
+      </View>
       <PremiumCard style={styles.profileCard}>
-        <Text style={styles.cardTitle}>Sai</Text>
+        {editing ? (
+          <>
+            <ProfileInput label="Name" value={profileName} onChangeText={setProfileName} />
+            <ProfileInput label="Phone" value={phone} onChangeText={setPhone} />
+          </>
+        ) : (
+          <>
+            <Text style={styles.cardTitle}>{profileName}</Text>
+            <Text style={styles.profileMeta}>{phone}</Text>
+          </>
+        )}
         <Text style={styles.profileMeta}>Assistant name: {assistantName}</Text>
-        <Text style={styles.profileMeta}>Plan: Free</Text>
         <Text style={styles.profileMeta}>Saved trips: 2</Text>
+      </PremiumCard>
+      <PremiumCard style={styles.subscriptionCard}>
+        <View style={styles.planHeader}>
+          <View>
+            <Text style={styles.cardTitle}>Waylo Free</Text>
+            <Text style={styles.profileMeta}>Current plan</Text>
+          </View>
+          <View style={styles.planBadge}>
+            <Text style={styles.planBadgeText}>Free</Text>
+          </View>
+        </View>
+        <Text style={styles.profileMeta}>Basic route planning and 1 fuel suggestion per trip.</Text>
+        <View style={styles.planRows}>
+          <PlanLine label="Basic route" included />
+          <PlanLine label="1 fuel suggestion" included />
+          <PlanLine label="Full AI fuel optimization" />
+          <PlanLine label="Multiple smart stops" />
+        </View>
+        <PrimaryButton title="View Premium Plan" variant="secondary" onPress={() => navigation.navigate("Paywall")} />
       </PremiumCard>
       <PremiumCard style={styles.profileCard}>
         <Text style={styles.cardTitle}>Preferences</Text>
@@ -160,6 +197,28 @@ function ProfileContent({ assistantName }) {
         <Text style={styles.profileMeta}>Rest reminders every 2.5-3 hours</Text>
       </PremiumCard>
     </>
+  );
+}
+
+function ProfileInput({ label, value, onChangeText }) {
+  return (
+    <View style={styles.profileInputWrap}>
+      <Text style={styles.label}>{label}</Text>
+      <TextInput value={value} onChangeText={onChangeText} style={styles.profileInput} />
+    </View>
+  );
+}
+
+function PlanLine({ label, included }) {
+  return (
+    <View style={styles.planLine}>
+      <Ionicons
+        color={included ? colors.green : colors.mutedLight}
+        name={included ? "checkmark-circle" : "lock-closed-outline"}
+        size={17}
+      />
+      <Text style={styles.planLineText}>{label}</Text>
+    </View>
   );
 }
 
@@ -297,6 +356,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "800"
   },
+  textAction: {
+    outlineStyle: "none"
+  },
   recentCard: {
     paddingVertical: spacing.sm
   },
@@ -352,6 +414,50 @@ const styles = StyleSheet.create({
   },
   profileCard: {
     gap: spacing.md
+  },
+  subscriptionCard: {
+    gap: spacing.md
+  },
+  planHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+  planBadge: {
+    backgroundColor: colors.paleBlue,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs
+  },
+  planBadgeText: {
+    color: colors.blue,
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  planRows: {
+    gap: spacing.sm
+  },
+  planLine: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm
+  },
+  planLineText: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: "700"
+  },
+  profileInputWrap: {
+    gap: spacing.xs
+  },
+  profileInput: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    color: colors.text,
+    minHeight: 44,
+    paddingHorizontal: spacing.md
   },
   profileMeta: {
     color: colors.muted,

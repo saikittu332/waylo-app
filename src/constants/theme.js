@@ -1,11 +1,11 @@
 export const colors = {
-  navy: "#061B49",
-  navyDeep: "#031238",
-  navySoft: "#17345F",
-  blue: "#0867F2",
-  skyBlue: "#08A5F5",
+  navy: "#0B2D5C",
+  navyDeep: "#061E42",
+  navySoft: "#245181",
+  blue: "#1478F2",
+  skyBlue: "#12A8F6",
   orange: "#08A5F5",
-  orangeDark: "#0867F2",
+  orangeDark: "#1478F2",
   green: "#14C79A",
   background: "#F7F8FA",
   appBackground: "#F6FAFF",
@@ -61,14 +61,14 @@ export const typography = {
 
 export const shadows = {
   card: {
-    shadowColor: "#0C1F3F",
-    shadowOpacity: 0.1,
+    shadowColor: "#153C72",
+    shadowOpacity: 0.08,
     shadowRadius: 22,
     shadowOffset: { width: 0, height: 12 },
     elevation: 4
   },
   soft: {
-    shadowColor: "#071E3D",
+    shadowColor: "#153C72",
     shadowOpacity: 0.06,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 8 },
