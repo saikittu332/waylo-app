@@ -47,15 +47,17 @@ export default function HomeScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.navyHeader}>
-        <View style={styles.headerContent}>
-          <Text style={styles.greeting}>Good Morning, Sai</Text>
-          <Text style={styles.assistant}>{assistantName} is ready to save your next mile.</Text>
-          <Ionicons color={colors.surface} name="notifications-outline" size={22} style={styles.bell} />
-        </View>
-      </View>
-
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <View style={styles.greetingCard}>
+          <View>
+            <Text style={styles.greeting}>Good Morning, Sai</Text>
+            <Text style={styles.assistant}>{assistantName} is ready to save your next mile.</Text>
+          </View>
+          <View style={styles.bellButton}>
+            <Ionicons color={colors.navy} name="notifications-outline" size={20} />
+          </View>
+        </View>
+
         {activeTab === "Home" && (
           <PlanTripContent
             assistantName={assistantName}
@@ -131,7 +133,7 @@ function PlanTripContent({ assistantName, vehicle, vehicles, navigation, from, s
             <TripModeChip key={item} label={item} selected={mode === item} onPress={() => setMode(item)} />
           ))}
         </View>
-        <Pressable onPress={() => setShowVehiclePicker(true)} style={styles.selectedVehicleCard}>
+        <Pressable onPress={() => setShowVehiclePicker((value) => !value)} style={styles.selectedVehicleCard}>
           <View style={styles.vehicleIconMini}>
             <Ionicons color={colors.blue} name="car-sport-outline" size={20} />
           </View>
@@ -139,11 +141,16 @@ function PlanTripContent({ assistantName, vehicle, vehicles, navigation, from, s
             <Text style={styles.selectedVehicleLabel}>Vehicle</Text>
             <Text style={styles.selectedVehicleName}>{vehicle.vehicleName}</Text>
           </View>
-          <Ionicons color={colors.muted} name="chevron-down" size={20} />
+          <Ionicons color={colors.muted} name={showVehiclePicker ? "chevron-up" : "chevron-down"} size={20} />
         </Pressable>
         {showVehiclePicker && (
           <View style={styles.vehiclePicker}>
-            <Text style={styles.label}>Choose vehicle for this trip</Text>
+            <View style={styles.pickerHeader}>
+              <Text style={styles.label}>Choose vehicle for this trip</Text>
+              <Pressable onPress={() => setShowVehiclePicker(false)} hitSlop={8} style={styles.textAction}>
+                <Text style={styles.doneText}>Done</Text>
+              </Pressable>
+            </View>
             {vehicles.map((item) => (
               <Pressable
                 key={item.vehicleName}
@@ -370,35 +377,34 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingBottom: 0
   },
-  navyHeader: {
+  greetingCard: {
+    alignItems: "center",
     backgroundColor: colors.headerBlue,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    minHeight: 92,
-    paddingHorizontal: screen.padding,
-    paddingTop: spacing.sm
-  },
-  headerContent: {
-    alignSelf: "center",
-    maxWidth: screen.maxWidth,
-    width: "100%"
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: spacing.md
   },
   greeting: {
-    color: colors.surface,
+    color: colors.navy,
     fontSize: 19,
-    fontWeight: "900",
-    marginTop: spacing.xs
+    fontWeight: "900"
   },
   assistant: {
-    color: "#B9C7D9",
+    color: colors.muted,
     fontSize: 13,
     fontWeight: "700",
     marginTop: spacing.xs
   },
-  bell: {
-    position: "absolute",
-    right: 4,
-    top: spacing.xs
+  bellButton: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderRadius: radii.pill,
+    height: 38,
+    justifyContent: "center",
+    width: 38
   },
   container: {
     alignSelf: "center",
@@ -406,7 +412,7 @@ const styles = StyleSheet.create({
     maxWidth: screen.maxWidth,
     paddingHorizontal: screen.padding,
     paddingBottom: spacing.lg,
-    paddingTop: spacing.md,
+    paddingTop: spacing.sm,
     width: "100%"
   },
   tripCard: {
@@ -573,6 +579,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: spacing.sm,
     padding: spacing.sm
+  },
+  pickerHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+  doneText: {
+    color: colors.blue,
+    fontSize: 13,
+    fontWeight: "900"
   },
   vehicleOption: {
     alignItems: "center",
