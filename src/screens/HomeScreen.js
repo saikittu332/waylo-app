@@ -26,7 +26,7 @@ const completedTrips = [
 ];
 
 export default function HomeScreen({ navigation, route }) {
-  const assistantName = route.params?.assistantName || "Waylo";
+  const [assistantName, setAssistantName] = useState(route.params?.assistantName || "Waylo");
   const vehicle = route.params?.vehicle || defaultVehicle;
   const initialVehicles = route.params?.vehicles || [vehicle];
   const [activeTab, setActiveTab] = useState("Home");
@@ -42,6 +42,9 @@ export default function HomeScreen({ navigation, route }) {
   useFocusEffect(
     React.useCallback(() => {
       setSubscription(getSubscriptionState());
+      if (route.params?.assistantName) {
+        setAssistantName(route.params.assistantName);
+      }
       if (route.params?.vehicle) {
         setVehicles((current) => {
           const exists = current.some((item) => item.vehicleName === route.params.vehicle.vehicleName);
@@ -56,7 +59,7 @@ export default function HomeScreen({ navigation, route }) {
         });
         navigation.setParams({ savedPlan: undefined });
       }
-    }, [navigation, route.params?.savedPlan, route.params?.vehicle])
+    }, [navigation, route.params?.assistantName, route.params?.savedPlan, route.params?.vehicle])
   );
 
   return (
@@ -218,7 +221,9 @@ function PlanTripContent({ assistantName, vehicle, vehicles, navigation, from, s
 }
 
 function TripsContent({ assistantName, vehicle, navigation, from, to, mode, compact, plannedTrips = [] }) {
+  const [selectedSection, setSelectedSection] = useState("Ready");
   const visiblePlans = compact ? plannedTrips.slice(0, 1) : plannedTrips;
+  const showingReady = selectedSection === "Ready";
 
   return (
     <>
@@ -226,50 +231,51 @@ function TripsContent({ assistantName, vehicle, navigation, from, to, mode, comp
         <Text style={styles.sectionTitle}>{compact ? "Saved Plans" : "Trips"}</Text>
       </View>
       <PremiumCard style={styles.recentCard}>
-        <Text style={styles.groupLabel}>Ready to Drive</Text>
-        {visiblePlans.length === 0 ? (
-          <Text style={styles.emptyText}>Saved trip plans will appear here.</Text>
-        ) : (
-          visiblePlans.map((plan, index) => (
-            <React.Fragment key={plan.id}>
-              <RecentTrip
-                badge="Saved"
-                title={plan.title}
-                date={`${plan.mode} route | ${plan.vehicleName}`}
-                onPress={() => navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from: plan.from, to: plan.to, mode: plan.mode } })}
-              />
-              {index < visiblePlans.length - 1 && <View style={styles.listDivider} />}
-            </React.Fragment>
-          ))
+        {!compact && (
+          <View style={styles.tripSections}>
+            {["Ready", "Completed"].map((section) => (
+              <Pressable
+                key={section}
+                onPress={() => setSelectedSection(section)}
+                style={[styles.tripSectionTab, selectedSection === section && styles.tripSectionTabActive]}
+              >
+                <Text style={[styles.tripSectionText, selectedSection === section && styles.tripSectionTextActive]}>
+                  {section === "Ready" ? "Ready to Drive" : "Completed"}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
         )}
+        {compact && <Text style={styles.groupLabel}>Ready to Drive</Text>}
+        {(compact || showingReady) && (
+          visiblePlans.length === 0 ? (
+            <Text style={styles.emptyText}>Saved trip plans will appear here.</Text>
+          ) : (
+            visiblePlans.map((plan, index) => (
+              <React.Fragment key={plan.id}>
+                <RecentTrip
+                  badge="Saved"
+                  title={plan.title}
+                  date={`${plan.mode} route | ${plan.vehicleName}`}
+                  onPress={() => navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from: plan.from, to: plan.to, mode: plan.mode } })}
+                />
+                {index < visiblePlans.length - 1 && <View style={styles.listDivider} />}
+              </React.Fragment>
+            ))
+          )
+        )}
+        {!compact && !showingReady && completedTrips.map((trip, index) => (
+          <React.Fragment key={trip.id}>
+            <RecentTrip title={trip.title} date={trip.date} onPress={() => navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from: trip.from, to: trip.to, mode: trip.mode } })} />
+            {index < completedTrips.length - 1 && <View style={styles.listDivider} />}
+          </React.Fragment>
+        ))}
       </PremiumCard>
-      {!compact && (
-        <PremiumCard style={styles.recentCard}>
-          <Text style={styles.groupLabel}>Trip History</Text>
-          {completedTrips.map((trip, index) => (
-            <React.Fragment key={trip.id}>
-              <RecentTrip title={trip.title} date={trip.date} onPress={() => navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from: trip.from, to: trip.to, mode: trip.mode } })} />
-              {index < completedTrips.length - 1 && <View style={styles.listDivider} />}
-            </React.Fragment>
-          ))}
-        </PremiumCard>
-      )}
-      {compact && (
-        <PremiumCard style={styles.recentCard}>
-          <Text style={styles.groupLabel}>Trip History</Text>
-          {completedTrips.slice(0, 2).map((trip, index) => (
-            <React.Fragment key={trip.id}>
-              <RecentTrip title={trip.title} date={trip.date} onPress={() => navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from: trip.from, to: trip.to, mode: trip.mode } })} />
-              {index < 1 && <View style={styles.listDivider} />}
-            </React.Fragment>
-          ))}
-        </PremiumCard>
-      )}
     </>
   );
 }
 
-function NavigateContent({ assistantName, navigation, plannedTrips, vehicle }) {
+function NavigateContent({ navigation, plannedTrips }) {
   function startSavedPlan(plan) {
     navigation.navigate("Navigation", {
       tripPlan: {
@@ -292,40 +298,44 @@ function NavigateContent({ assistantName, navigation, plannedTrips, vehicle }) {
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Navigate</Text>
       </View>
-      <PremiumCard style={styles.navigateHero}>
-        <View style={styles.navigateIcon}>
-          <Ionicons color={colors.surface} name="navigate" size={24} />
+      <View style={styles.liveMapCard}>
+        <View style={styles.mapLandMass} />
+        <View style={styles.mapRoadOne} />
+        <View style={styles.mapRoadTwo} />
+        <View style={styles.currentLocationPulse} />
+        <View style={styles.currentLocationDot}>
+          <Ionicons color={colors.surface} name="navigate" size={18} />
         </View>
-        <View style={styles.navigateCopy}>
-          <Text style={styles.cardTitle}>Start a saved route</Text>
-          <Text style={styles.profileMeta}>Choose a ready plan and jump straight into navigation.</Text>
+        <View style={styles.mapCaption}>
+          <Text style={styles.mapCaptionTitle}>Current location</Text>
+          <Text style={styles.mapCaptionText}>Live route view placeholder</Text>
         </View>
-      </PremiumCard>
-      <PremiumCard style={styles.recentCard}>
-        <Text style={styles.groupLabel}>Ready Routes</Text>
-        {plannedTrips.length === 0 ? (
-          <Text style={styles.emptyText}>No saved plans yet. Build a route and tap Save for Later.</Text>
-        ) : (
-          plannedTrips.map((plan, index) => (
-            <React.Fragment key={plan.id}>
-              <View style={styles.navPlanRow}>
-                <View style={styles.recentText}>
-                  <Text style={styles.recentTitle}>{plan.title}</Text>
-                  <Text style={styles.recentDate}>{plan.mode} route | {plan.vehicleName}</Text>
+        <PremiumCard style={styles.routeSheet}>
+          <Text style={styles.groupLabel}>Ready Routes</Text>
+          {plannedTrips.length === 0 ? (
+            <Text style={styles.emptyText}>No saved plans yet. Build a route and tap Save for Later.</Text>
+          ) : (
+            plannedTrips.map((plan, index) => (
+              <React.Fragment key={plan.id}>
+                <View style={styles.navPlanRow}>
+                  <View style={styles.recentText}>
+                    <Text style={styles.recentTitle}>{plan.title}</Text>
+                    <Text style={styles.recentDate}>{plan.mode} route | {plan.vehicleName}</Text>
+                  </View>
+                  <Pressable
+                    onPress={() => startSavedPlan(plan)}
+                    style={styles.startMiniButton}
+                  >
+                    <Ionicons color={colors.surface} name="navigate" size={15} />
+                    <Text style={styles.startMiniText}>Start</Text>
+                  </Pressable>
                 </View>
-                <Pressable
-                  onPress={() => startSavedPlan(plan)}
-                  style={styles.startMiniButton}
-                >
-                  <Ionicons color={colors.surface} name="navigate" size={15} />
-                  <Text style={styles.startMiniText}>Start</Text>
-                </Pressable>
-              </View>
-              {index < plannedTrips.length - 1 && <View style={styles.listDivider} />}
-            </React.Fragment>
-          ))
-        )}
-      </PremiumCard>
+                {index < plannedTrips.length - 1 && <View style={styles.listDivider} />}
+              </React.Fragment>
+            ))
+          )}
+        </PremiumCard>
+      </View>
     </>
   );
 }
@@ -716,6 +726,37 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xs,
     textTransform: "uppercase"
   },
+  tripSections: {
+    backgroundColor: colors.appBackground,
+    borderRadius: radii.pill,
+    flexDirection: "row",
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
+    padding: 4
+  },
+  tripSectionTab: {
+    alignItems: "center",
+    borderRadius: radii.pill,
+    flex: 1,
+    minHeight: 38,
+    justifyContent: "center",
+    paddingHorizontal: spacing.sm
+  },
+  tripSectionTabActive: {
+    backgroundColor: colors.surface,
+    shadowColor: colors.navy,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 }
+  },
+  tripSectionText: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "800"
+  },
+  tripSectionTextActive: {
+    color: colors.navy
+  },
   emptyText: {
     color: colors.muted,
     fontSize: 13,
@@ -895,6 +936,90 @@ const styles = StyleSheet.create({
   },
   navigateCopy: {
     flex: 1
+  },
+  liveMapCard: {
+    backgroundColor: colors.mapBlue,
+    borderRadius: radii.xl,
+    height: 560,
+    overflow: "hidden",
+    position: "relative"
+  },
+  mapLandMass: {
+    backgroundColor: colors.mapGreen,
+    borderRadius: 260,
+    height: 470,
+    left: -120,
+    position: "absolute",
+    top: 40,
+    transform: [{ rotate: "-18deg" }],
+    width: 380
+  },
+  mapRoadOne: {
+    backgroundColor: "rgba(255,255,255,0.82)",
+    borderRadius: 999,
+    height: 520,
+    left: 245,
+    position: "absolute",
+    top: -42,
+    transform: [{ rotate: "28deg" }],
+    width: 26
+  },
+  mapRoadTwo: {
+    backgroundColor: "rgba(47,128,237,0.72)",
+    borderRadius: 999,
+    height: 420,
+    left: 164,
+    position: "absolute",
+    top: 68,
+    transform: [{ rotate: "-18deg" }],
+    width: 10
+  },
+  currentLocationPulse: {
+    backgroundColor: "rgba(47,128,237,0.16)",
+    borderRadius: radii.pill,
+    height: 92,
+    left: "46%",
+    position: "absolute",
+    top: 180,
+    width: 92
+  },
+  currentLocationDot: {
+    alignItems: "center",
+    backgroundColor: colors.blue,
+    borderColor: colors.surface,
+    borderRadius: radii.pill,
+    borderWidth: 4,
+    height: 52,
+    justifyContent: "center",
+    left: "51%",
+    position: "absolute",
+    top: 200,
+    width: 52
+  },
+  mapCaption: {
+    backgroundColor: "rgba(255,255,255,0.9)",
+    borderRadius: radii.md,
+    left: spacing.md,
+    padding: spacing.sm,
+    position: "absolute",
+    right: spacing.md,
+    top: spacing.md
+  },
+  mapCaptionTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: "800"
+  },
+  mapCaptionText: {
+    color: colors.muted,
+    fontSize: 12,
+    marginTop: 2
+  },
+  routeSheet: {
+    bottom: spacing.md,
+    left: spacing.md,
+    position: "absolute",
+    right: spacing.md
   },
   navPlanRow: {
     alignItems: "center",

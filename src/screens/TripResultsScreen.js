@@ -13,6 +13,7 @@ import { getSubscriptionState } from "../services/subscriptionService";
 import { formatCurrency, formatHours } from "../utils/tripCalculator";
 
 export default function TripResultsScreen({ navigation, route }) {
+  const assistantName = route.params?.assistantName || "Waylo";
   const vehicle = route.params?.vehicle || defaultVehicle;
   const tripRequest = route.params?.tripRequest;
   const [tripPlan, setTripPlan] = useState(null);
@@ -111,7 +112,7 @@ export default function TripResultsScreen({ navigation, route }) {
         <PrimaryButton
           title="Save for Later"
           variant="secondary"
-          onPress={() => navigation.navigate("Home", { savedPlan })}
+          onPress={() => navigation.navigate("Home", { assistantName, vehicle, savedPlan })}
         />
       </ScrollView>
     </SafeAreaView>
