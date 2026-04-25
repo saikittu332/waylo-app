@@ -1,18 +1,18 @@
 export const defaultVehicle = {
-  vehicleName: "2022 Toyota RAV4",
+  vehicleName: "Toyota Camry 2021",
   fuelType: "gas",
-  cityMpg: 27,
+  cityMpg: 28,
   highwayMpg: 35,
-  tankCapacity: 14.5
+  tankCapacity: 15.8
 };
 
 export const vehicleSuggestions = [
   {
-    vehicleName: "2022 Toyota RAV4",
+    vehicleName: "Toyota Camry 2021",
     fuelType: "gas",
-    cityMpg: 27,
+    cityMpg: 28,
     highwayMpg: 35,
-    tankCapacity: 14.5
+    tankCapacity: 15.8
   },
   {
     vehicleName: "2021 Honda Accord Hybrid",

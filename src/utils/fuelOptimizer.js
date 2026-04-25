@@ -1,7 +1,8 @@
-import { calculateSafeRange } from "./tripCalculator";
+import { calculateRange, calculateSafeRange } from "./tripCalculator";
 
 export function suggestFuelStops(distanceMiles, vehicle) {
-  const safeRange = calculateSafeRange(vehicle.highwayMpg, vehicle.tankCapacity);
+  const range = calculateRange(vehicle.highwayMpg, vehicle.tankCapacity);
+  const safeRange = calculateSafeRange(range);
 
   if (!safeRange) return [];
 

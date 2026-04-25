@@ -1,13 +1,15 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { colors, radii, shadows, spacing } from "../constants/theme";
+import { colors, radii, spacing } from "../constants/theme";
 
 export default function InsightCard({ title, value, detail, accent = "blue" }) {
   const accentStyle = accent === "green" ? styles.green : accent === "orange" ? styles.orange : styles.blue;
 
   return (
     <View style={styles.card}>
-      <View style={[styles.marker, accentStyle]} />
+      <View style={[styles.icon, accentStyle]}>
+        <Text style={styles.iconText}>{title.slice(0, 1)}</Text>
+      </View>
       <View style={styles.content}>
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.value}>{value}</Text>
@@ -20,17 +22,17 @@ export default function InsightCard({ title, value, detail, accent = "blue" }) {
 const styles = StyleSheet.create({
   card: {
     alignItems: "flex-start",
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
+    backgroundColor: "transparent",
     flexDirection: "row",
-    gap: spacing.md,
-    padding: spacing.md,
-    ...shadows.card
+    gap: spacing.sm,
+    paddingVertical: spacing.sm
   },
-  marker: {
-    borderRadius: radii.pill,
-    height: 42,
-    width: 6
+  icon: {
+    alignItems: "center",
+    borderRadius: radii.sm,
+    height: 28,
+    justifyContent: "center",
+    width: 28
   },
   blue: {
     backgroundColor: colors.navy
@@ -44,15 +46,20 @@ const styles = StyleSheet.create({
   content: {
     flex: 1
   },
+  iconText: {
+    color: colors.surface,
+    fontSize: 12,
+    fontWeight: "900"
+  },
   title: {
-    color: colors.muted,
-    fontSize: 13,
+    color: colors.text,
+    fontSize: 14,
     fontWeight: "700",
-    marginBottom: 4
+    marginBottom: 2
   },
   value: {
-    color: colors.text,
-    fontSize: 18,
+    color: colors.muted,
+    fontSize: 12,
     fontWeight: "800"
   },
   detail: {

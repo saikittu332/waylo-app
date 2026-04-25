@@ -1,57 +1,60 @@
 export const mockTripRequest = {
   from: "Current location",
-  to: "Denver, CO",
+  to: "Los Angeles, CA",
   mode: "Cheapest"
 };
 
 export const mockRoute = {
-  distanceMiles: 642,
-  durationHours: 9.7,
-  mockFuelPrice: 3.42,
-  comparisonFuelPrice: 3.76
+  from: "San Francisco",
+  to: "Los Angeles",
+  distanceMiles: 383,
+  durationHours: 6.75,
+  mockFuelPrice: 3.49,
+  comparisonFuelPrice: 3.88
 };
 
 export const mockStops = [
   {
     id: "fuel-1",
-    name: "Prairie Star Fuel",
+    name: "Shell Gas Station",
     type: "fuel",
-    distanceFromStart: 235,
-    distanceFromCurrent: 62,
-    rating: "4.4",
-    fuelPrice: "3.19"
+    distanceFromStart: 120,
+    distanceFromCurrent: 42,
+    rating: "4.3",
+    fuelPrice: "3.49",
+    address: "1200 W Tehachapi Blvd, Tehachapi, CA"
   },
   {
     id: "rest-1",
-    name: "Tallgrass Rest Area",
+    name: "Tehachapi Rest Stop",
     type: "rest",
-    distanceFromStart: 178,
-    distanceFromCurrent: 35,
+    distanceFromStart: 186,
+    distanceFromCurrent: 86,
     rating: "4.2"
   },
   {
     id: "food-1",
-    name: "Mesa Kitchen",
+    name: "Central Coast Grill",
     type: "food",
-    distanceFromStart: 318,
-    distanceFromCurrent: 112,
+    distanceFromStart: 238,
+    distanceFromCurrent: 126,
     rating: "4.6"
   },
   {
     id: "scenic-1",
-    name: "Front Range Overlook",
+    name: "Pacific View Stop",
     type: "scenic",
-    distanceFromStart: 574,
-    distanceFromCurrent: 228,
+    distanceFromStart: 310,
+    distanceFromCurrent: 174,
     rating: "4.8"
   },
   {
     id: "fuel-2",
-    name: "Milepost Market Fuel",
+    name: "Chevron Fuel Stop",
     type: "fuel",
-    distanceFromStart: 470,
-    distanceFromCurrent: 166,
+    distanceFromStart: 282,
+    distanceFromCurrent: 154,
     rating: "4.1",
-    fuelPrice: "3.26"
+    fuelPrice: "3.55"
   }
 ];
