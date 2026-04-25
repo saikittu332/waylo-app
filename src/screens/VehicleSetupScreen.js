@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { CommonActions } from "@react-navigation/native";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
 import StatItem from "../components/StatItem";
@@ -11,15 +12,30 @@ const fuelTypes = ["gas", "diesel", "hybrid", "EV"];
 
 export default function VehicleSetupScreen({ navigation, route }) {
   const assistantName = route.params?.assistantName || "Waylo";
-  const [vehicle, setVehicle] = useState(defaultVehicle);
-  const [search, setSearch] = useState("Toyota Camry 2021");
+  const initialVehicle = route.params?.vehicle || defaultVehicle;
+  const [vehicle, setVehicle] = useState(initialVehicle);
+  const [search, setSearch] = useState(initialVehicle.vehicleName || "Toyota Camry 2021");
 
   function updateField(key, value) {
     setVehicle((current) => ({ ...current, [key]: value }));
   }
 
   function saveVehicle() {
-    navigation.navigate("Home", { assistantName, vehicle });
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: "Home", params: { assistantName, vehicle } }]
+      })
+    );
+  }
+
+  function cancelEdit() {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: "Home", params: { assistantName, vehicle: initialVehicle } }]
+      })
+    );
   }
 
   return (
@@ -81,6 +97,7 @@ export default function VehicleSetupScreen({ navigation, route }) {
         </View>
 
         <PrimaryButton title="Save Vehicle" onPress={saveVehicle} />
+        <PrimaryButton title="Cancel" variant="secondary" onPress={cancelEdit} />
       </ScrollView>
     </SafeAreaView>
   );
