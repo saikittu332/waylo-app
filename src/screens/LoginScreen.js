@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Logo from "../components/Logo";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
 import { colors, radii, screen, spacing, typography } from "../constants/theme";
@@ -29,7 +28,10 @@ export default function LoginScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <Logo size="md" />
+        <View style={styles.brandRow}>
+          <Text style={styles.brandMark}>W</Text>
+          <Text style={styles.brandName}>Wayl<Text style={styles.brandAccent}>o</Text></Text>
+        </View>
         <View style={styles.header}>
           <Text style={styles.heading}>Welcome back!</Text>
           <Text style={styles.copy}>Login to continue your journey</Text>
@@ -78,11 +80,31 @@ const styles = StyleSheet.create({
   },
   container: {
     alignSelf: "center",
-    gap: spacing.lg,
+    gap: spacing.md,
     maxWidth: screen.maxWidth,
     minHeight: "100%",
     padding: screen.padding,
     width: "100%"
+  },
+  brandRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+    justifyContent: "center",
+    marginTop: spacing.lg
+  },
+  brandMark: {
+    color: colors.blue,
+    fontSize: 30,
+    fontWeight: "900"
+  },
+  brandName: {
+    color: colors.navy,
+    fontSize: 26,
+    fontWeight: "900"
+  },
+  brandAccent: {
+    color: colors.green
   },
   header: {
     alignItems: "center",

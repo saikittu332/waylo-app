@@ -29,8 +29,12 @@ export default function AppNavigator() {
       <Stack.Screen name="Splash" component={SplashScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Login" component={LoginScreen} options={{ title: "Phone Login" }} />
       <Stack.Screen name="AssistantName" component={AssistantNameScreen} options={{ title: "Assistant" }} />
-      <Stack.Screen name="VehicleSetup" component={VehicleSetupScreen} options={{ title: "Vehicle" }} />
-      <Stack.Screen name="Home" component={HomeScreen} options={{ title: "Plan Trip" }} />
+      <Stack.Screen
+        name="VehicleSetup"
+        component={VehicleSetupScreen}
+        options={{ title: "Vehicle", headerBackVisible: false, headerLeft: () => null, gestureEnabled: false }}
+      />
+      <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
       <Stack.Screen name="TripResults" component={TripResultsScreen} options={{ title: "AI Trip Plan" }} />
       <Stack.Screen name="StopDetails" component={StopDetailsScreen} options={{ title: "Stop Details" }} />
       <Stack.Screen name="Navigation" component={NavigationScreen} options={{ headerShown: false }} />

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { CommonActions } from "@react-navigation/native";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
 import StatItem from "../components/StatItem";
@@ -11,15 +12,30 @@ const fuelTypes = ["gas", "diesel", "hybrid", "EV"];
 
 export default function VehicleSetupScreen({ navigation, route }) {
   const assistantName = route.params?.assistantName || "Waylo";
-  const [vehicle, setVehicle] = useState(defaultVehicle);
-  const [search, setSearch] = useState("Toyota Camry 2021");
+  const initialVehicle = route.params?.vehicle || defaultVehicle;
+  const [vehicle, setVehicle] = useState(initialVehicle);
+  const [search, setSearch] = useState(initialVehicle.vehicleName || "Toyota Camry 2021");
 
   function updateField(key, value) {
     setVehicle((current) => ({ ...current, [key]: value }));
   }
 
   function saveVehicle() {
-    navigation.navigate("Home", { assistantName, vehicle });
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: "Home", params: { assistantName, vehicle } }]
+      })
+    );
+  }
+
+  function cancelEdit() {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: "Home", params: { assistantName, vehicle: initialVehicle } }]
+      })
+    );
   }
 
   return (
@@ -40,8 +56,13 @@ export default function VehicleSetupScreen({ navigation, route }) {
 
         <PremiumCard style={styles.vehicleCard}>
           <View style={styles.carImage}>
+            <View style={styles.carRoad} />
+            <View style={styles.carShadow} />
             <View style={styles.carBody} />
             <View style={styles.carCabin} />
+            <View style={styles.carWindowLeft} />
+            <View style={styles.carWindowRight} />
+            <View style={styles.headLight} />
             <View style={[styles.wheel, styles.wheelLeft]} />
             <View style={[styles.wheel, styles.wheelRight]} />
           </View>
@@ -81,6 +102,7 @@ export default function VehicleSetupScreen({ navigation, route }) {
         </View>
 
         <PrimaryButton title="Save Vehicle" onPress={saveVehicle} />
+        <PrimaryButton title="Cancel" variant="secondary" onPress={cancelEdit} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -144,42 +166,89 @@ const styles = StyleSheet.create({
   },
   carImage: {
     alignItems: "center",
-    backgroundColor: colors.appBackground,
+    backgroundColor: "#DCEEFF",
     borderRadius: radii.md,
-    height: 128,
+    height: 150,
     justifyContent: "center",
     overflow: "hidden"
   },
+  carRoad: {
+    backgroundColor: "#C6D4E3",
+    borderRadius: 120,
+    bottom: -60,
+    height: 110,
+    position: "absolute",
+    width: 340
+  },
+  carShadow: {
+    backgroundColor: "rgba(7,30,61,0.18)",
+    borderRadius: 999,
+    bottom: 38,
+    height: 18,
+    position: "absolute",
+    width: 210
+  },
   carBody: {
-    backgroundColor: "#DDE2E8",
-    borderRadius: 18,
-    height: 36,
-    width: 210,
+    backgroundColor: "#EEF3F8",
+    borderColor: "#B8C7D7",
+    borderRadius: 22,
+    borderWidth: 1,
+    height: 42,
+    width: 226,
     ...shadows.soft
   },
   carCabin: {
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#F7FBFF",
     borderColor: "#B8C0CC",
-    borderRadius: 30,
+    borderRadius: 18,
     borderWidth: 1,
-    height: 44,
+    height: 48,
     position: "absolute",
-    top: 40,
-    width: 118
+    top: 44,
+    width: 112
+  },
+  carWindowLeft: {
+    backgroundColor: "#BFDDF7",
+    borderRadius: 8,
+    height: 22,
+    left: "40%",
+    position: "absolute",
+    top: 57,
+    transform: [{ skewX: "-14deg" }],
+    width: 38
+  },
+  carWindowRight: {
+    backgroundColor: "#BFDDF7",
+    borderRadius: 8,
+    height: 22,
+    position: "absolute",
+    right: "40%",
+    top: 57,
+    transform: [{ skewX: "14deg" }],
+    width: 38
+  },
+  headLight: {
+    backgroundColor: colors.orange,
+    borderRadius: 5,
+    height: 10,
+    position: "absolute",
+    right: 93,
+    top: 89,
+    width: 16
   },
   wheel: {
     backgroundColor: colors.navy,
     borderRadius: 14,
-    bottom: 32,
+    bottom: 37,
     height: 28,
     position: "absolute",
     width: 28
   },
   wheelLeft: {
-    left: 92
+    left: 94
   },
   wheelRight: {
-    right: 92
+    right: 94
   },
   vehicleName: {
     color: colors.text,

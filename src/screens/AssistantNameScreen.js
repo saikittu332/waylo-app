@@ -39,6 +39,7 @@ export default function AssistantNameScreen({ navigation }) {
           ))}
         </View>
         <PrimaryButton title="Save Assistant Name" onPress={saveName} />
+        <PrimaryButton title="Skip for Now" variant="secondary" onPress={() => navigation.navigate("VehicleSetup", { assistantName: "Waylo" })} />
       </ScrollView>
     </SafeAreaView>
   );

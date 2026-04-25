@@ -66,19 +66,19 @@ const styles = StyleSheet.create({
   header: {
     alignItems: "center",
     backgroundColor: colors.navy,
-    borderBottomLeftRadius: 34,
-    borderBottomRightRadius: 34,
-    minHeight: 210,
-    paddingTop: 62
+    borderBottomLeftRadius: 26,
+    borderBottomRightRadius: 26,
+    minHeight: 148,
+    paddingTop: 36
   },
   completed: {
     color: colors.surface,
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "900"
   },
   message: {
     color: "#DDE7F5",
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
     lineHeight: 20,
     marginTop: spacing.xs,
@@ -88,9 +88,9 @@ const styles = StyleSheet.create({
   container: {
     alignSelf: "center",
     gap: spacing.md,
-    marginTop: -64,
     maxWidth: screen.maxWidth,
     padding: screen.padding,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.xl * 2,
     width: "100%"
   },

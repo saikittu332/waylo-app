@@ -30,16 +30,17 @@ export default function PrimaryButton({ title, onPress, variant = "primary", dis
 const styles = StyleSheet.create({
   button: {
     alignItems: "center",
-    backgroundColor: colors.orange,
+    backgroundColor: colors.blue,
     borderRadius: radii.pill,
     justifyContent: "center",
     minHeight: 54,
     paddingHorizontal: spacing.lg,
-    shadowColor: colors.orange,
+    shadowColor: colors.blue,
     shadowOpacity: 0.24,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 7 },
-    elevation: 3
+    elevation: 3,
+    outlineStyle: "none"
   },
   secondary: {
     backgroundColor: colors.surface,
