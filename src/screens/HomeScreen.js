@@ -15,8 +15,14 @@ const modes = ["Fastest", "Cheapest", "Scenic", "Comfort"];
 const tabs = [
   { label: "Home", icon: "home" },
   { label: "Trips", icon: "map" },
+  { label: "Navigate", icon: "navigate" },
   { label: "Vehicle", icon: "car-sport" },
   { label: "Profile", icon: "person" }
+];
+
+const completedTrips = [
+  { id: "past-yosemite", title: "San Francisco -> Yosemite", date: "May 20, 2024", from: "San Francisco", to: "Yosemite, CA", mode: "Scenic" },
+  { id: "past-grand-canyon", title: "Las Vegas -> Grand Canyon", date: "May 18, 2024", from: "Las Vegas", to: "Grand Canyon, AZ", mode: "Comfort" }
 ];
 
 export default function HomeScreen({ navigation, route }) {
@@ -31,6 +37,7 @@ export default function HomeScreen({ navigation, route }) {
   const [selectedVehicle, setSelectedVehicle] = useState(vehicle);
   const [showVehiclePicker, setShowVehiclePicker] = useState(false);
   const [subscription, setSubscription] = useState(getSubscriptionState());
+  const [plannedTrips, setPlannedTrips] = useState([]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -42,22 +49,19 @@ export default function HomeScreen({ navigation, route }) {
         });
         setSelectedVehicle(route.params.vehicle);
       }
-    }, [route.params?.vehicle])
+      if (route.params?.savedPlan) {
+        setPlannedTrips((current) => {
+          const exists = current.some((item) => item.id === route.params.savedPlan.id);
+          return exists ? current.map((item) => (item.id === route.params.savedPlan.id ? route.params.savedPlan : item)) : [route.params.savedPlan, ...current];
+        });
+        navigation.setParams({ savedPlan: undefined });
+      }
+    }, [navigation, route.params?.savedPlan, route.params?.vehicle])
   );
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <View style={styles.greetingCard}>
-          <View>
-            <Text style={styles.greeting}>Good Morning, Sai</Text>
-            <Text style={styles.assistant}>{assistantName} is ready to save your next mile.</Text>
-          </View>
-          <View style={styles.bellButton}>
-            <Ionicons color={colors.navy} name="notifications-outline" size={20} />
-          </View>
-        </View>
-
         {activeTab === "Home" && (
           <PlanTripContent
             assistantName={assistantName}
@@ -73,6 +77,7 @@ export default function HomeScreen({ navigation, route }) {
             showVehiclePicker={showVehiclePicker}
             setShowVehiclePicker={setShowVehiclePicker}
             setSelectedVehicle={setSelectedVehicle}
+            plannedTrips={plannedTrips}
           />
         )}
         {activeTab === "Trips" && (
@@ -83,7 +88,15 @@ export default function HomeScreen({ navigation, route }) {
             from={from}
             to={to}
             mode={mode}
-            showDraft={showVehiclePicker}
+            plannedTrips={plannedTrips}
+          />
+        )}
+        {activeTab === "Navigate" && (
+          <NavigateContent
+            assistantName={assistantName}
+            navigation={navigation}
+            plannedTrips={plannedTrips}
+            vehicle={selectedVehicle}
           />
         )}
         {activeTab === "Vehicle" && (
@@ -117,13 +130,24 @@ export default function HomeScreen({ navigation, route }) {
   );
 }
 
-function PlanTripContent({ assistantName, vehicle, vehicles, navigation, from, setFrom, to, setTo, mode, setMode, showVehiclePicker, setShowVehiclePicker, setSelectedVehicle }) {
+function PlanTripContent({ assistantName, vehicle, vehicles, navigation, from, setFrom, to, setTo, mode, setMode, showVehiclePicker, setShowVehiclePicker, setSelectedVehicle, plannedTrips }) {
   function continuePlan() {
+    setShowVehiclePicker(false);
     navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from, to, mode } });
   }
 
   return (
     <>
+      <View style={styles.homeHero}>
+        <View>
+          <Text style={styles.heroEyebrow}>Waylo</Text>
+          <Text style={styles.heroTitle}>Plan a smarter drive</Text>
+          <Text style={styles.heroCopy}>Pick a destination, compare modes, and let {assistantName} tune the stops.</Text>
+        </View>
+        <View style={styles.bellButton}>
+          <Ionicons color={colors.navy} name="notifications-outline" size={20} />
+        </View>
+      </View>
       <PremiumCard style={styles.tripCard}>
         <Text style={styles.cardTitle}>Plan Your Trip</Text>
         <TripField label="From" value={from} onChangeText={setFrom} pinColor="#367CFF" />
@@ -175,10 +199,8 @@ function PlanTripContent({ assistantName, vehicle, vehicles, navigation, from, s
           </View>
         )}
         <PrimaryButton
-          title={showVehiclePicker ? "Continue with Vehicle" : "Plan Smart Trip"}
-          onPress={showVehiclePicker ? continuePlan : () => {
-            setShowVehiclePicker(true);
-          }}
+          title="Plan Smart Trip"
+          onPress={continuePlan}
         />
       </PremiumCard>
       <TripsContent
@@ -189,33 +211,120 @@ function PlanTripContent({ assistantName, vehicle, vehicles, navigation, from, s
         to={to}
         mode={mode}
         compact
-        showDraft={showVehiclePicker}
+        plannedTrips={plannedTrips}
       />
     </>
   );
 }
 
-function TripsContent({ assistantName, vehicle, navigation, from, to, mode, compact, showDraft }) {
+function TripsContent({ assistantName, vehicle, navigation, from, to, mode, compact, plannedTrips = [] }) {
+  const visiblePlans = compact ? plannedTrips.slice(0, 1) : plannedTrips;
+
   return (
     <>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{compact ? "Recent Trips" : "Trips"}</Text>
+        <Text style={styles.sectionTitle}>{compact ? "Saved Plans" : "Trips"}</Text>
       </View>
       <PremiumCard style={styles.recentCard}>
-        {showDraft && from && to && (
-          <>
-            <RecentTrip
-              badge="Planning"
-              title={`${from === "Current Location" ? "Current location" : from} -> ${to}`}
-              date={`${mode} route draft`}
-              onPress={() => navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from, to, mode } })}
-            />
-            <View style={styles.listDivider} />
-          </>
+        <Text style={styles.groupLabel}>Ready to Drive</Text>
+        {visiblePlans.length === 0 ? (
+          <Text style={styles.emptyText}>Saved trip plans will appear here.</Text>
+        ) : (
+          visiblePlans.map((plan, index) => (
+            <React.Fragment key={plan.id}>
+              <RecentTrip
+                badge="Saved"
+                title={plan.title}
+                date={`${plan.mode} route | ${plan.vehicleName}`}
+                onPress={() => navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from: plan.from, to: plan.to, mode: plan.mode } })}
+              />
+              {index < visiblePlans.length - 1 && <View style={styles.listDivider} />}
+            </React.Fragment>
+          ))
         )}
-        <RecentTrip title="San Francisco -> Yosemite" date="May 20, 2024" onPress={() => navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from: "San Francisco", to: "Yosemite, CA", mode: "Scenic" } })} />
-        <View style={styles.listDivider} />
-        <RecentTrip title="Las Vegas -> Grand Canyon" date="May 18, 2024" onPress={() => navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from: "Las Vegas", to: "Grand Canyon, AZ", mode: "Comfort" } })} />
+      </PremiumCard>
+      {!compact && (
+        <PremiumCard style={styles.recentCard}>
+          <Text style={styles.groupLabel}>Trip History</Text>
+          {completedTrips.map((trip, index) => (
+            <React.Fragment key={trip.id}>
+              <RecentTrip title={trip.title} date={trip.date} onPress={() => navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from: trip.from, to: trip.to, mode: trip.mode } })} />
+              {index < completedTrips.length - 1 && <View style={styles.listDivider} />}
+            </React.Fragment>
+          ))}
+        </PremiumCard>
+      )}
+      {compact && (
+        <PremiumCard style={styles.recentCard}>
+          <Text style={styles.groupLabel}>Trip History</Text>
+          {completedTrips.slice(0, 2).map((trip, index) => (
+            <React.Fragment key={trip.id}>
+              <RecentTrip title={trip.title} date={trip.date} onPress={() => navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from: trip.from, to: trip.to, mode: trip.mode } })} />
+              {index < 1 && <View style={styles.listDivider} />}
+            </React.Fragment>
+          ))}
+        </PremiumCard>
+      )}
+    </>
+  );
+}
+
+function NavigateContent({ assistantName, navigation, plannedTrips, vehicle }) {
+  function startSavedPlan(plan) {
+    navigation.navigate("Navigation", {
+      tripPlan: {
+        route: {
+          from: plan.from,
+          to: plan.to,
+          mode: plan.mode,
+          distanceMiles: 383,
+          durationHours: 6.75
+        },
+        fullStops: [
+          { id: "quick-fuel", type: "fuel", name: "Best Fuel Stop" }
+        ]
+      }
+    });
+  }
+
+  return (
+    <>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Navigate</Text>
+      </View>
+      <PremiumCard style={styles.navigateHero}>
+        <View style={styles.navigateIcon}>
+          <Ionicons color={colors.surface} name="navigate" size={24} />
+        </View>
+        <View style={styles.navigateCopy}>
+          <Text style={styles.cardTitle}>Start a saved route</Text>
+          <Text style={styles.profileMeta}>Choose a ready plan and jump straight into navigation.</Text>
+        </View>
+      </PremiumCard>
+      <PremiumCard style={styles.recentCard}>
+        <Text style={styles.groupLabel}>Ready Routes</Text>
+        {plannedTrips.length === 0 ? (
+          <Text style={styles.emptyText}>No saved plans yet. Build a route and tap Save for Later.</Text>
+        ) : (
+          plannedTrips.map((plan, index) => (
+            <React.Fragment key={plan.id}>
+              <View style={styles.navPlanRow}>
+                <View style={styles.recentText}>
+                  <Text style={styles.recentTitle}>{plan.title}</Text>
+                  <Text style={styles.recentDate}>{plan.mode} route | {plan.vehicleName}</Text>
+                </View>
+                <Pressable
+                  onPress={() => startSavedPlan(plan)}
+                  style={styles.startMiniButton}
+                >
+                  <Ionicons color={colors.surface} name="navigate" size={15} />
+                  <Text style={styles.startMiniText}>Start</Text>
+                </Pressable>
+              </View>
+              {index < plannedTrips.length - 1 && <View style={styles.listDivider} />}
+            </React.Fragment>
+          ))
+        )}
       </PremiumCard>
     </>
   );
@@ -497,6 +606,37 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     width: "100%"
   },
+  homeHero: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: spacing.md
+  },
+  heroEyebrow: {
+    color: colors.green,
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+    textTransform: "uppercase"
+  },
+  heroTitle: {
+    color: colors.navy,
+    fontSize: 24,
+    fontWeight: "800",
+    marginTop: 4
+  },
+  heroCopy: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: "600",
+    lineHeight: 19,
+    marginTop: 4,
+    maxWidth: 285
+  },
   tripCard: {
     gap: spacing.md
   },
@@ -565,7 +705,22 @@ const styles = StyleSheet.create({
     outlineStyle: "none"
   },
   recentCard: {
+    gap: spacing.xs,
     paddingVertical: spacing.sm
+  },
+  groupLabel: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "800",
+    paddingHorizontal: spacing.sm,
+    paddingTop: spacing.xs,
+    textTransform: "uppercase"
+  },
+  emptyText: {
+    color: colors.muted,
+    fontSize: 13,
+    lineHeight: 19,
+    padding: spacing.sm
   },
   recentTrip: {
     alignItems: "center",
@@ -625,7 +780,7 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     color: colors.muted,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "800"
   },
   activeTab: {
@@ -724,6 +879,42 @@ const styles = StyleSheet.create({
   },
   vehicleListCard: {
     gap: spacing.md
+  },
+  navigateHero: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md
+  },
+  navigateIcon: {
+    alignItems: "center",
+    backgroundColor: colors.blue,
+    borderRadius: radii.pill,
+    height: 52,
+    justifyContent: "center",
+    width: 52
+  },
+  navigateCopy: {
+    flex: 1
+  },
+  navPlanRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+    padding: spacing.sm
+  },
+  startMiniButton: {
+    alignItems: "center",
+    backgroundColor: colors.green,
+    borderRadius: radii.pill,
+    flexDirection: "row",
+    gap: 4,
+    minHeight: 36,
+    paddingHorizontal: spacing.sm
+  },
+  startMiniText: {
+    color: colors.surface,
+    fontSize: 12,
+    fontWeight: "800"
   },
   vehiclePhoto: {
     alignItems: "center",

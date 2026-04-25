@@ -42,6 +42,15 @@ export default function TripResultsScreen({ navigation, route }) {
   const finalStops = stops.filter((stop) => stopDecisions[stop.id] === "added");
   const destination = plannedRoute.to || "Los Angeles, CA";
   const routeLabel = `${plannedRoute.from === "Current Location" ? "San Francisco" : plannedRoute.from} -> ${destination.replace(", CA", "")}`;
+  const savedPlan = {
+    id: `${plannedRoute.from}-${destination}-${plannedRoute.mode}`.replace(/\s+/g, "-").toLowerCase(),
+    title: routeLabel,
+    from: plannedRoute.from,
+    to: destination,
+    mode: plannedRoute.mode,
+    vehicleName: vehicle.vehicleName,
+    savedAt: "Saved just now"
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -99,6 +108,11 @@ export default function TripResultsScreen({ navigation, route }) {
         </PremiumCard>
 
         <PrimaryButton title="Start Navigation" onPress={() => navigation.navigate("Navigation", { tripPlan: { ...tripPlan, finalStops } })} />
+        <PrimaryButton
+          title="Save for Later"
+          variant="secondary"
+          onPress={() => navigation.navigate("Home", { savedPlan })}
+        />
       </ScrollView>
     </SafeAreaView>
   );

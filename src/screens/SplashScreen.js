@@ -21,8 +21,7 @@ export default function SplashScreen({ navigation }) {
       <SafeAreaView style={styles.safe}>
         <View style={styles.container}>
           <View style={styles.logoBlock}>
-            <Logo size="lg" />
-            <Text style={styles.tagline}>Drive smart. Spend less.</Text>
+            <Logo size="lg" image />
           </View>
 
           <View style={styles.glassCard}>
