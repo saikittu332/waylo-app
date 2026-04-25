@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   completed: {
     color: colors.surface,
     fontSize: 22,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   message: {
     color: "#DDE7F5",
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   },
   routeTitle: {
     ...typography.body,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   date: {
     color: colors.muted,
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   summaryValue: {
     color: colors.navy,
     fontSize: 16,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   savingsCard: {
     alignItems: "center",
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   savingsLabel: {
     color: "#087A3A",
     fontSize: 16,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   savingsSub: {
     color: "#087A3A",
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   savingsValue: {
     color: "#087A3A",
     fontSize: 24,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   stopsMade: {
     gap: 3
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   stopsTitle: {
     color: colors.text,
     fontSize: 14,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   stopsText: {
     color: colors.muted,

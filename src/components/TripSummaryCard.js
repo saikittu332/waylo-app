@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
   value: {
     color: colors.navy,
     fontSize: 24,
-    fontWeight: "900",
+    fontWeight: "800",
     marginTop: spacing.sm
   },
   sublabel: {

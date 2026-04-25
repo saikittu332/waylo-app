@@ -16,11 +16,19 @@ export default function TripResultsScreen({ navigation, route }) {
   const vehicle = route.params?.vehicle || defaultVehicle;
   const tripRequest = route.params?.tripRequest;
   const [tripPlan, setTripPlan] = useState(null);
+  const [stopDecisions, setStopDecisions] = useState({});
   const subscription = getSubscriptionState();
 
   useEffect(() => {
     planTrip({ ...tripRequest, vehicle }).then(setTripPlan);
   }, [tripRequest, vehicle]);
+
+  useEffect(() => {
+    const decision = route.params?.stopDecision;
+    if (decision?.id) {
+      setStopDecisions((current) => ({ ...current, [decision.id]: decision.status }));
+    }
+  }, [route.params?.stopDecision]);
 
   if (!tripPlan) {
     return (
@@ -31,6 +39,7 @@ export default function TripResultsScreen({ navigation, route }) {
   }
 
   const { route: plannedRoute, ruleBasedPlan, insights, stops } = tripPlan;
+  const finalStops = stops.filter((stop) => stopDecisions[stop.id] === "added");
   const destination = plannedRoute.to || "Los Angeles, CA";
   const routeLabel = `${plannedRoute.from === "Current Location" ? "San Francisco" : plannedRoute.from} -> ${destination.replace(", CA", "")}`;
 
@@ -67,9 +76,17 @@ export default function TripResultsScreen({ navigation, route }) {
         </PremiumCard>
 
         <PremiumCard style={styles.stopsCard}>
-          <Text style={styles.stopsTitle}>Recommended Stops</Text>
+          <View style={styles.stopsHeader}>
+            <Text style={styles.stopsTitle}>Recommended Stops</Text>
+            <Text style={styles.stopsMeta}>{finalStops.length} final</Text>
+          </View>
           {stops.map((stop) => (
-            <StopCard key={stop.id} stop={stop} onPress={() => navigation.navigate("StopDetails", { stop })} />
+            <StopCard
+              key={stop.id}
+              decision={stopDecisions[stop.id]}
+              stop={stop}
+              onPress={() => navigation.navigate("StopDetails", { stop, decision: stopDecisions[stop.id] })}
+            />
           ))}
         </PremiumCard>
 
@@ -81,7 +98,7 @@ export default function TripResultsScreen({ navigation, route }) {
           <StatItem label="Est. Fuel Cost" value={formatCurrency(insights.estimatedFuelCost)} />
         </PremiumCard>
 
-        <PrimaryButton title="Start Navigation" onPress={() => navigation.navigate("Navigation", { tripPlan })} />
+        <PrimaryButton title="Start Navigation" onPress={() => navigation.navigate("Navigation", { tripPlan: { ...tripPlan, finalStops } })} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -122,12 +139,12 @@ const styles = StyleSheet.create({
   routeTitle: {
     color: colors.text,
     fontSize: 16,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   routeMeta: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     marginTop: 4
   },
   mapCard: {
@@ -171,7 +188,7 @@ const styles = StyleSheet.create({
   mapPinText: {
     color: colors.navy,
     fontSize: 11,
-    fontWeight: "900",
+    fontWeight: "800",
     marginTop: 2
   },
   pinStart: {
@@ -194,7 +211,7 @@ const styles = StyleSheet.create({
   planTitle: {
     color: colors.text,
     fontSize: 14,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   premiumText: {
     color: colors.green,
@@ -217,7 +234,7 @@ const styles = StyleSheet.create({
   savingsLabel: {
     color: "#0E7A4A",
     fontSize: 12,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   savingsSub: {
     color: "#0E7A4A",
@@ -227,7 +244,7 @@ const styles = StyleSheet.create({
   savingsValue: {
     color: "#0E7A4A",
     fontSize: 18,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   summaryBar: {
     alignItems: "center",
@@ -236,10 +253,20 @@ const styles = StyleSheet.create({
   stopsCard: {
     gap: spacing.md
   },
+  stopsHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
   stopsTitle: {
     color: colors.text,
     fontSize: 16,
-    fontWeight: "900"
+    fontWeight: "800"
+  },
+  stopsMeta: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "700"
   },
   divider: {
     backgroundColor: colors.border,

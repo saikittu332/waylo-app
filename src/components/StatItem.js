@@ -24,7 +24,7 @@ const styles = StyleSheet.create({
   value: {
     color: colors.navy,
     fontSize: 18,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   compactValue: {
     fontSize: 16

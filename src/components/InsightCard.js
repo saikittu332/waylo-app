@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
   value: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "800"
+    fontWeight: "600"
   },
   detail: {
     color: colors.muted,

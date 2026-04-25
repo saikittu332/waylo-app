@@ -42,12 +42,12 @@ export const radii = {
 export const typography = {
   title: {
     fontSize: 34,
-    fontWeight: "900",
+    fontWeight: "800",
     color: colors.navy
   },
   heading: {
     fontSize: 24,
-    fontWeight: "900",
+    fontWeight: "800",
     color: colors.text
   },
   body: {

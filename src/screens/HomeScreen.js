@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "@react-navigation/native";
+import { CommonActions, useFocusEffect } from "@react-navigation/native";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
 import TripModeChip from "../components/TripModeChip";
@@ -83,6 +83,7 @@ export default function HomeScreen({ navigation, route }) {
             from={from}
             to={to}
             mode={mode}
+            showDraft={showVehiclePicker}
           />
         )}
         {activeTab === "Vehicle" && (
@@ -175,24 +176,43 @@ function PlanTripContent({ assistantName, vehicle, vehicles, navigation, from, s
         )}
         <PrimaryButton
           title={showVehiclePicker ? "Continue with Vehicle" : "Plan Smart Trip"}
-          onPress={showVehiclePicker ? continuePlan : () => setShowVehiclePicker(true)}
+          onPress={showVehiclePicker ? continuePlan : () => {
+            setShowVehiclePicker(true);
+          }}
         />
       </PremiumCard>
-      <TripsContent assistantName={assistantName} vehicle={vehicle} navigation={navigation} from={from} to={to} mode={mode} compact />
+      <TripsContent
+        assistantName={assistantName}
+        vehicle={vehicle}
+        navigation={navigation}
+        from={from}
+        to={to}
+        mode={mode}
+        compact
+        showDraft={showVehiclePicker}
+      />
     </>
   );
 }
 
-function TripsContent({ assistantName, vehicle, navigation, from, to, mode, compact }) {
+function TripsContent({ assistantName, vehicle, navigation, from, to, mode, compact, showDraft }) {
   return (
     <>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>{compact ? "Recent Trips" : "Trips"}</Text>
-        <Pressable onPress={() => navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from, to, mode } })} hitSlop={8}>
-          <Text style={styles.viewAll}>View current plan</Text>
-        </Pressable>
       </View>
       <PremiumCard style={styles.recentCard}>
+        {showDraft && from && to && (
+          <>
+            <RecentTrip
+              badge="Planning"
+              title={`${from === "Current Location" ? "Current location" : from} -> ${to}`}
+              date={`${mode} route draft`}
+              onPress={() => navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from, to, mode } })}
+            />
+            <View style={styles.listDivider} />
+          </>
+        )}
         <RecentTrip title="San Francisco -> Yosemite" date="May 20, 2024" onPress={() => navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from: "San Francisco", to: "Yosemite, CA", mode: "Scenic" } })} />
         <View style={styles.listDivider} />
         <RecentTrip title="Las Vegas -> Grand Canyon" date="May 18, 2024" onPress={() => navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from: "Las Vegas", to: "Grand Canyon, AZ", mode: "Comfort" } })} />
@@ -259,6 +279,15 @@ function ProfileContent({ assistantName, navigation, subscription, setSubscripti
     return `+1 (${area}) ${prefix}-${line}`;
   }
 
+  function signOut() {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: "Splash" }]
+      })
+    );
+  }
+
   return (
     <>
       <View style={styles.sectionHeader}>
@@ -310,6 +339,13 @@ function ProfileContent({ assistantName, navigation, subscription, setSubscripti
           onIntervalChange={setRestInterval}
           onToggle={setRestReminders}
         />
+      </PremiumCard>
+      <PremiumCard style={styles.accountCard}>
+        <View>
+          <Text style={styles.cardTitle}>Account</Text>
+          <Text style={styles.profileMeta}>Return to the welcome screen and clear this mock session.</Text>
+        </View>
+        <PrimaryButton title="Sign Out" variant="secondary" onPress={signOut} />
       </PremiumCard>
     </>
   );
@@ -404,13 +440,14 @@ function TripField({ label, value, onChangeText, pinColor }) {
   );
 }
 
-function RecentTrip({ title, date, onPress }) {
+function RecentTrip({ title, date, onPress, badge }) {
   return (
     <Pressable onPress={onPress} style={styles.recentTrip}>
-      <View>
+      <View style={styles.recentText}>
         <Text style={styles.recentTitle}>{title}</Text>
         <Text style={styles.recentDate}>{date}</Text>
       </View>
+      {badge && <Text style={styles.tripBadge}>{badge}</Text>}
       <Text style={styles.chevron}>{">"}</Text>
     </Pressable>
   );
@@ -435,7 +472,7 @@ const styles = StyleSheet.create({
   greeting: {
     color: colors.navy,
     fontSize: 19,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   assistant: {
     color: colors.muted,
@@ -466,12 +503,12 @@ const styles = StyleSheet.create({
   cardTitle: {
     color: colors.text,
     fontSize: 20,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   label: {
     color: colors.text,
     fontSize: 12,
-    fontWeight: "900",
+    fontWeight: "700",
     marginBottom: spacing.xs
   },
   tripFieldWrap: {
@@ -497,12 +534,12 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
     fontSize: 14,
-    fontWeight: "800"
+    fontWeight: "600"
   },
   fieldAction: {
     color: colors.navy,
     fontSize: 18,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   modes: {
     flexDirection: "row",
@@ -517,12 +554,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: colors.text,
     fontSize: 16,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   viewAll: {
     color: colors.blue,
     fontSize: 13,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   textAction: {
     outlineStyle: "none"
@@ -534,12 +571,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
+    gap: spacing.sm,
     padding: spacing.sm
+  },
+  recentText: {
+    flex: 1
   },
   recentTitle: {
     color: colors.text,
     fontSize: 14,
-    fontWeight: "900"
+    fontWeight: "700"
   },
   recentDate: {
     color: colors.muted,
@@ -554,6 +595,16 @@ const styles = StyleSheet.create({
   listDivider: {
     backgroundColor: colors.border,
     height: 1
+  },
+  tripBadge: {
+    backgroundColor: colors.paleGreen,
+    borderRadius: radii.pill,
+    color: colors.green,
+    fontSize: 11,
+    fontWeight: "700",
+    overflow: "hidden",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4
   },
   tabBar: {
     alignSelf: "center",
@@ -581,6 +632,9 @@ const styles = StyleSheet.create({
     color: colors.navy
   },
   profileCard: {
+    gap: spacing.md
+  },
+  accountCard: {
     gap: spacing.md
   },
   selectedVehicleCard: {
@@ -614,7 +668,7 @@ const styles = StyleSheet.create({
   selectedVehicleName: {
     color: colors.text,
     fontSize: 14,
-    fontWeight: "900",
+    fontWeight: "800",
     marginTop: 2
   },
   vehiclePicker: {
@@ -633,7 +687,7 @@ const styles = StyleSheet.create({
   doneText: {
     color: colors.blue,
     fontSize: 13,
-    fontWeight: "900"
+    fontWeight: "700"
   },
   vehicleOption: {
     alignItems: "center",
@@ -646,7 +700,7 @@ const styles = StyleSheet.create({
   vehicleOptionName: {
     color: colors.text,
     fontSize: 13,
-    fontWeight: "900"
+    fontWeight: "700"
   },
   vehicleOptionMeta: {
     color: colors.muted,
@@ -666,7 +720,7 @@ const styles = StyleSheet.create({
   addVehicleText: {
     color: colors.blue,
     fontSize: 13,
-    fontWeight: "900"
+    fontWeight: "700"
   },
   vehicleListCard: {
     gap: spacing.md
@@ -690,7 +744,7 @@ const styles = StyleSheet.create({
   currentVehicle: {
     color: colors.green,
     fontSize: 13,
-    fontWeight: "900"
+    fontWeight: "700"
   },
   subscriptionCard: {
     gap: spacing.md
@@ -709,7 +763,7 @@ const styles = StyleSheet.create({
   planBadgeText: {
     color: colors.blue,
     fontSize: 12,
-    fontWeight: "900"
+    fontWeight: "700"
   },
   planRows: {
     gap: spacing.sm
@@ -786,7 +840,7 @@ const styles = StyleSheet.create({
   intervalChipText: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "900"
+    fontWeight: "700"
   },
   intervalChipTextActive: {
     color: colors.surface

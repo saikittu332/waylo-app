@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
   text: {
     color: colors.surface,
     fontSize: 16,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   secondaryText: {
     color: colors.navy

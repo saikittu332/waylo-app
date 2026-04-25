@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
   label: {
     color: colors.text,
     fontSize: 13,
-    fontWeight: "900",
+    fontWeight: "800",
     marginBottom: spacing.xs
   },
   searchBox: {
@@ -234,12 +234,12 @@ const styles = StyleSheet.create({
   vehicleName: {
     color: colors.text,
     fontSize: 18,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   verified: {
     color: colors.green,
     fontSize: 13,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   statsRow: {
     alignItems: "center",
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   },
   suggestionName: {
     color: colors.text,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   suggestionMeta: {
     color: colors.muted,

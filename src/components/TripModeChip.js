@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
   text: {
     color: colors.text,
     fontSize: 12,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   selectedText: {
     color: colors.surface

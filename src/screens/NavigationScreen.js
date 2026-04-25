@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   carText: {
     color: "#287BFF",
     fontSize: 22,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   overlay: {
     ...StyleSheet.absoluteFillObject
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   turnArrow: {
     color: colors.surface,
     fontSize: 42,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   turnText: {
     color: colors.surface,
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
   turnDistance: {
     color: colors.surface,
     fontSize: 23,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   voiceButton: {
     alignItems: "center",
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   voiceText: {
     color: colors.surface,
     fontSize: 11,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   controls: {
     gap: spacing.sm,
@@ -202,12 +202,12 @@ const styles = StyleSheet.create({
   floatLabel: {
     color: colors.navy,
     fontSize: 18,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   floatSub: {
     color: colors.muted,
     fontSize: 9,
-    fontWeight: "900",
+    fontWeight: "800",
     textTransform: "uppercase"
   },
   bottomCard: {
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
   smartTitle: {
     color: colors.text,
     fontSize: 13,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   smartValue: {
     color: colors.muted,
@@ -272,6 +272,6 @@ const styles = StyleSheet.create({
   },
   endButtonText: {
     color: colors.surface,
-    fontWeight: "900"
+    fontWeight: "800"
   }
 });

@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
   },
   w: {
     color: colors.blue,
-    fontWeight: "900",
+    fontWeight: "800",
     letterSpacing: 0
   },
   road: {
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface
   },
   text: {
-    fontWeight: "900",
+    fontWeight: "800",
     letterSpacing: 0,
     marginTop: -2
   },

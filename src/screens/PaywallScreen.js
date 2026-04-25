@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
   planTitle: {
     color: colors.text,
     fontSize: 18,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   featuredText: {
     color: colors.surface
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   price: {
     color: colors.orange,
     fontSize: 20,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   item: {
     color: colors.muted,

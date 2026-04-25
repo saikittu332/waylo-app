@@ -17,18 +17,28 @@ const typeIcons = {
   scenic: "camera-outline"
 };
 
-export default function StopCard({ stop, onPress }) {
+export default function StopCard({ stop, onPress, decision }) {
+  const isAdded = decision === "added";
+  const isSkipped = decision === "skipped";
+
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, isAdded && styles.addedCard, isSkipped && styles.skippedCard, pressed && styles.pressed]}>
       <View style={styles.header}>
         <View style={styles.badge}>
           <Ionicons color={colors.blue} name={typeIcons[stop.type] || "location-outline"} size={19} />
         </View>
         <View style={styles.titleBlock}>
-        <Text style={styles.name}>{stop.name}</Text>
+          <Text style={styles.name}>{stop.name}</Text>
           <Text style={styles.meta}>{stop.distanceFromStart} mi into route | {stop.distanceFromCurrent} mi away</Text>
         </View>
-        <Text style={styles.type}>{typeLabels[stop.type] || stop.type}</Text>
+        {decision ? (
+          <View style={[styles.decisionPill, isAdded ? styles.addedPill : styles.skippedPill]}>
+            <Ionicons color={isAdded ? colors.green : colors.muted} name={isAdded ? "checkmark-circle" : "remove-circle-outline"} size={14} />
+            <Text style={[styles.decisionText, isAdded ? styles.addedText : styles.skippedText]}>{isAdded ? "Added" : "Skipped"}</Text>
+          </View>
+        ) : (
+          <Text style={styles.type}>{typeLabels[stop.type] || stop.type}</Text>
+        )}
       </View>
       <View style={styles.footer}>
         <Text style={styles.rating}>Rating {stop.rating}</Text>
@@ -41,9 +51,18 @@ export default function StopCard({ stop, onPress }) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
+    borderColor: "transparent",
+    borderWidth: 1,
     borderRadius: radii.md,
     padding: spacing.md,
     ...shadows.soft
+  },
+  addedCard: {
+    borderColor: "rgba(18,184,134,0.28)",
+    backgroundColor: "#FBFFFD"
+  },
+  skippedCard: {
+    opacity: 0.74
   },
   pressed: {
     opacity: 0.8
@@ -69,14 +88,14 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
     fontSize: 17,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   type: {
     backgroundColor: colors.paleOrange,
     borderRadius: radii.pill,
     color: colors.orange,
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "700",
     overflow: "hidden",
     paddingHorizontal: spacing.sm,
     paddingVertical: 5
@@ -93,10 +112,34 @@ const styles = StyleSheet.create({
   },
   rating: {
     color: colors.navy,
-    fontWeight: "700"
+    fontWeight: "600"
   },
   price: {
     color: colors.green,
-    fontWeight: "800"
+    fontWeight: "700"
+  },
+  decisionPill: {
+    alignItems: "center",
+    borderRadius: radii.pill,
+    flexDirection: "row",
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5
+  },
+  addedPill: {
+    backgroundColor: colors.paleGreen
+  },
+  skippedPill: {
+    backgroundColor: colors.appBackground
+  },
+  decisionText: {
+    fontSize: 12,
+    fontWeight: "700"
+  },
+  addedText: {
+    color: colors.green
+  },
+  skippedText: {
+    color: colors.muted
   }
 });

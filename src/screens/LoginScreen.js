@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Logo from "../components/Logo";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
 import { colors, radii, screen, spacing, typography } from "../constants/theme";
@@ -28,11 +29,8 @@ export default function LoginScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <View style={styles.brandRow}>
-          <Text style={styles.brandMark}>W</Text>
-          <Text style={styles.brandName}>Wayl<Text style={styles.brandAccent}>o</Text></Text>
-        </View>
         <View style={styles.header}>
+          <Logo size="md" />
           <Text style={styles.heading}>Welcome back!</Text>
           <Text style={styles.copy}>Login to continue your journey</Text>
         </View>
@@ -86,29 +84,10 @@ const styles = StyleSheet.create({
     padding: screen.padding,
     width: "100%"
   },
-  brandRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.sm,
-    justifyContent: "center",
-    marginTop: spacing.lg
-  },
-  brandMark: {
-    color: colors.blue,
-    fontSize: 30,
-    fontWeight: "900"
-  },
-  brandName: {
-    color: colors.navy,
-    fontSize: 26,
-    fontWeight: "900"
-  },
-  brandAccent: {
-    color: colors.green
-  },
   header: {
     alignItems: "center",
-    gap: spacing.xs
+    gap: spacing.xs,
+    marginTop: spacing.lg
   },
   heading: typography.heading,
   copy: {
@@ -122,7 +101,7 @@ const styles = StyleSheet.create({
   label: {
     color: colors.text,
     fontSize: 13,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   phoneRow: {
     alignItems: "center",
@@ -136,7 +115,7 @@ const styles = StyleSheet.create({
   },
   flag: {
     color: colors.navy,
-    fontWeight: "900",
+    fontWeight: "800",
     marginRight: spacing.md
   },
   phoneInput: {
@@ -157,7 +136,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: colors.navy,
     fontSize: 18,
-    fontWeight: "900",
+    fontWeight: "800",
     height: 46,
     textAlign: "center",
     width: 46

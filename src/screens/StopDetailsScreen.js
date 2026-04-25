@@ -13,6 +13,15 @@ export default function StopDetailsScreen({ navigation, route }) {
     rating: "4.3",
     fuelPrice: "3.49"
   };
+  const decision = route.params?.decision;
+
+  function chooseStop(status) {
+    navigation.navigate({
+      name: "TripResults",
+      params: { stopDecision: { id: stop.id, status } },
+      merge: true
+    });
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -43,8 +52,8 @@ export default function StopDetailsScreen({ navigation, route }) {
           <Checklist text="Convenient detour (2 min)" />
         </PremiumCard>
 
-        <PrimaryButton title="Add to Route" onPress={() => navigation.goBack()} />
-        <PrimaryButton title="Skip Stop" variant="secondary" onPress={() => navigation.goBack()} />
+        <PrimaryButton title={decision === "added" ? "Added to Route" : "Add to Route"} onPress={() => chooseStop("added")} />
+        <PrimaryButton title={decision === "skipped" ? "Skipped" : "Skip Stop"} variant="secondary" onPress={() => chooseStop("skipped")} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -144,7 +153,7 @@ const styles = StyleSheet.create({
   rating: {
     color: colors.orange,
     fontSize: 13,
-    fontWeight: "900"
+    fontWeight: "700"
   },
   features: {
     borderTopColor: colors.border,
@@ -169,19 +178,19 @@ const styles = StyleSheet.create({
   featureLabel: {
     color: colors.muted,
     fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "700",
     textAlign: "center"
   },
   featureValue: {
     color: colors.text,
     fontSize: 12,
-    fontWeight: "900",
+    fontWeight: "700",
     textAlign: "center"
   },
   sectionTitle: {
     color: colors.text,
     fontSize: 15,
-    fontWeight: "900",
+    fontWeight: "800",
     marginTop: spacing.md
   },
   checkRow: {

@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   featureTitle: {
     color: colors.navy,
     fontSize: 14,
-    fontWeight: "900"
+    fontWeight: "800"
   },
   featureDetail: {
     color: colors.muted,
