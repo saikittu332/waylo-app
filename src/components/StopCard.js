@@ -13,10 +13,15 @@ export default function StopCard({ stop, onPress }) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       <View style={styles.header}>
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{(typeLabels[stop.type] || "S").slice(0, 1)}</Text>
+        </View>
+        <View style={styles.titleBlock}>
         <Text style={styles.name}>{stop.name}</Text>
+          <Text style={styles.meta}>{stop.distanceFromStart} mi into route | {stop.distanceFromCurrent} mi away</Text>
+        </View>
         <Text style={styles.type}>{typeLabels[stop.type] || stop.type}</Text>
       </View>
-      <Text style={styles.meta}>{stop.distanceFromStart} mi into route | {stop.distanceFromCurrent} mi away</Text>
       <View style={styles.footer}>
         <Text style={styles.rating}>Rating {stop.rating}</Text>
         {stop.fuelPrice ? <Text style={styles.price}>${stop.fuelPrice}/gal</Text> : <Text style={styles.price}>Good stop</Text>}
@@ -30,7 +35,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: radii.md,
     padding: spacing.md,
-    ...shadows.card
+    ...shadows.soft
   },
   pressed: {
     opacity: 0.8
@@ -40,6 +45,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     gap: spacing.md
+  },
+  badge: {
+    alignItems: "center",
+    backgroundColor: colors.paleOrange,
+    borderRadius: radii.pill,
+    height: 36,
+    justifyContent: "center",
+    width: 36
+  },
+  badgeText: {
+    color: colors.orange,
+    fontWeight: "900"
+  },
+  titleBlock: {
+    flex: 1
   },
   name: {
     color: colors.text,

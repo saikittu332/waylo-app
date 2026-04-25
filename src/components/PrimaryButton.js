@@ -4,6 +4,7 @@ import { colors, radii, spacing } from "../constants/theme";
 
 export default function PrimaryButton({ title, onPress, variant = "primary", disabled, loading }) {
   const isSecondary = variant === "secondary";
+  const isDanger = variant === "danger";
 
   return (
     <Pressable
@@ -13,6 +14,7 @@ export default function PrimaryButton({ title, onPress, variant = "primary", dis
       style={({ pressed }) => [
         styles.button,
         isSecondary && styles.secondary,
+        isDanger && styles.danger,
         (pressed || disabled) && styles.dimmed
       ]}
     >
@@ -32,12 +34,23 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     justifyContent: "center",
     minHeight: 54,
-    paddingHorizontal: spacing.lg
+    paddingHorizontal: spacing.lg,
+    shadowColor: colors.orange,
+    shadowOpacity: 0.24,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 7 },
+    elevation: 3
   },
   secondary: {
-    backgroundColor: colors.paleBlue,
+    backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderWidth: 1
+    borderWidth: 1,
+    shadowOpacity: 0,
+    elevation: 0
+  },
+  danger: {
+    backgroundColor: colors.red,
+    shadowColor: colors.red
   },
   dimmed: {
     opacity: 0.72
