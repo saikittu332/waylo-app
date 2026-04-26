@@ -134,6 +134,8 @@ export default function HomeScreen({ navigation, route }) {
 }
 
 function PlanTripContent({ assistantName, vehicle, vehicles, navigation, from, setFrom, to, setTo, mode, setMode, showVehiclePicker, setShowVehiclePicker, setSelectedVehicle, plannedTrips }) {
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+
   function continuePlan() {
     setShowVehiclePicker(false);
     navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from, to, mode } });
@@ -142,15 +144,36 @@ function PlanTripContent({ assistantName, vehicle, vehicles, navigation, from, s
   return (
     <>
       <View style={styles.homeHero}>
-        <View>
-          <Text style={styles.heroEyebrow}>Waylo</Text>
-          <Text style={styles.heroTitle}>Plan a smarter drive</Text>
-          <Text style={styles.heroCopy}>Pick a destination, compare modes, and let {assistantName} tune the stops.</Text>
+        <View style={styles.heroMain}>
+          <View style={styles.heroTopRow}>
+            <Text style={styles.heroEyebrow}>Waylo ready</Text>
+            <Text style={styles.heroStatus}>2 alerts</Text>
+          </View>
+          <Text style={styles.heroTitle}>Where are we driving?</Text>
+          <Text style={styles.heroCopy}>{assistantName} will compare fuel, rest timing, and comfort before you go.</Text>
+          <View style={styles.heroMetrics}>
+            <MiniMetric icon="cash-outline" label="Savings" value="$14 est." />
+            <MiniMetric icon="car-sport-outline" label="Vehicle" value={vehicle.vehicleName.replace("Toyota ", "")} />
+          </View>
         </View>
-        <View style={styles.bellButton}>
+        <Pressable onPress={() => setNotificationsOpen((value) => !value)} style={styles.bellButton} hitSlop={8}>
           <Ionicons color={colors.navy} name="notifications-outline" size={20} />
-        </View>
+          <View style={styles.bellDot} />
+        </Pressable>
       </View>
+      {notificationsOpen && (
+        <PremiumCard style={styles.notificationPanel}>
+          <View style={styles.notificationHeader}>
+            <Text style={styles.groupLabel}>Notifications</Text>
+            <Pressable onPress={() => setNotificationsOpen(false)} hitSlop={8}>
+              <Ionicons color={colors.muted} name="close" size={18} />
+            </Pressable>
+          </View>
+          <NotificationRow icon="pricetag-outline" title="Fuel price watch" detail="Prices near Bakersfield are trending lower." />
+          <View style={styles.listDivider} />
+          <NotificationRow icon="time-outline" title="Rest reminder ready" detail="A break will be suggested around 2.5 hours." />
+        </PremiumCard>
+      )}
       <PremiumCard style={styles.tripCard}>
         <Text style={styles.cardTitle}>Plan Your Trip</Text>
         <TripField label="From" value={from} onChangeText={setFrom} pinColor="#367CFF" />
@@ -217,6 +240,32 @@ function PlanTripContent({ assistantName, vehicle, vehicles, navigation, from, s
         plannedTrips={plannedTrips}
       />
     </>
+  );
+}
+
+function MiniMetric({ icon, label, value }) {
+  return (
+    <View style={styles.miniMetric}>
+      <Ionicons color={colors.blue} name={icon} size={15} />
+      <View>
+        <Text style={styles.miniMetricLabel}>{label}</Text>
+        <Text style={styles.miniMetricValue}>{value}</Text>
+      </View>
+    </View>
+  );
+}
+
+function NotificationRow({ icon, title, detail }) {
+  return (
+    <View style={styles.notificationRow}>
+      <View style={styles.notificationIcon}>
+        <Ionicons color={colors.blue} name={icon} size={17} />
+      </View>
+      <View style={styles.recentText}>
+        <Text style={styles.notificationTitle}>{title}</Text>
+        <Text style={styles.notificationDetail}>{detail}</Text>
+      </View>
+    </View>
   );
 }
 
@@ -602,10 +651,24 @@ const styles = StyleSheet.create({
   bellButton: {
     alignItems: "center",
     backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderWidth: 1,
     borderRadius: radii.pill,
     height: 38,
     justifyContent: "center",
+    position: "relative",
     width: 38
+  },
+  bellDot: {
+    backgroundColor: colors.orange,
+    borderColor: colors.surface,
+    borderRadius: radii.pill,
+    borderWidth: 2,
+    height: 10,
+    position: "absolute",
+    right: 8,
+    top: 8,
+    width: 10
   },
   container: {
     alignSelf: "center",
@@ -617,35 +680,119 @@ const styles = StyleSheet.create({
     width: "100%"
   },
   homeHero: {
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
+    alignItems: "flex-start",
+    backgroundColor: colors.navy,
+    borderColor: "rgba(255,255,255,0.2)",
     borderRadius: radii.xl,
     borderWidth: 1,
     flexDirection: "row",
+    gap: spacing.md,
     justifyContent: "space-between",
+    overflow: "hidden",
     padding: spacing.md
   },
+  heroMain: {
+    flex: 1
+  },
+  heroTopRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginBottom: spacing.xs
+  },
   heroEyebrow: {
-    color: colors.green,
+    color: "#8EE7C8",
     fontSize: 12,
     fontWeight: "800",
     letterSpacing: 0.5,
     textTransform: "uppercase"
   },
+  heroStatus: {
+    backgroundColor: "rgba(255,255,255,0.13)",
+    borderRadius: radii.pill,
+    color: colors.surface,
+    fontSize: 11,
+    fontWeight: "700",
+    overflow: "hidden",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3
+  },
   heroTitle: {
-    color: colors.navy,
+    color: colors.surface,
     fontSize: 24,
     fontWeight: "800",
     marginTop: 4
   },
   heroCopy: {
-    color: colors.muted,
+    color: "rgba(255,255,255,0.76)",
     fontSize: 13,
     fontWeight: "600",
     lineHeight: 19,
     marginTop: 4,
     maxWidth: 285
+  },
+  heroMetrics: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    marginTop: spacing.md
+  },
+  miniMetric: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(255,255,255,0.14)",
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs
+  },
+  miniMetricLabel: {
+    color: "rgba(255,255,255,0.62)",
+    fontSize: 10,
+    fontWeight: "700"
+  },
+  miniMetricValue: {
+    color: colors.surface,
+    fontSize: 12,
+    fontWeight: "800",
+    marginTop: 1
+  },
+  notificationPanel: {
+    gap: spacing.sm,
+    paddingVertical: spacing.sm
+  },
+  notificationHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+  notificationRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs
+  },
+  notificationIcon: {
+    alignItems: "center",
+    backgroundColor: colors.paleBlue,
+    borderRadius: radii.pill,
+    height: 34,
+    justifyContent: "center",
+    width: 34
+  },
+  notificationTitle: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "800"
+  },
+  notificationDetail: {
+    color: colors.muted,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2
   },
   tripCard: {
     gap: spacing.md
