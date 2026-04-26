@@ -1,6 +1,6 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import PremiumCard from "../components/PremiumCard";
 import StatItem from "../components/StatItem";
@@ -8,6 +8,7 @@ import { colors, radii, screen, shadows, spacing } from "../constants/theme";
 import { formatHours } from "../utils/tripCalculator";
 
 export default function NavigationScreen({ navigation, route }) {
+  const insets = useSafeAreaInsets();
   const tripPlan = route.params?.tripPlan;
   const routeSummary = tripPlan?.route;
   const firstFuelStop = tripPlan?.fullStops?.find((stop) => stop.type === "fuel");
@@ -22,8 +23,16 @@ export default function NavigationScreen({ navigation, route }) {
         </View>
       </View>
 
-      <SafeAreaView style={styles.overlay}>
-        <View style={styles.content}>
+      <View style={styles.overlay}>
+        <View
+          style={[
+            styles.content,
+            {
+              paddingBottom: Math.max(insets.bottom, spacing.sm) + spacing.sm,
+              paddingTop: Math.max(insets.top, spacing.sm) + spacing.xs
+            }
+          ]}
+        >
           <View style={styles.turnCard}>
             <Text style={styles.turnArrow}>{">"}</Text>
             <View>
@@ -57,7 +66,7 @@ export default function NavigationScreen({ navigation, route }) {
             </View>
           </PremiumCard>
         </View>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }
@@ -145,7 +154,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "space-between",
     maxWidth: screen.maxWidth,
-    padding: screen.padding,
+    paddingHorizontal: screen.padding,
     width: "100%"
   },
   turnCard: {
@@ -154,7 +163,6 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     flexDirection: "row",
     gap: spacing.md,
-    marginTop: spacing.sm,
     padding: spacing.md,
     ...shadows.card
   },
