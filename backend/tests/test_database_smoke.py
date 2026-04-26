@@ -142,6 +142,13 @@ def test_create_user_vehicle_trip_and_get_trips_by_user(client: TestClient) -> N
     assert len(trips) == 1
     assert trips[0]["id"] == trip["id"]
 
+    complete_trip_response = client.patch(
+        f"/trips/{trip['id']}",
+        json={"status": "completed"},
+    )
+    assert complete_trip_response.status_code == 200
+    assert complete_trip_response.json()["status"] == "completed"
+
     saved_plan_response = client.post(
         "/saved-plans",
         json={

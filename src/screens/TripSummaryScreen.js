@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
 import { colors, radii, screen, spacing, typography } from "../constants/theme";
+import { apiTripToCompletedTrip, completeTrip } from "../services/api";
 import { formatCurrency, formatHours } from "../utils/tripCalculator";
 import { routeTitle } from "../utils/placeLabels";
 
@@ -28,6 +29,27 @@ export default function TripSummaryScreen({ navigation, route }) {
     estimatedSavings: savings,
     tripPlan
   };
+
+  async function saveCompletedTrip() {
+    let nextCompletedTrip = completedTrip;
+    const tripId = tripPlan?.persistedTrip?.id;
+    if (tripId) {
+      try {
+        const updatedTrip = await completeTrip(tripId);
+        nextCompletedTrip = {
+          ...apiTripToCompletedTrip(updatedTrip, tripPlan?.vehicleName || completedTrip.vehicleName),
+          savedPlanId: tripPlan?.savedPlanId,
+          tripPlan: {
+            ...tripPlan,
+            persistedTrip: updatedTrip
+          }
+        };
+      } catch (error) {
+        console.warn("Waylo API trip completion unavailable:", error.message);
+      }
+    }
+    navigation.navigate("Home", { completedTrip: nextCompletedTrip });
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -63,7 +85,7 @@ export default function TripSummaryScreen({ navigation, route }) {
           </View>
         </PremiumCard>
 
-        <PrimaryButton title="Save Trip" onPress={() => navigation.navigate("Home", { completedTrip })} />
+        <PrimaryButton title="Save Trip" onPress={saveCompletedTrip} />
         <PrimaryButton title="Share Summary" variant="secondary" onPress={() => navigation.navigate("Home")} />
       </ScrollView>
     </SafeAreaView>

@@ -20,6 +20,7 @@ from app.schemas import (
     SubscriptionRead,
     TripCreate,
     TripRead,
+    TripUpdate,
     UserCreate,
     UserRead,
     UserUpdate,
@@ -161,6 +162,18 @@ def list_trips(
     if user_id:
         query = query.where(Trip.user_id == user_id)
     return list(db.scalars(query).all())
+
+
+@app.patch("/trips/{trip_id}", response_model=TripRead)
+def update_trip(trip_id: uuid.UUID, payload: TripUpdate, db: Session = Depends(get_db)) -> Trip:
+    trip = db.get(Trip, trip_id)
+    if trip is None:
+        raise HTTPException(status_code=404, detail="Trip not found.")
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(trip, key, value)
+    db.commit()
+    db.refresh(trip)
+    return trip
 
 
 @app.post("/saved-plans", response_model=SavedPlanRead, status_code=status.HTTP_201_CREATED)

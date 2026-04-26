@@ -88,6 +88,36 @@ export function apiSavedPlanToApp(plan) {
   };
 }
 
+export function apiTripToCompletedTrip(trip, vehicleName = "Saved vehicle") {
+  return {
+    id: trip.id,
+    tripId: trip.id,
+    title: routeTitle(trip.origin, trip.destination),
+    from: trip.origin,
+    to: trip.destination,
+    mode: trip.trip_mode,
+    vehicleName,
+    distanceMiles: trip.distance_miles,
+    durationHours: trip.duration_hours,
+    estimatedFuelCost: trip.estimated_fuel_cost,
+    estimatedSavings: trip.estimated_savings,
+    tripPlan: {
+      persistedTrip: trip,
+      route: {
+        from: trip.origin,
+        to: trip.destination,
+        mode: trip.trip_mode,
+        distanceMiles: trip.distance_miles,
+        durationHours: trip.duration_hours
+      },
+      insights: {
+        estimatedFuelCost: trip.estimated_fuel_cost,
+        estimatedSavings: trip.estimated_savings
+      }
+    }
+  };
+}
+
 export async function loginWithPhone(phone) {
   return request("/auth/login", {
     body: JSON.stringify({ phone: normalizePhone(phone) }),
@@ -159,6 +189,21 @@ export async function createTripRecord({ userId, vehicle, route, insights }) {
     }),
     method: "POST"
   });
+}
+
+export async function updateTrip(tripId, payload) {
+  return request(`/trips/${tripId}`, {
+    body: JSON.stringify(payload),
+    method: "PATCH"
+  });
+}
+
+export async function completeTrip(tripId) {
+  return updateTrip(tripId, { status: "completed" });
+}
+
+export async function getTrips(userId) {
+  return request(`/trips?user_id=${encodeURIComponent(userId)}`);
 }
 
 export async function savePlan({ userId, tripId, route, vehicle, insights }) {

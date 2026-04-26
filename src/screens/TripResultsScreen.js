@@ -162,7 +162,18 @@ export default function TripResultsScreen({ navigation, route }) {
           <StatItem label="Est. Fuel Cost" value={formatCurrency(insights.estimatedFuelCost)} />
         </PremiumCard>
 
-        <PrimaryButton title="Start Navigation" onPress={() => navigation.navigate("Navigation", { tripPlan: { ...tripPlan, savedPlanId: savedPlan.id, finalStops } })} />
+        <PrimaryButton
+          title="Start Navigation"
+          onPress={() => navigation.navigate("Navigation", {
+            tripPlan: {
+              ...tripPlan,
+              savedPlanId: savedPlan.id,
+              vehicleName: vehicle.vehicleName,
+              finalStops,
+              user
+            }
+          })}
+        />
         <PrimaryButton
           title="Save for Later"
           variant="secondary"

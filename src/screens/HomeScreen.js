@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Alert, Animated, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { Animated, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { CommonActions, useFocusEffect } from "@react-navigation/native";
@@ -9,7 +9,7 @@ import TripModeChip from "../components/TripModeChip";
 import { colors, radii, screen, spacing } from "../constants/theme";
 import { mockTripRequest } from "../data/mockTrip";
 import { defaultVehicle } from "../data/mockVehicleSpecs";
-import { deleteVehicle, getSavedPlans, getSubscription, getVehicles, updateUser } from "../services/api";
+import { apiTripToCompletedTrip, deleteVehicle, getSavedPlans, getSubscription, getTrips, getVehicles, updateUser } from "../services/api";
 import { CURRENT_LOCATION_PLACE, geocodeAddress, hasMapboxToken } from "../services/mapService";
 import { getSubscriptionState } from "../services/subscriptionService";
 import { routeMetaLabel, routeTitle } from "../utils/placeLabels";
@@ -89,9 +89,10 @@ export default function HomeScreen({ navigation, route }) {
       async function loadPersistedData() {
         if (!user?.id) return;
         try {
-          const [apiVehicles, apiPlans, apiSubscription] = await Promise.all([
+          const [apiVehicles, apiPlans, apiTrips, apiSubscription] = await Promise.all([
             getVehicles(user.id),
             getSavedPlans(user.id),
+            getTrips(user.id),
             getSubscription(user.id)
           ]);
           if (!active) return;
@@ -100,6 +101,11 @@ export default function HomeScreen({ navigation, route }) {
             setSelectedVehicle((current) => apiVehicles.find((item) => item.id === current?.id) || apiVehicles[0]);
           }
           setPlannedTrips(apiPlans);
+          setCompletedTrips(
+            apiTrips
+              .filter((trip) => trip.status === "completed")
+              .map((trip) => apiTripToCompletedTrip(trip, apiVehicles.find((item) => item.id === trip.vehicle_id)?.vehicleName || selectedVehicle?.vehicleName))
+          );
           if (apiSubscription) setSubscription(apiSubscription);
         } catch (error) {
           console.warn("Waylo API home refresh unavailable:", error.message);
@@ -476,6 +482,8 @@ function NavigateContent({ navigation, plannedTrips }) {
     navigation.navigate("Navigation", {
       tripPlan: {
         savedPlanId: plan.id,
+        persistedTrip: plan.tripId ? { id: plan.tripId } : null,
+        vehicleName: plan.vehicleName,
         route,
         insights: {
           estimatedFuelCost: plan.estimatedFuelCost,
@@ -536,9 +544,12 @@ function NavigateContent({ navigation, plannedTrips }) {
 }
 
 function VehicleContent({ assistantName, user, vehicles, selectedVehicle, setVehicles, setSelectedVehicle, navigation }) {
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deleteMessage, setDeleteMessage] = useState("");
+
   async function removeVehicle(item) {
     if (vehicles.length <= 1) {
-      Alert.alert("Keep one vehicle", "Waylo needs at least one vehicle to estimate route range and fuel cost. Add a new vehicle first, then delete this one.");
+      setDeleteMessage("Waylo needs at least one vehicle to estimate route range and fuel cost. Add another vehicle first, then delete this one.");
       return;
     }
     try {
@@ -548,8 +559,9 @@ function VehicleContent({ assistantName, user, vehicles, selectedVehicle, setVeh
       if ((item.id && selectedVehicle?.id === item.id) || selectedVehicle?.vehicleName === item.vehicleName) {
         setSelectedVehicle(remainingVehicles[0]);
       }
+      setPendingDelete(null);
     } catch (error) {
-      Alert.alert("Could not delete vehicle", error.message);
+      setDeleteMessage(error.message || "Could not delete vehicle.");
     }
   }
 
@@ -576,13 +588,49 @@ function VehicleContent({ assistantName, user, vehicles, selectedVehicle, setVeh
               <Ionicons color={colors.surface} name="create-outline" size={17} />
               <Text style={styles.vehicleActionPrimaryText}>Edit</Text>
             </Pressable>
-            <Pressable onPress={() => removeVehicle(item)} style={styles.vehicleActionDanger}>
+            <Pressable
+              onPress={() => {
+                if (vehicles.length <= 1) {
+                  setDeleteMessage("Waylo needs at least one vehicle to estimate route range and fuel cost. Add another vehicle first, then delete this one.");
+                  return;
+                }
+                setPendingDelete(item);
+              }}
+              style={styles.vehicleActionDanger}
+            >
               <Ionicons color={colors.red} name="trash-outline" size={17} />
               <Text style={styles.vehicleActionDangerText}>Delete</Text>
             </Pressable>
           </View>
         </PremiumCard>
       ))}
+      <Modal transparent visible={Boolean(pendingDelete) || Boolean(deleteMessage)} animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <PremiumCard style={styles.confirmCard}>
+            <View style={styles.confirmIcon}>
+              <Ionicons color={colors.red} name="trash-outline" size={24} />
+            </View>
+            <Text style={styles.cardTitle}>{pendingDelete ? "Delete vehicle?" : "Keep one vehicle"}</Text>
+            <Text style={styles.profileMeta}>
+              {pendingDelete
+                ? `${pendingDelete.vehicleName} will be removed from your vehicle list. Existing trips stay saved.`
+                : deleteMessage}
+            </Text>
+            {pendingDelete ? (
+              <View style={styles.confirmActions}>
+                <Pressable onPress={() => setPendingDelete(null)} style={styles.confirmSecondary}>
+                  <Text style={styles.confirmSecondaryText}>Cancel</Text>
+                </Pressable>
+                <Pressable onPress={() => removeVehicle(pendingDelete)} style={styles.confirmDanger}>
+                  <Text style={styles.confirmDangerText}>Delete</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <PrimaryButton title="Got it" onPress={() => setDeleteMessage("")} />
+            )}
+          </PremiumCard>
+        </View>
+      </Modal>
     </>
   );
 }
@@ -1590,6 +1638,58 @@ const styles = StyleSheet.create({
     color: colors.green,
     fontSize: 13,
     fontWeight: "700"
+  },
+  modalBackdrop: {
+    alignItems: "center",
+    backgroundColor: "rgba(11, 31, 59, 0.34)",
+    flex: 1,
+    justifyContent: "center",
+    padding: screen.padding
+  },
+  confirmCard: {
+    alignItems: "stretch",
+    gap: spacing.md,
+    maxWidth: screen.maxWidth - screen.padding * 2,
+    width: "100%"
+  },
+  confirmIcon: {
+    alignItems: "center",
+    backgroundColor: "rgba(239,68,68,0.1)",
+    borderRadius: radii.pill,
+    height: 52,
+    justifyContent: "center",
+    width: 52
+  },
+  confirmActions: {
+    flexDirection: "row",
+    gap: spacing.sm
+  },
+  confirmSecondary: {
+    alignItems: "center",
+    borderColor: colors.border,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    flex: 1,
+    justifyContent: "center",
+    minHeight: 48
+  },
+  confirmSecondaryText: {
+    color: colors.navy,
+    fontSize: 14,
+    fontWeight: "800"
+  },
+  confirmDanger: {
+    alignItems: "center",
+    backgroundColor: colors.red,
+    borderRadius: radii.pill,
+    flex: 1,
+    justifyContent: "center",
+    minHeight: 48
+  },
+  confirmDangerText: {
+    color: colors.surface,
+    fontSize: 14,
+    fontWeight: "800"
   },
   subscriptionCard: {
     gap: spacing.md
