@@ -4,13 +4,25 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import PrimaryButton from "../components/PrimaryButton";
 import { colors, radii, screen, shadows, spacing, typography } from "../constants/theme";
+import { createSubscription } from "../services/api";
 import { setMockPremium } from "../services/subscriptionService";
 
-export default function PaywallScreen({ navigation }) {
+export default function PaywallScreen({ navigation, route }) {
+  const user = route.params?.user;
   const [upgraded, setUpgraded] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  function upgrade() {
+  async function upgrade() {
+    setLoading(true);
     setMockPremium(true);
+    if (user?.id) {
+      try {
+        await createSubscription(user.id, true);
+      } catch (error) {
+        console.warn("Waylo API subscription persistence unavailable:", error.message);
+      }
+    }
+    setLoading(false);
     setUpgraded(true);
   }
 
@@ -27,7 +39,7 @@ export default function PaywallScreen({ navigation }) {
             items={["Full AI fuel optimization", "Multiple smart stops", "Cost savings insights", "Scenic recommendations"]}
           />
         </View>
-        <PrimaryButton title={upgraded ? "Premium Enabled" : "Upgrade to Premium"} onPress={upgrade} />
+        <PrimaryButton title={upgraded ? "Premium Enabled" : "Upgrade to Premium"} loading={loading} onPress={upgrade} />
         <PrimaryButton title="Back to Waylo" variant="secondary" onPress={() => navigation.goBack()} />
       </ScrollView>
     </SafeAreaView>

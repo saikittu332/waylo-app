@@ -11,7 +11,8 @@ Tagline: Drive smart. Spend less.
 - Mock Mapbox route preview through a map service abstraction that can later support Google Maps.
 - Mock subscription logic isolated for future Stripe integration.
 - Rule-based trip intelligence for fuel range, safe range, rest stops, fuel cost, and estimated savings.
-- Mock trip and vehicle data.
+- Mock map visuals and AI stop recommendations until Mapbox and AI planning are integrated.
+- Real FastAPI persistence for users, vehicles, trips, saved plans, and subscriptions when the backend is running.
 
 ## Run locally
 
@@ -26,21 +27,49 @@ Then open the Expo app on a simulator, emulator, physical device, or web target.
 
 The FastAPI + PostgreSQL foundation lives in `backend/`.
 
+Start PostgreSQL from the repo root:
+
+```bash
+docker compose up -d
+```
+
 ```bash
 cd backend
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 copy .env.example .env
-alembic upgrade head
-uvicorn app.main:app --reload
+python -m alembic upgrade head
+python -m uvicorn app.main:app --reload
 ```
 
-The backend currently includes User, Vehicle, Trip, SavedPlan, and Subscription models plus basic API endpoints. Stripe, Mapbox, and AI planning are intentionally not integrated yet.
+API docs are available at `http://127.0.0.1:8000/docs`.
+
+To run Expo against the local API on web or iOS simulator:
+
+```bash
+EXPO_PUBLIC_WAYLO_API_URL=http://127.0.0.1:8000 npx expo start
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:EXPO_PUBLIC_WAYLO_API_URL="http://127.0.0.1:8000"
+npx expo start
+```
+
+For a physical phone, use your computer's LAN IP instead of `127.0.0.1`, for example:
+
+```powershell
+$env:EXPO_PUBLIC_WAYLO_API_URL="http://192.168.1.25:8000"
+npx expo start
+```
+
+The backend currently includes User, Vehicle, Trip, SavedPlan, and Subscription models plus API endpoints used by the MVP app. Stripe, Mapbox, Firebase, and AI planning are intentionally not integrated yet.
 
 ## Future integration points
 
 - `src/services/authService.js`: replace the mock phone OTP flow with Firebase Phone Auth.
 - `src/services/mapService.js`: connect Mapbox Directions and rendering, or add Google Maps behind the same service contract.
-- `src/services/api.js`: replace local mock trip planning with FastAPI calls.
+- `src/services/api.js`: keep expanding FastAPI integration beyond persistence into real planning once AI and map services exist.
 - `src/services/subscriptionService.js`: replace mock premium state with Stripe-backed entitlements.

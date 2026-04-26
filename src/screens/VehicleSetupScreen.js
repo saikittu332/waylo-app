@@ -8,11 +8,13 @@ import PrimaryButton from "../components/PrimaryButton";
 import StatItem from "../components/StatItem";
 import { colors, radii, screen, spacing, typography } from "../constants/theme";
 import { defaultVehicle, vehicleSuggestions } from "../data/mockVehicleSpecs";
+import { createVehicle, updateVehicle } from "../services/api";
 
 const fuelTypes = ["gas", "diesel", "hybrid", "EV"];
 
 export default function VehicleSetupScreen({ navigation, route }) {
   const assistantName = route.params?.assistantName || "Waylo";
+  const user = route.params?.user;
   const isNewVehicle = route.params?.mode === "new";
   const emptyVehicle = { vehicleName: "", fuelType: "gas", cityMpg: "", highwayMpg: "", tankCapacity: "" };
   const initialVehicle = isNewVehicle ? emptyVehicle : route.params?.vehicle || defaultVehicle;
@@ -20,6 +22,7 @@ export default function VehicleSetupScreen({ navigation, route }) {
   const [vehicle, setVehicle] = useState(initialVehicle);
   const [search, setSearch] = useState(initialVehicle.vehicleName || "");
   const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
 
   function updateField(key, value) {
     setVehicle((current) => ({ ...current, [key]: value }));
@@ -39,15 +42,25 @@ export default function VehicleSetupScreen({ navigation, route }) {
     return Object.keys(nextErrors).length === 0;
   }
 
-  function saveVehicle() {
+  async function saveVehicle() {
     if (!validateVehicle()) return;
-    const nextVehicles = existingVehicles.some((item) => item.vehicleName === vehicle.vehicleName)
-      ? existingVehicles.map((item) => (item.vehicleName === vehicle.vehicleName ? vehicle : item))
-      : [...existingVehicles, vehicle];
+    setSaving(true);
+    let savedVehicle = vehicle;
+    if (user?.id) {
+      try {
+        savedVehicle = vehicle.id ? await updateVehicle(vehicle) : await createVehicle(vehicle, user.id);
+      } catch (error) {
+        console.warn("Waylo API vehicle persistence unavailable:", error.message);
+      }
+    }
+    setSaving(false);
+    const nextVehicles = existingVehicles.some((item) => item.id ? item.id === savedVehicle.id : item.vehicleName === savedVehicle.vehicleName)
+      ? existingVehicles.map((item) => ((item.id && item.id === savedVehicle.id) || item.vehicleName === savedVehicle.vehicleName ? savedVehicle : item))
+      : [...existingVehicles, savedVehicle];
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
-        routes: [{ name: "Home", params: { assistantName, vehicle, vehicles: nextVehicles } }]
+        routes: [{ name: "Home", params: { assistantName, user, vehicle: savedVehicle, vehicles: nextVehicles } }]
       })
     );
   }
@@ -56,7 +69,7 @@ export default function VehicleSetupScreen({ navigation, route }) {
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
-        routes: [{ name: "Home", params: { assistantName, vehicle: initialVehicle.vehicleName ? initialVehicle : existingVehicles[0], vehicles: existingVehicles } }]
+        routes: [{ name: "Home", params: { assistantName, user, vehicle: initialVehicle.vehicleName ? initialVehicle : existingVehicles[0], vehicles: existingVehicles } }]
       })
     );
   }
@@ -126,7 +139,7 @@ export default function VehicleSetupScreen({ navigation, route }) {
           ))}
         </View>
 
-        <PrimaryButton title="Save Vehicle" onPress={saveVehicle} />
+        <PrimaryButton title="Save Vehicle" loading={saving} onPress={saveVehicle} />
         <PrimaryButton title="Cancel" variant="secondary" onPress={cancelEdit} />
       </ScrollView>
     </SafeAreaView>

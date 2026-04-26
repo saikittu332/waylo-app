@@ -8,12 +8,13 @@ import StatItem from "../components/StatItem";
 import StopCard from "../components/StopCard";
 import { colors, radii, screen, shadows, spacing } from "../constants/theme";
 import { defaultVehicle } from "../data/mockVehicleSpecs";
-import { planTrip } from "../services/api";
+import { apiSavedPlanToApp, savePlan, planTrip } from "../services/api";
 import { getSubscriptionState } from "../services/subscriptionService";
 import { formatCurrency, formatHours } from "../utils/tripCalculator";
 
 export default function TripResultsScreen({ navigation, route }) {
   const assistantName = route.params?.assistantName || "Waylo";
+  const user = route.params?.user;
   const vehicle = route.params?.vehicle || defaultVehicle;
   const tripRequest = route.params?.tripRequest;
   const [tripPlan, setTripPlan] = useState(null);
@@ -21,8 +22,8 @@ export default function TripResultsScreen({ navigation, route }) {
   const subscription = getSubscriptionState();
 
   useEffect(() => {
-    planTrip({ ...tripRequest, vehicle }).then(setTripPlan);
-  }, [tripRequest, vehicle]);
+    planTrip({ ...tripRequest, vehicle, user }).then(setTripPlan);
+  }, [tripRequest, user, vehicle]);
 
   useEffect(() => {
     const decision = route.params?.stopDecision;
@@ -52,6 +53,25 @@ export default function TripResultsScreen({ navigation, route }) {
     vehicleName: vehicle.vehicleName,
     savedAt: "Saved just now"
   };
+
+  async function handleSaveForLater() {
+    let nextSavedPlan = savedPlan;
+    if (user?.id) {
+      try {
+        const persisted = await savePlan({
+          userId: user.id,
+          tripId: tripPlan.persistedTrip?.id,
+          route: plannedRoute,
+          vehicle,
+          insights
+        });
+        nextSavedPlan = apiSavedPlanToApp(persisted);
+      } catch (error) {
+        console.warn("Waylo API saved plan persistence unavailable:", error.message);
+      }
+    }
+    navigation.navigate("Home", { assistantName, user, vehicle, savedPlan: nextSavedPlan });
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -112,7 +132,7 @@ export default function TripResultsScreen({ navigation, route }) {
         <PrimaryButton
           title="Save for Later"
           variant="secondary"
-          onPress={() => navigation.navigate("Home", { assistantName, vehicle, savedPlan })}
+          onPress={handleSaveForLater}
         />
       </ScrollView>
     </SafeAreaView>

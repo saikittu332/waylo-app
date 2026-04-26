@@ -83,6 +83,17 @@ def test_create_user_vehicle_trip_and_get_trips_by_user(client: TestClient) -> N
     assert vehicle["user_id"] == user["id"]
     assert vehicle["vehicle_name"] == "Toyota Camry 2021"
 
+    vehicles_response = client.get("/vehicles", params={"user_id": user["id"]})
+    assert vehicles_response.status_code == 200
+    assert vehicles_response.json()[0]["id"] == vehicle["id"]
+
+    vehicle_update_response = client.patch(
+        f"/vehicles/{vehicle['id']}",
+        json={"highway_mpg": 36},
+    )
+    assert vehicle_update_response.status_code == 200
+    assert vehicle_update_response.json()["highway_mpg"] == 36
+
     trip_response = client.post(
         "/trips",
         json={
@@ -108,3 +119,22 @@ def test_create_user_vehicle_trip_and_get_trips_by_user(client: TestClient) -> N
     trips = trips_response.json()
     assert len(trips) == 1
     assert trips[0]["id"] == trip["id"]
+
+    saved_plan_response = client.post(
+        "/saved-plans",
+        json={
+            "user_id": user["id"],
+            "trip_id": trip["id"],
+            "title": "San Francisco -> Los Angeles",
+            "origin": "San Francisco, CA",
+            "destination": "Los Angeles, CA",
+            "trip_mode": "Cheapest",
+            "notes": "Saved from the mobile app",
+            "plan_payload": {"distanceMiles": 383},
+        },
+    )
+    assert saved_plan_response.status_code == 201
+
+    saved_plans_response = client.get("/saved-plans", params={"user_id": user["id"]})
+    assert saved_plans_response.status_code == 200
+    assert saved_plans_response.json()[0]["trip_id"] == trip["id"]

@@ -5,7 +5,7 @@ import Logo from "../components/Logo";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
 import { colors, radii, screen, spacing, typography } from "../constants/theme";
-import { sendPhoneOtp, verifyOtp } from "../services/authService";
+import { completePhoneLogin, sendPhoneOtp, verifyOtp } from "../services/authService";
 
 export default function LoginScreen({ navigation }) {
   const [phone, setPhone] = useState("+1 (555) 123-4567");
@@ -22,8 +22,9 @@ export default function LoginScreen({ navigation }) {
       return;
     }
     await verifyOtp("mock-verification-id", code.join(""));
+    const session = await completePhoneLogin(phone);
     setLoading(false);
-    navigation.navigate("AssistantName");
+    navigation.navigate("AssistantName", { user: session.user, accessToken: session.access_token });
   }
 
   return (

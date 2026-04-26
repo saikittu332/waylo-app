@@ -3,15 +3,27 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-
 import { SafeAreaView } from "react-native-safe-area-context";
 import PrimaryButton from "../components/PrimaryButton";
 import { colors, radii, spacing, typography } from "../constants/theme";
+import { updateUser } from "../services/api";
 
 const suggestions = ["Waylo", "Scout", "Milewise", "Atlas"];
 
-export default function AssistantNameScreen({ navigation }) {
+export default function AssistantNameScreen({ navigation, route }) {
+  const user = route.params?.user;
   const [assistantName, setAssistantName] = useState("Waylo");
 
-  function saveName() {
+  async function saveName() {
+    const nextName = assistantName.trim() || "Waylo";
+    let nextUser = user ? { ...user, assistant_name: nextName } : user;
+    if (user?.id) {
+      try {
+        nextUser = await updateUser(user.id, { assistant_name: nextName });
+      } catch (error) {
+        console.warn("Waylo API assistant update unavailable:", error.message);
+      }
+    }
     navigation.navigate("VehicleSetup", {
-      assistantName: assistantName.trim() || "Waylo"
+      assistantName: nextName,
+      user: nextUser
     });
   }
 
@@ -39,7 +51,7 @@ export default function AssistantNameScreen({ navigation }) {
           ))}
         </View>
         <PrimaryButton title="Save Assistant Name" onPress={saveName} />
-        <PrimaryButton title="Skip for Now" variant="secondary" onPress={() => navigation.navigate("VehicleSetup", { assistantName: "Waylo" })} />
+        <PrimaryButton title="Skip for Now" variant="secondary" onPress={() => navigation.navigate("VehicleSetup", { assistantName: "Waylo", user })} />
       </ScrollView>
     </SafeAreaView>
   );

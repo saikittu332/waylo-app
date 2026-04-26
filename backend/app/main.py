@@ -20,8 +20,10 @@ from app.schemas import (
     TripRead,
     UserCreate,
     UserRead,
+    UserUpdate,
     VehicleCreate,
     VehicleRead,
+    VehicleUpdate,
 )
 
 app = FastAPI(title=settings.api_title)
@@ -58,11 +60,42 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)) -> User:
     return user
 
 
+@app.patch("/users/{user_id}", response_model=UserRead)
+def update_user(user_id: uuid.UUID, payload: UserUpdate, db: Session = Depends(get_db)) -> User:
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found.")
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(user, key, value)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 @app.post("/vehicles", response_model=VehicleRead, status_code=status.HTTP_201_CREATED)
 def create_vehicle(payload: VehicleCreate, db: Session = Depends(get_db)) -> Vehicle:
     ensure_user_exists(db, payload.user_id)
     vehicle = Vehicle(**payload.model_dump())
     db.add(vehicle)
+    db.commit()
+    db.refresh(vehicle)
+    return vehicle
+
+
+@app.get("/vehicles", response_model=list[VehicleRead])
+def list_vehicles(user_id: uuid.UUID = Query(), db: Session = Depends(get_db)) -> list[Vehicle]:
+    ensure_user_exists(db, user_id)
+    query = select(Vehicle).where(Vehicle.user_id == user_id).order_by(Vehicle.created_at.desc())
+    return list(db.scalars(query).all())
+
+
+@app.patch("/vehicles/{vehicle_id}", response_model=VehicleRead)
+def update_vehicle(vehicle_id: uuid.UUID, payload: VehicleUpdate, db: Session = Depends(get_db)) -> Vehicle:
+    vehicle = db.get(Vehicle, vehicle_id)
+    if vehicle is None:
+        raise HTTPException(status_code=404, detail="Vehicle not found.")
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(vehicle, key, value)
     db.commit()
     db.refresh(vehicle)
     return vehicle
@@ -103,6 +136,13 @@ def create_saved_plan(payload: SavedPlanCreate, db: Session = Depends(get_db)) -
     return saved_plan
 
 
+@app.get("/saved-plans", response_model=list[SavedPlanRead])
+def list_saved_plans(user_id: uuid.UUID = Query(), db: Session = Depends(get_db)) -> list[SavedPlan]:
+    ensure_user_exists(db, user_id)
+    query = select(SavedPlan).where(SavedPlan.user_id == user_id).order_by(SavedPlan.created_at.desc())
+    return list(db.scalars(query).all())
+
+
 @app.post("/subscriptions", response_model=SubscriptionRead, status_code=status.HTTP_201_CREATED)
 def create_subscription(payload: SubscriptionCreate, db: Session = Depends(get_db)) -> Subscription:
     ensure_user_exists(db, payload.user_id)
@@ -111,6 +151,13 @@ def create_subscription(payload: SubscriptionCreate, db: Session = Depends(get_d
     db.commit()
     db.refresh(subscription)
     return subscription
+
+
+@app.get("/subscriptions", response_model=list[SubscriptionRead])
+def list_subscriptions(user_id: uuid.UUID = Query(), db: Session = Depends(get_db)) -> list[Subscription]:
+    ensure_user_exists(db, user_id)
+    query = select(Subscription).where(Subscription.user_id == user_id).order_by(Subscription.created_at.desc())
+    return list(db.scalars(query).all())
 
 
 def ensure_user_exists(db: Session, user_id: uuid.UUID) -> None:

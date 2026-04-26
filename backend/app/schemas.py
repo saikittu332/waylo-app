@@ -11,6 +11,11 @@ class UserCreate(BaseModel):
     assistant_name: str = "Waylo"
 
 
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    assistant_name: Optional[str] = None
+
+
 class UserRead(UserCreate):
     id: uuid.UUID
     created_at: datetime
@@ -33,6 +38,14 @@ class VehicleCreate(BaseModel):
     user_id: uuid.UUID
     vehicle_name: str
     fuel_type: str = "gas"
+    city_mpg: Optional[float] = None
+    highway_mpg: Optional[float] = None
+    tank_capacity_gallons: Optional[float] = None
+
+
+class VehicleUpdate(BaseModel):
+    vehicle_name: Optional[str] = None
+    fuel_type: Optional[str] = None
     city_mpg: Optional[float] = None
     highway_mpg: Optional[float] = None
     tank_capacity_gallons: Optional[float] = None

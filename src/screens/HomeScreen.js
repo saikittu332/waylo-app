@@ -9,6 +9,7 @@ import TripModeChip from "../components/TripModeChip";
 import { colors, radii, screen, spacing } from "../constants/theme";
 import { mockTripRequest } from "../data/mockTrip";
 import { defaultVehicle } from "../data/mockVehicleSpecs";
+import { getSavedPlans, getSubscription, getVehicles, updateUser } from "../services/api";
 import { getSubscriptionState } from "../services/subscriptionService";
 
 const modes = ["Fastest", "Cheapest", "Scenic", "Comfort"];
@@ -26,6 +27,7 @@ const completedTrips = [
 ];
 
 export default function HomeScreen({ navigation, route }) {
+  const [user, setUser] = useState(route.params?.user || null);
   const [assistantName, setAssistantName] = useState(route.params?.assistantName || "Waylo");
   const vehicle = route.params?.vehicle || defaultVehicle;
   const initialVehicles = route.params?.vehicles || [vehicle];
@@ -41,6 +43,9 @@ export default function HomeScreen({ navigation, route }) {
 
   useFocusEffect(
     React.useCallback(() => {
+      if (route.params?.user) {
+        setUser(route.params.user);
+      }
       setSubscription(getSubscriptionState());
       if (route.params?.assistantName) {
         setAssistantName(route.params.assistantName);
@@ -59,7 +64,36 @@ export default function HomeScreen({ navigation, route }) {
         });
         navigation.setParams({ savedPlan: undefined });
       }
-    }, [navigation, route.params?.assistantName, route.params?.savedPlan, route.params?.vehicle])
+    }, [navigation, route.params?.assistantName, route.params?.savedPlan, route.params?.user, route.params?.vehicle])
+  );
+
+  useFocusEffect(
+    React.useCallback(() => {
+      let active = true;
+      async function loadPersistedData() {
+        if (!user?.id) return;
+        try {
+          const [apiVehicles, apiPlans, apiSubscription] = await Promise.all([
+            getVehicles(user.id),
+            getSavedPlans(user.id),
+            getSubscription(user.id)
+          ]);
+          if (!active) return;
+          if (apiVehicles.length > 0) {
+            setVehicles(apiVehicles);
+            setSelectedVehicle((current) => apiVehicles.find((item) => item.id === current?.id) || apiVehicles[0]);
+          }
+          setPlannedTrips(apiPlans);
+          if (apiSubscription) setSubscription(apiSubscription);
+        } catch (error) {
+          console.warn("Waylo API home refresh unavailable:", error.message);
+        }
+      }
+      loadPersistedData();
+      return () => {
+        active = false;
+      };
+    }, [user?.id])
   );
 
   return (
@@ -68,6 +102,7 @@ export default function HomeScreen({ navigation, route }) {
         {activeTab === "Home" && (
           <PlanTripContent
             assistantName={assistantName}
+            user={user}
             vehicle={selectedVehicle}
             vehicles={vehicles}
             navigation={navigation}
@@ -86,6 +121,7 @@ export default function HomeScreen({ navigation, route }) {
         {activeTab === "Trips" && (
           <TripsContent
             assistantName={assistantName}
+            user={user}
             vehicle={selectedVehicle}
             navigation={navigation}
             from={from}
@@ -97,6 +133,7 @@ export default function HomeScreen({ navigation, route }) {
         {activeTab === "Navigate" && (
           <NavigateContent
             assistantName={assistantName}
+            user={user}
             navigation={navigation}
             plannedTrips={plannedTrips}
             vehicle={selectedVehicle}
@@ -105,12 +142,13 @@ export default function HomeScreen({ navigation, route }) {
         {activeTab === "Vehicle" && (
           <VehicleContent
             assistantName={assistantName}
+            user={user}
             vehicles={vehicles}
             selectedVehicle={selectedVehicle}
             navigation={navigation}
           />
         )}
-        {activeTab === "Profile" && <ProfileContent assistantName={assistantName} navigation={navigation} subscription={subscription} setSubscription={setSubscription} />}
+        {activeTab === "Profile" && <ProfileContent assistantName={assistantName} setAssistantName={setAssistantName} user={user} setUser={setUser} navigation={navigation} subscription={subscription} setSubscription={setSubscription} />}
       </ScrollView>
 
       <View style={styles.tabBar}>
@@ -133,7 +171,7 @@ export default function HomeScreen({ navigation, route }) {
   );
 }
 
-function PlanTripContent({ assistantName, vehicle, vehicles, navigation, from, setFrom, to, setTo, mode, setMode, showVehiclePicker, setShowVehiclePicker, setSelectedVehicle, plannedTrips }) {
+function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, from, setFrom, to, setTo, mode, setMode, showVehiclePicker, setShowVehiclePicker, setSelectedVehicle, plannedTrips }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const popoverAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -150,7 +188,7 @@ function PlanTripContent({ assistantName, vehicle, vehicles, navigation, from, s
 
   function continuePlan() {
     setShowVehiclePicker(false);
-    navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from, to, mode } });
+    navigation.navigate("TripResults", { assistantName, user, vehicle, tripRequest: { from, to, mode } });
   }
 
   return (
@@ -242,7 +280,7 @@ function PlanTripContent({ assistantName, vehicle, vehicles, navigation, from, s
                 </View>
               </Pressable>
             ))}
-            <Pressable onPress={() => navigation.navigate("VehicleSetup", { assistantName, mode: "new", vehicles })} style={styles.addVehicleInline}>
+            <Pressable onPress={() => navigation.navigate("VehicleSetup", { assistantName, user, mode: "new", vehicles })} style={styles.addVehicleInline}>
               <Ionicons color={colors.blue} name="add-circle-outline" size={19} />
               <Text style={styles.addVehicleText}>Add new vehicle</Text>
             </Pressable>
@@ -255,6 +293,7 @@ function PlanTripContent({ assistantName, vehicle, vehicles, navigation, from, s
       </PremiumCard>
       <TripsContent
         assistantName={assistantName}
+        user={user}
         vehicle={vehicle}
         navigation={navigation}
         from={from}
@@ -293,7 +332,7 @@ function NotificationRow({ icon, title, detail }) {
   );
 }
 
-function TripsContent({ assistantName, vehicle, navigation, from, to, mode, compact, plannedTrips = [] }) {
+function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode, compact, plannedTrips = [] }) {
   const [selectedSection, setSelectedSection] = useState("Ready");
   const visiblePlans = compact ? plannedTrips.slice(0, 1) : plannedTrips;
   const showingReady = selectedSection === "Ready";
@@ -330,7 +369,7 @@ function TripsContent({ assistantName, vehicle, navigation, from, to, mode, comp
                   badge="Saved"
                   title={plan.title}
                   date={`${plan.mode} route | ${plan.vehicleName}`}
-                  onPress={() => navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from: plan.from, to: plan.to, mode: plan.mode } })}
+                  onPress={() => navigation.navigate("TripResults", { assistantName, user, vehicle, tripRequest: { from: plan.from, to: plan.to, mode: plan.mode } })}
                 />
                 {index < visiblePlans.length - 1 && <View style={styles.listDivider} />}
               </React.Fragment>
@@ -339,7 +378,7 @@ function TripsContent({ assistantName, vehicle, navigation, from, to, mode, comp
         )}
         {!compact && !showingReady && completedTrips.map((trip, index) => (
           <React.Fragment key={trip.id}>
-            <RecentTrip title={trip.title} date={trip.date} onPress={() => navigation.navigate("TripResults", { assistantName, vehicle, tripRequest: { from: trip.from, to: trip.to, mode: trip.mode } })} />
+            <RecentTrip title={trip.title} date={trip.date} onPress={() => navigation.navigate("TripResults", { assistantName, user, vehicle, tripRequest: { from: trip.from, to: trip.to, mode: trip.mode } })} />
             {index < completedTrips.length - 1 && <View style={styles.listDivider} />}
           </React.Fragment>
         ))}
@@ -413,12 +452,12 @@ function NavigateContent({ navigation, plannedTrips }) {
   );
 }
 
-function VehicleContent({ assistantName, vehicles, selectedVehicle, navigation }) {
+function VehicleContent({ assistantName, user, vehicles, selectedVehicle, navigation }) {
   return (
     <>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Your Vehicles</Text>
-        <Pressable onPress={() => navigation.navigate("VehicleSetup", { assistantName, mode: "new", vehicles })} hitSlop={8} style={styles.textAction}>
+        <Pressable onPress={() => navigation.navigate("VehicleSetup", { assistantName, user, mode: "new", vehicles })} hitSlop={8} style={styles.textAction}>
           <Text style={styles.viewAll}>Add vehicle</Text>
         </Pressable>
       </View>
@@ -432,16 +471,16 @@ function VehicleContent({ assistantName, vehicles, selectedVehicle, navigation }
           <Text style={styles.profileMeta}>{item.fuelType.toUpperCase()} | {item.cityMpg} city MPG | {item.highwayMpg} highway MPG</Text>
           <Text style={styles.profileMeta}>Tank capacity: {item.tankCapacity} gal</Text>
           {selectedVehicle.vehicleName === item.vehicleName && <Text style={styles.currentVehicle}>Selected for trips</Text>}
-          <PrimaryButton title="Edit Vehicle" onPress={() => navigation.navigate("VehicleSetup", { assistantName, vehicle: item, vehicles })} />
+          <PrimaryButton title="Edit Vehicle" onPress={() => navigation.navigate("VehicleSetup", { assistantName, user, vehicle: item, vehicles })} />
         </PremiumCard>
       ))}
     </>
   );
 }
 
-function ProfileContent({ assistantName, navigation, subscription, setSubscription }) {
-  const [profileName, setProfileName] = useState("Sai");
-  const [phone, setPhone] = useState("+1 (555) 123-4567");
+function ProfileContent({ assistantName, setAssistantName, user, setUser, navigation, subscription, setSubscription }) {
+  const [profileName, setProfileName] = useState(user?.name || "Sai");
+  const [phone, setPhone] = useState(user?.phone || "+1 (555) 123-4567");
   const [editing, setEditing] = useState(false);
   const [phoneError, setPhoneError] = useState("");
   const [nameError, setNameError] = useState("");
@@ -458,7 +497,14 @@ function ProfileContent({ assistantName, navigation, subscription, setSubscripti
     const validPhone = /^\+1 \(\d{3}\) \d{3}-\d{4}$/.test(phone.trim());
     setNameError(validName ? "" : "Enter at least 2 characters.");
     setPhoneError(validPhone ? "" : "Use format +1 (555) 123-4567.");
-    if (validName && validPhone) setEditing(false);
+    if (validName && validPhone) {
+      if (user?.id) {
+        updateUser(user.id, { name: profileName.trim(), assistant_name: assistantName })
+          .then((updated) => setUser(updated))
+          .catch((error) => console.warn("Waylo API profile update unavailable:", error.message));
+      }
+      setEditing(false);
+    }
   }
 
   function formatPhoneInput(value) {
@@ -520,7 +566,7 @@ function ProfileContent({ assistantName, navigation, subscription, setSubscripti
           <PlanLine label="Full AI fuel optimization" included={subscription.isPremium} />
           <PlanLine label="Multiple smart stops" included={subscription.isPremium} />
         </View>
-        <PrimaryButton title={subscription.isPremium ? "Manage Premium" : "View Premium Plan"} variant="secondary" onPress={() => navigation.navigate("Paywall")} />
+        <PrimaryButton title={subscription.isPremium ? "Manage Premium" : "View Premium Plan"} variant="secondary" onPress={() => navigation.navigate("Paywall", { user })} />
       </PremiumCard>
       <PremiumCard style={styles.profileCard}>
         <Text style={styles.cardTitle}>Preferences</Text>
