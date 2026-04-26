@@ -23,6 +23,38 @@ npx expo start
 
 Then open the Expo app on a simulator, emulator, physical device, or web target.
 
+## Firebase Phone Auth
+
+Real Firebase SMS OTP on a physical iPhone requires a custom Expo development build. The stock Expo Go app can still open the UI, but native Firebase Phone Auth is only available in the Waylo dev build.
+
+Firebase iOS setup currently expects:
+
+```text
+Bundle ID: com.saikittu332.waylo
+Config file: ./GoogleService-Info.plist
+```
+
+Create an iOS development build:
+
+```powershell
+npx eas login
+npx eas build:configure
+npx eas build --profile development --platform ios
+```
+
+After installing that build on the iPhone, start Metro for the dev client:
+
+```powershell
+npm run start:dev-client
+```
+
+For backend persistence during mobile testing, point the app at your computer's LAN IP:
+
+```powershell
+$env:EXPO_PUBLIC_WAYLO_API_URL="http://YOUR_COMPUTER_IP:8000"
+npm run start:dev-client
+```
+
 ## Backend foundation
 
 The FastAPI + PostgreSQL foundation lives in `backend/`.

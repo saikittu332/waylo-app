@@ -12,17 +12,19 @@ export default function LoginScreen({ navigation }) {
   const [otpSent, setOtpSent] = useState(false);
   const [code, setCode] = useState(["2", "4", "6", "8", "1", "2"]);
   const [loading, setLoading] = useState(false);
+  const [confirmation, setConfirmation] = useState(null);
 
   async function handleContinue() {
     setLoading(true);
     if (!otpSent) {
-      await sendPhoneOtp(phone);
+      const nextConfirmation = await sendPhoneOtp(phone);
+      setConfirmation(nextConfirmation);
       setOtpSent(true);
       setLoading(false);
       return;
     }
-    await verifyOtp("mock-verification-id", code.join(""));
-    const session = await completePhoneLogin(phone);
+    const firebaseUser = await verifyOtp(confirmation, code.join(""));
+    const session = await completePhoneLogin(phone, firebaseUser);
     setLoading(false);
     navigation.navigate("AssistantName", { user: session.user, accessToken: session.access_token });
   }

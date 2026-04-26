@@ -12,9 +12,17 @@
       "**/*"
     ],
     "ios": {
+      "bundleIdentifier": "com.saikittu332.waylo",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "supportsTablet": true
     },
-    "android": {},
+    "android": {
+      "package": "com.saikittu332.waylo"
+    },
+    "plugins": [
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth"
+    ],
     "web": {
       "bundler": "metro"
     }
