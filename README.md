@@ -22,6 +22,22 @@ npx expo start
 
 Then open the Expo app on a simulator, emulator, physical device, or web target.
 
+## Backend foundation
+
+The FastAPI + PostgreSQL foundation lives in `backend/`.
+
+```bash
+cd backend
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env
+alembic upgrade head
+uvicorn app.main:app --reload
+```
+
+The backend currently includes User, Vehicle, Trip, SavedPlan, and Subscription models plus basic API endpoints. Stripe, Mapbox, and AI planning are intentionally not integrated yet.
+
 ## Future integration points
 
 - `src/services/authService.js`: replace the mock phone OTP flow with Firebase Phone Auth.
