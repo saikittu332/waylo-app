@@ -1,13 +1,13 @@
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class UserCreate(BaseModel):
     phone: str = Field(min_length=7, max_length=32)
-    name: str | None = None
+    name: Optional[str] = None
     assistant_name: str = "Waylo"
 
 
@@ -20,7 +20,7 @@ class UserRead(UserCreate):
 
 class LoginRequest(BaseModel):
     phone: str
-    otp_code: str | None = None
+    otp_code: Optional[str] = None
 
 
 class LoginResponse(BaseModel):
@@ -33,9 +33,9 @@ class VehicleCreate(BaseModel):
     user_id: uuid.UUID
     vehicle_name: str
     fuel_type: str = "gas"
-    city_mpg: float | None = None
-    highway_mpg: float | None = None
-    tank_capacity_gallons: float | None = None
+    city_mpg: Optional[float] = None
+    highway_mpg: Optional[float] = None
+    tank_capacity_gallons: Optional[float] = None
 
 
 class VehicleRead(VehicleCreate):
@@ -47,15 +47,15 @@ class VehicleRead(VehicleCreate):
 
 class TripCreate(BaseModel):
     user_id: uuid.UUID
-    vehicle_id: uuid.UUID | None = None
+    vehicle_id: Optional[uuid.UUID] = None
     origin: str
     destination: str
     trip_mode: str = "Cheapest"
     status: str = "planned"
-    distance_miles: float | None = None
-    duration_hours: float | None = None
-    estimated_fuel_cost: float | None = None
-    estimated_savings: float | None = None
+    distance_miles: Optional[float] = None
+    duration_hours: Optional[float] = None
+    estimated_fuel_cost: Optional[float] = None
+    estimated_savings: Optional[float] = None
 
 
 class TripRead(TripCreate):
@@ -67,12 +67,12 @@ class TripRead(TripCreate):
 
 class SavedPlanCreate(BaseModel):
     user_id: uuid.UUID
-    trip_id: uuid.UUID | None = None
+    trip_id: Optional[uuid.UUID] = None
     title: str
     origin: str
     destination: str
     trip_mode: str = "Cheapest"
-    notes: str | None = None
+    notes: Optional[str] = None
     plan_payload: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -88,7 +88,7 @@ class SubscriptionCreate(BaseModel):
     plan_name: str = "Free"
     status: str = "active"
     is_premium: bool = False
-    current_period_end: datetime | None = None
+    current_period_end: Optional[datetime] = None
 
 
 class SubscriptionRead(SubscriptionCreate):

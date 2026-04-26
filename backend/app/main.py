@@ -1,4 +1,5 @@
 import uuid
+from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from sqlalchemy import select
@@ -81,7 +82,7 @@ def create_trip(payload: TripCreate, db: Session = Depends(get_db)) -> Trip:
 
 @app.get("/trips", response_model=list[TripRead])
 def list_trips(
-    user_id: uuid.UUID | None = Query(default=None),
+    user_id: Optional[uuid.UUID] = Query(default=None),
     db: Session = Depends(get_db),
 ) -> list[Trip]:
     query = select(Trip).order_by(Trip.created_at.desc())
