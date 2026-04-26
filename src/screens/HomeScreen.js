@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { Animated, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { CommonActions, useFocusEffect } from "@react-navigation/native";
@@ -135,6 +135,18 @@ export default function HomeScreen({ navigation, route }) {
 
 function PlanTripContent({ assistantName, vehicle, vehicles, navigation, from, setFrom, to, setTo, mode, setMode, showVehiclePicker, setShowVehiclePicker, setSelectedVehicle, plannedTrips }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const popoverAnim = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    if (notificationsOpen) {
+      popoverAnim.setValue(0);
+      Animated.timing(popoverAnim, {
+        duration: 180,
+        toValue: 1,
+        useNativeDriver: true
+      }).start();
+    }
+  }, [notificationsOpen, popoverAnim]);
 
   function continuePlan() {
     setShowVehiclePicker(false);
@@ -160,20 +172,32 @@ function PlanTripContent({ assistantName, vehicle, vehicles, navigation, from, s
           <Ionicons color={colors.navy} name="notifications-outline" size={20} />
           <View style={styles.bellDot} />
         </Pressable>
+        {notificationsOpen && (
+          <Animated.View
+            style={[
+              styles.notificationPanel,
+              {
+                opacity: popoverAnim,
+                transform: [
+                  { translateY: popoverAnim.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) },
+                  { scale: popoverAnim.interpolate({ inputRange: [0, 1], outputRange: [0.98, 1] }) }
+                ]
+              }
+            ]}
+          >
+            <View style={styles.popoverPointer} />
+            <View style={styles.notificationHeader}>
+              <Text style={styles.notificationHeading}>Notifications</Text>
+              <Pressable onPress={() => setNotificationsOpen(false)} hitSlop={8}>
+                <Ionicons color={colors.muted} name="close" size={18} />
+              </Pressable>
+            </View>
+            <NotificationRow icon="pricetag-outline" title="Fuel price watch" detail="Prices near Bakersfield are trending lower." />
+            <View style={styles.listDivider} />
+            <NotificationRow icon="time-outline" title="Rest reminder ready" detail="A break will be suggested around 2.5 hours." />
+          </Animated.View>
+        )}
       </View>
-      {notificationsOpen && (
-        <PremiumCard style={styles.notificationPanel}>
-          <View style={styles.notificationHeader}>
-            <Text style={styles.groupLabel}>Notifications</Text>
-            <Pressable onPress={() => setNotificationsOpen(false)} hitSlop={8}>
-              <Ionicons color={colors.muted} name="close" size={18} />
-            </Pressable>
-          </View>
-          <NotificationRow icon="pricetag-outline" title="Fuel price watch" detail="Prices near Bakersfield are trending lower." />
-          <View style={styles.listDivider} />
-          <NotificationRow icon="time-outline" title="Rest reminder ready" detail="A break will be suggested around 2.5 hours." />
-        </PremiumCard>
-      )}
       <PremiumCard style={styles.tripCard}>
         <Text style={styles.cardTitle}>Plan Your Trip</Text>
         <TripField label="From" value={from} onChangeText={setFrom} pinColor="#367CFF" />
@@ -688,8 +712,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.md,
     justifyContent: "space-between",
-    overflow: "hidden",
-    padding: spacing.md
+    overflow: "visible",
+    padding: spacing.md,
+    position: "relative",
+    zIndex: 4
   },
   heroMain: {
     flex: 1
@@ -760,13 +786,47 @@ const styles = StyleSheet.create({
     marginTop: 1
   },
   notificationPanel: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    borderWidth: 1,
     gap: spacing.sm,
-    paddingVertical: spacing.sm
+    padding: spacing.sm,
+    position: "absolute",
+    right: 10,
+    shadowColor: colors.navy,
+    shadowOpacity: 0.12,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 12 },
+    top: 62,
+    width: "86%",
+    elevation: 12,
+    zIndex: 8
+  },
+  popoverPointer: {
+    backgroundColor: colors.surface,
+    borderLeftColor: colors.border,
+    borderTopColor: colors.border,
+    borderLeftWidth: 1,
+    borderTopWidth: 1,
+    height: 14,
+    position: "absolute",
+    right: 18,
+    top: -7,
+    transform: [{ rotate: "45deg" }],
+    width: 14
   },
   notificationHeader: {
     alignItems: "center",
     flexDirection: "row",
-    justifyContent: "space-between"
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.xs
+  },
+  notificationHeading: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "800",
+    textTransform: "uppercase"
   },
   notificationRow: {
     alignItems: "center",
@@ -795,7 +855,8 @@ const styles = StyleSheet.create({
     marginTop: 2
   },
   tripCard: {
-    gap: spacing.md
+    gap: spacing.md,
+    zIndex: 1
   },
   cardTitle: {
     color: colors.text,
