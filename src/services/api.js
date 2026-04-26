@@ -124,6 +124,12 @@ export async function updateVehicle(vehicle) {
   return apiVehicleToApp(saved);
 }
 
+export async function deleteVehicle(vehicleId) {
+  await request(`/vehicles/${vehicleId}`, {
+    method: "DELETE"
+  });
+}
+
 export async function getVehicles(userId) {
   const vehicles = await request(`/vehicles?user_id=${encodeURIComponent(userId)}`);
   return vehicles.map(apiVehicleToApp);

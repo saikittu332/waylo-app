@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Animated, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { Alert, Animated, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { CommonActions, useFocusEffect } from "@react-navigation/native";
@@ -9,10 +9,20 @@ import TripModeChip from "../components/TripModeChip";
 import { colors, radii, screen, spacing } from "../constants/theme";
 import { mockTripRequest } from "../data/mockTrip";
 import { defaultVehicle } from "../data/mockVehicleSpecs";
-import { getSavedPlans, getSubscription, getVehicles, updateUser } from "../services/api";
+import { deleteVehicle, getSavedPlans, getSubscription, getVehicles, updateUser } from "../services/api";
 import { getSubscriptionState } from "../services/subscriptionService";
 
 const modes = ["Fastest", "Cheapest", "Scenic", "Comfort"];
+const locationSuggestions = [
+  "Current Location",
+  "San Francisco, CA",
+  "Los Angeles, CA",
+  "Yosemite, CA",
+  "Las Vegas, NV",
+  "Grand Canyon, AZ",
+  "Denver, CO",
+  "Portland, OR"
+];
 const tabs = [
   { label: "Home", icon: "home" },
   { label: "Trips", icon: "map" },
@@ -145,6 +155,8 @@ export default function HomeScreen({ navigation, route }) {
             user={user}
             vehicles={vehicles}
             selectedVehicle={selectedVehicle}
+            setVehicles={setVehicles}
+            setSelectedVehicle={setSelectedVehicle}
             navigation={navigation}
           />
         )}
@@ -238,8 +250,8 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
       </View>
       <PremiumCard style={styles.tripCard}>
         <Text style={styles.cardTitle}>Plan Your Trip</Text>
-        <TripField label="From" value={from} onChangeText={setFrom} pinColor="#367CFF" />
-        <TripField label="To" value={to} onChangeText={setTo} pinColor={colors.red} />
+        <TripField label="From" value={from} onChangeText={setFrom} pinColor="#367CFF" suggestions={locationSuggestions} />
+        <TripField label="To" value={to} onChangeText={setTo} pinColor={colors.red} suggestions={locationSuggestions.filter((item) => item !== "Current Location")} />
         <Text style={styles.label}>Trip Mode</Text>
         <View style={styles.modes}>
           {modes.map((item) => (
@@ -452,7 +464,24 @@ function NavigateContent({ navigation, plannedTrips }) {
   );
 }
 
-function VehicleContent({ assistantName, user, vehicles, selectedVehicle, navigation }) {
+function VehicleContent({ assistantName, user, vehicles, selectedVehicle, setVehicles, setSelectedVehicle, navigation }) {
+  async function removeVehicle(item) {
+    if (vehicles.length <= 1) {
+      Alert.alert("Keep one vehicle", "Waylo needs at least one vehicle to estimate route range and fuel cost. Add a new vehicle first, then delete this one.");
+      return;
+    }
+    try {
+      if (item.id) await deleteVehicle(item.id);
+      const remainingVehicles = vehicles.filter((vehicle) => (item.id ? vehicle.id !== item.id : vehicle.vehicleName !== item.vehicleName));
+      setVehicles(remainingVehicles);
+      if ((item.id && selectedVehicle?.id === item.id) || selectedVehicle?.vehicleName === item.vehicleName) {
+        setSelectedVehicle(remainingVehicles[0]);
+      }
+    } catch (error) {
+      Alert.alert("Could not delete vehicle", error.message);
+    }
+  }
+
   return (
     <>
       <View style={styles.sectionHeader}>
@@ -462,7 +491,7 @@ function VehicleContent({ assistantName, user, vehicles, selectedVehicle, naviga
         </Pressable>
       </View>
       {vehicles.map((item) => (
-        <PremiumCard key={item.vehicleName} style={styles.vehicleListCard}>
+        <PremiumCard key={item.id || item.vehicleName} style={styles.vehicleListCard}>
           <View style={styles.vehiclePhoto}>
             <View style={styles.vehiclePhotoRoad} />
             <Ionicons color={colors.blue} name="car-sport" size={56} />
@@ -470,8 +499,17 @@ function VehicleContent({ assistantName, user, vehicles, selectedVehicle, naviga
           <Text style={styles.cardTitle}>{item.vehicleName}</Text>
           <Text style={styles.profileMeta}>{item.fuelType.toUpperCase()} | {item.cityMpg} city MPG | {item.highwayMpg} highway MPG</Text>
           <Text style={styles.profileMeta}>Tank capacity: {item.tankCapacity} gal</Text>
-          {selectedVehicle.vehicleName === item.vehicleName && <Text style={styles.currentVehicle}>Selected for trips</Text>}
-          <PrimaryButton title="Edit Vehicle" onPress={() => navigation.navigate("VehicleSetup", { assistantName, user, vehicle: item, vehicles })} />
+          {selectedVehicle?.vehicleName === item.vehicleName && <Text style={styles.currentVehicle}>Selected for trips</Text>}
+          <View style={styles.vehicleActions}>
+            <Pressable onPress={() => navigation.navigate("VehicleSetup", { assistantName, user, vehicle: item, vehicles })} style={styles.vehicleActionPrimary}>
+              <Ionicons color={colors.surface} name="create-outline" size={17} />
+              <Text style={styles.vehicleActionPrimaryText}>Edit</Text>
+            </Pressable>
+            <Pressable onPress={() => removeVehicle(item)} style={styles.vehicleActionDanger}>
+              <Ionicons color={colors.red} name="trash-outline" size={17} />
+              <Text style={styles.vehicleActionDangerText}>Delete</Text>
+            </Pressable>
+          </View>
         </PremiumCard>
       ))}
     </>
@@ -480,41 +518,41 @@ function VehicleContent({ assistantName, user, vehicles, selectedVehicle, naviga
 
 function ProfileContent({ assistantName, setAssistantName, user, setUser, navigation, subscription, setSubscription }) {
   const [profileName, setProfileName] = useState(user?.name || "Sai");
-  const [phone, setPhone] = useState(user?.phone || "+1 (555) 123-4567");
+  const [assistantDraft, setAssistantDraft] = useState(assistantName);
+  const phone = user?.phone || "+1 (555) 123-4567";
   const [editing, setEditing] = useState(false);
-  const [phoneError, setPhoneError] = useState("");
   const [nameError, setNameError] = useState("");
+  const [assistantNameError, setAssistantNameError] = useState("");
   const [fuelAlerts, setFuelAlerts] = useState(true);
   const [restReminders, setRestReminders] = useState(true);
   const [restInterval, setRestInterval] = useState("2.5 hours");
 
   function toggleEditing() {
     if (!editing) {
+      setProfileName(user?.name || profileName);
+      setAssistantDraft(assistantName);
+      setNameError("");
+      setAssistantNameError("");
       setEditing(true);
       return;
     }
     const validName = profileName.trim().length >= 2;
-    const validPhone = /^\+1 \(\d{3}\) \d{3}-\d{4}$/.test(phone.trim());
+    const validAssistantName = assistantDraft.trim().length >= 2;
     setNameError(validName ? "" : "Enter at least 2 characters.");
-    setPhoneError(validPhone ? "" : "Use format +1 (555) 123-4567.");
-    if (validName && validPhone) {
+    setAssistantNameError(validAssistantName ? "" : "Enter at least 2 characters.");
+    if (validName && validAssistantName) {
+      const nextAssistantName = assistantDraft.trim() || "Waylo";
       if (user?.id) {
-        updateUser(user.id, { name: profileName.trim(), assistant_name: assistantName })
-          .then((updated) => setUser(updated))
+        updateUser(user.id, { name: profileName.trim(), assistant_name: nextAssistantName })
+          .then((updated) => {
+            setUser(updated);
+            setAssistantName(updated.assistant_name || nextAssistantName);
+          })
           .catch((error) => console.warn("Waylo API profile update unavailable:", error.message));
       }
+      setAssistantName(nextAssistantName);
       setEditing(false);
     }
-  }
-
-  function formatPhoneInput(value) {
-    const digits = value.replace(/\D/g, "").replace(/^1/, "").slice(0, 10);
-    const area = digits.slice(0, 3);
-    const prefix = digits.slice(3, 6);
-    const line = digits.slice(6, 10);
-    if (digits.length <= 3) return `+1 (${area}`;
-    if (digits.length <= 6) return `+1 (${area}) ${prefix}`;
-    return `+1 (${area}) ${prefix}-${line}`;
   }
 
   function signOut() {
@@ -538,15 +576,22 @@ function ProfileContent({ assistantName, setAssistantName, user, setUser, naviga
         {editing ? (
           <>
             <ProfileInput label="Name" value={profileName} onChangeText={setProfileName} error={nameError} />
-            <ProfileInput label="Phone" value={phone} onChangeText={(value) => setPhone(formatPhoneInput(value))} error={phoneError} keyboardType="phone-pad" />
+            <ProfileInput label="Assistant name" value={assistantDraft} onChangeText={setAssistantDraft} error={assistantNameError} />
+            <View style={styles.verifiedPhoneRow}>
+              <Ionicons color={colors.green} name="shield-checkmark-outline" size={18} />
+              <View style={styles.recentText}>
+                <Text style={styles.profileMeta}>{phone}</Text>
+                <Text style={styles.preferenceSub}>Phone changes will require OTP re-verification.</Text>
+              </View>
+            </View>
           </>
         ) : (
           <>
             <Text style={styles.cardTitle}>{profileName}</Text>
             <Text style={styles.profileMeta}>{phone}</Text>
+            <Text style={styles.profileMeta}>Assistant name: {assistantName}</Text>
           </>
         )}
-        <Text style={styles.profileMeta}>Assistant name: {assistantName}</Text>
         <Text style={styles.profileMeta}>Saved trips: 2</Text>
       </PremiumCard>
       <PremiumCard style={styles.subscriptionCard}>
@@ -665,15 +710,47 @@ function PlanLine({ label, included }) {
   );
 }
 
-function TripField({ label, value, onChangeText, pinColor }) {
+function TripField({ label, value, onChangeText, pinColor, suggestions = [] }) {
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const filteredSuggestions = suggestions
+    .filter((item) => item.toLowerCase().includes(value.trim().toLowerCase()))
+    .slice(0, 4);
+
   return (
     <View style={styles.tripFieldWrap}>
       <Text style={styles.label}>{label}</Text>
       <View style={styles.tripField}>
         <View style={[styles.pin, { backgroundColor: pinColor }]} />
-        <TextInput value={value} onChangeText={onChangeText} style={styles.input} />
-        <Text style={styles.fieldAction}>+</Text>
+        <TextInput
+          onFocus={() => setShowSuggestions(true)}
+          value={value}
+          onChangeText={(text) => {
+            onChangeText(text);
+            setShowSuggestions(true);
+          }}
+          style={styles.input}
+        />
+        <Pressable onPress={() => setShowSuggestions((open) => !open)} hitSlop={8}>
+          <Ionicons color={colors.navy} name={showSuggestions ? "chevron-up" : "add"} size={18} />
+        </Pressable>
       </View>
+      {showSuggestions && filteredSuggestions.length > 0 && (
+        <View style={styles.locationSuggestions}>
+          {filteredSuggestions.map((item) => (
+            <Pressable
+              key={`${label}-${item}`}
+              onPress={() => {
+                onChangeText(item);
+                setShowSuggestions(false);
+              }}
+              style={styles.locationSuggestion}
+            >
+              <Ionicons color={pinColor} name={item === "Current Location" ? "navigate-outline" : "location-outline"} size={16} />
+              <Text style={styles.locationSuggestionText}>{item}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -928,6 +1005,29 @@ const styles = StyleSheet.create({
     minHeight: 48,
     paddingHorizontal: spacing.md
   },
+  locationSuggestions: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    gap: 2,
+    marginTop: spacing.xs,
+    overflow: "hidden"
+  },
+  locationSuggestion: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+    minHeight: 42,
+    outlineStyle: "none",
+    paddingHorizontal: spacing.md
+  },
+  locationSuggestionText: {
+    color: colors.text,
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "700"
+  },
   pin: {
     borderRadius: radii.pill,
     height: 14,
@@ -1175,6 +1275,44 @@ const styles = StyleSheet.create({
   vehicleListCard: {
     gap: spacing.md
   },
+  vehicleActions: {
+    flexDirection: "row",
+    gap: spacing.sm
+  },
+  vehicleActionPrimary: {
+    alignItems: "center",
+    backgroundColor: colors.blue,
+    borderRadius: radii.pill,
+    flex: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
+    justifyContent: "center",
+    minHeight: 46,
+    outlineStyle: "none"
+  },
+  vehicleActionPrimaryText: {
+    color: colors.surface,
+    fontSize: 14,
+    fontWeight: "800"
+  },
+  vehicleActionDanger: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: "rgba(239,68,68,0.24)",
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
+    justifyContent: "center",
+    minHeight: 46,
+    outlineStyle: "none",
+    paddingHorizontal: spacing.md
+  },
+  vehicleActionDangerText: {
+    color: colors.red,
+    fontSize: 14,
+    fontWeight: "800"
+  },
   navigateHero: {
     alignItems: "center",
     flexDirection: "row",
@@ -1367,6 +1505,16 @@ const styles = StyleSheet.create({
     color: colors.red,
     fontSize: 12,
     fontWeight: "700"
+  },
+  verifiedPhoneRow: {
+    alignItems: "flex-start",
+    backgroundColor: colors.paleGreen,
+    borderColor: "rgba(24,184,117,0.18)",
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    padding: spacing.md
   },
   preferenceRow: {
     alignItems: "center",

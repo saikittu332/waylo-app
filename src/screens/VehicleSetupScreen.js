@@ -23,6 +23,9 @@ export default function VehicleSetupScreen({ navigation, route }) {
   const [search, setSearch] = useState(initialVehicle.vehicleName || "");
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const matchingVehicles = vehicleSuggestions
+    .filter((item) => item.vehicleName.toLowerCase().includes(search.trim().toLowerCase()))
+    .slice(0, 4);
 
   function updateField(key, value) {
     setVehicle((current) => ({ ...current, [key]: value }));
@@ -131,12 +134,26 @@ export default function VehicleSetupScreen({ navigation, route }) {
         <EditableField label="Tank Capacity (gal)" keyboardType="numeric" value={String(vehicle.tankCapacity)} error={errors.tankCapacity} onChangeText={(v) => updateNumericField("tankCapacity", v)} />
 
         <View style={styles.suggestions}>
-          {vehicleSuggestions.slice(0, 2).map((item) => (
-            <Pressable key={item.vehicleName} onPress={() => { setVehicle(item); setSearch(item.vehicleName); setErrors({}); }} style={styles.suggestion}>
-              <Text style={styles.suggestionName}>{item.vehicleName}</Text>
-              <Text style={styles.suggestionMeta}>{item.highwayMpg || "EV"} highway MPG</Text>
-            </Pressable>
-          ))}
+          <Text style={styles.suggestionsTitle}>{search.trim() ? "Matching vehicles" : "Popular vehicles"}</Text>
+          {matchingVehicles.length > 0 ? (
+            matchingVehicles.map((item) => (
+              <Pressable key={item.vehicleName} onPress={() => { setVehicle(item); setSearch(item.vehicleName); setErrors({}); }} style={styles.suggestion}>
+                <View style={styles.suggestionIcon}>
+                  <Ionicons color={colors.blue} name={item.fuelType === "EV" ? "flash-outline" : "car-sport-outline"} size={18} />
+                </View>
+                <View style={styles.suggestionCopy}>
+                  <Text style={styles.suggestionName}>{item.vehicleName}</Text>
+                  <Text style={styles.suggestionMeta}>{item.fuelType.toUpperCase()} | {item.highwayMpg || "EV"} highway MPG | {item.tankCapacity || "N/A"} gal</Text>
+                </View>
+                <Ionicons color={colors.mutedLight} name="chevron-forward" size={17} />
+              </Pressable>
+            ))
+          ) : (
+            <View style={styles.emptySuggestion}>
+              <Ionicons color={colors.muted} name="create-outline" size={18} />
+              <Text style={styles.suggestionMeta}>No exact match yet. Continue with manual specs and save your custom vehicle.</Text>
+            </View>
+          )}
         </View>
 
         <PrimaryButton title="Save Vehicle" loading={saving} onPress={saveVehicle} />
@@ -321,10 +338,33 @@ const styles = StyleSheet.create({
   suggestions: {
     gap: spacing.sm
   },
+  suggestionsTitle: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "800",
+    textTransform: "uppercase"
+  },
   suggestion: {
+    alignItems: "center",
     backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    outlineStyle: "none",
     padding: spacing.md
+  },
+  suggestionIcon: {
+    alignItems: "center",
+    backgroundColor: colors.paleBlue,
+    borderRadius: radii.pill,
+    height: 36,
+    justifyContent: "center",
+    width: 36
+  },
+  suggestionCopy: {
+    flex: 1
   },
   suggestionName: {
     color: colors.text,
@@ -334,5 +374,15 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 12,
     marginTop: 3
+  },
+  emptySuggestion: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    padding: spacing.md
   }
 });

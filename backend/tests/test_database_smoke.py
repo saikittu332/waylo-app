@@ -95,6 +95,27 @@ def test_create_user_vehicle_trip_and_get_trips_by_user(client: TestClient) -> N
     assert vehicle_update_response.status_code == 200
     assert vehicle_update_response.json()["highway_mpg"] == 36
 
+    delete_vehicle_response = client.post(
+        "/vehicles",
+        json={
+            "user_id": user["id"],
+            "vehicle_name": "Delete Test Vehicle",
+            "fuel_type": "gas",
+            "city_mpg": 20,
+            "highway_mpg": 25,
+            "tank_capacity_gallons": 14,
+        },
+    )
+    assert delete_vehicle_response.status_code == 201
+    deleted_vehicle_id = delete_vehicle_response.json()["id"]
+
+    vehicle_delete_response = client.delete(f"/vehicles/{deleted_vehicle_id}")
+    assert vehicle_delete_response.status_code == 204
+
+    vehicles_after_delete_response = client.get("/vehicles", params={"user_id": user["id"]})
+    assert vehicles_after_delete_response.status_code == 200
+    assert all(item["id"] != deleted_vehicle_id for item in vehicles_after_delete_response.json())
+
     trip_response = client.post(
         "/trips",
         json={

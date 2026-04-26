@@ -14,7 +14,10 @@
     "ios": {
       "bundleIdentifier": "com.saikittu332.waylo",
       "googleServicesFile": "./GoogleService-Info.plist",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.saikittu332.waylo"
@@ -25,6 +28,11 @@
     ],
     "web": {
       "bundler": "metro"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "ceaf89bf-1fcf-409c-aed9-36af5ade60db"
+      }
     }
   }
 }

@@ -131,6 +131,15 @@ def update_vehicle(vehicle_id: uuid.UUID, payload: VehicleUpdate, db: Session = 
     return vehicle
 
 
+@app.delete("/vehicles/{vehicle_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_vehicle(vehicle_id: uuid.UUID, db: Session = Depends(get_db)) -> None:
+    vehicle = db.get(Vehicle, vehicle_id)
+    if vehicle is None:
+        raise HTTPException(status_code=404, detail="Vehicle not found.")
+    db.delete(vehicle)
+    db.commit()
+
+
 @app.post("/trips", response_model=TripRead, status_code=status.HTTP_201_CREATED)
 def create_trip(payload: TripCreate, db: Session = Depends(get_db)) -> Trip:
     ensure_user_exists(db, payload.user_id)
