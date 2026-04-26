@@ -10,11 +10,13 @@ class UserCreate(BaseModel):
     firebase_uid: Optional[str] = None
     name: Optional[str] = None
     assistant_name: str = "Waylo"
+    active_vehicle_id: Optional[uuid.UUID] = None
 
 
 class UserUpdate(BaseModel):
     name: Optional[str] = None
     assistant_name: Optional[str] = None
+    active_vehicle_id: Optional[uuid.UUID] = None
 
 
 class UserRead(UserCreate):
@@ -100,6 +102,12 @@ class SavedPlanCreate(BaseModel):
     trip_mode: str = "Cheapest"
     notes: Optional[str] = None
     plan_payload: dict[str, Any] = Field(default_factory=dict)
+
+
+class SavedPlanUpdate(BaseModel):
+    title: Optional[str] = None
+    notes: Optional[str] = None
+    plan_payload: Optional[dict[str, Any]] = None
 
 
 class SavedPlanRead(SavedPlanCreate):

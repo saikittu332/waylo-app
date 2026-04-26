@@ -58,6 +58,13 @@ export function apiVehicleToApp(vehicle) {
   };
 }
 
+export function apiUserToApp(user) {
+  return {
+    ...user,
+    activeVehicleId: user.active_vehicle_id
+  };
+}
+
 export function appVehicleToApi(vehicle, userId) {
   return {
     user_id: userId,
@@ -243,6 +250,20 @@ export async function savePlan({ userId, tripId, route, vehicle, insights }) {
 export async function getSavedPlans(userId) {
   const plans = await request(`/saved-plans?user_id=${encodeURIComponent(userId)}`);
   return plans.map(apiSavedPlanToApp);
+}
+
+export async function updateSavedPlan(planId, payload) {
+  const plan = await request(`/saved-plans/${planId}`, {
+    body: JSON.stringify(payload),
+    method: "PATCH"
+  });
+  return apiSavedPlanToApp(plan);
+}
+
+export async function deleteSavedPlan(planId) {
+  await request(`/saved-plans/${planId}`, {
+    method: "DELETE"
+  });
 }
 
 export async function createSubscription(userId, premium) {

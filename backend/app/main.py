@@ -16,6 +16,7 @@ from app.schemas import (
     LoginResponse,
     SavedPlanCreate,
     SavedPlanRead,
+    SavedPlanUpdate,
     SubscriptionCreate,
     SubscriptionRead,
     TripCreate,
@@ -96,6 +97,8 @@ def update_user(user_id: uuid.UUID, payload: UserUpdate, db: Session = Depends(g
     user = db.get(User, user_id)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found.")
+    if payload.active_vehicle_id:
+        ensure_vehicle_exists(db, payload.active_vehicle_id)
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(user, key, value)
     db.commit()
@@ -193,6 +196,27 @@ def list_saved_plans(user_id: uuid.UUID = Query(), db: Session = Depends(get_db)
     ensure_user_exists(db, user_id)
     query = select(SavedPlan).where(SavedPlan.user_id == user_id).order_by(SavedPlan.created_at.desc())
     return list(db.scalars(query).all())
+
+
+@app.patch("/saved-plans/{saved_plan_id}", response_model=SavedPlanRead)
+def update_saved_plan(saved_plan_id: uuid.UUID, payload: SavedPlanUpdate, db: Session = Depends(get_db)) -> SavedPlan:
+    saved_plan = db.get(SavedPlan, saved_plan_id)
+    if saved_plan is None:
+        raise HTTPException(status_code=404, detail="Saved plan not found.")
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(saved_plan, key, value)
+    db.commit()
+    db.refresh(saved_plan)
+    return saved_plan
+
+
+@app.delete("/saved-plans/{saved_plan_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_saved_plan(saved_plan_id: uuid.UUID, db: Session = Depends(get_db)) -> None:
+    saved_plan = db.get(SavedPlan, saved_plan_id)
+    if saved_plan is None:
+        raise HTTPException(status_code=404, detail="Saved plan not found.")
+    db.delete(saved_plan)
+    db.commit()
 
 
 @app.post("/subscriptions", response_model=SubscriptionRead, status_code=status.HTTP_201_CREATED)

@@ -17,9 +17,10 @@ class User(Base):
     phone: Mapped[str] = mapped_column(String(32), unique=True, index=True)
     name: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
     assistant_name: Mapped[str] = mapped_column(String(80), default="Waylo")
+    active_vehicle_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("vehicles.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    vehicles: Mapped[list["Vehicle"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    vehicles: Mapped[list["Vehicle"]] = relationship(back_populates="user", cascade="all, delete-orphan", foreign_keys="Vehicle.user_id")
     trips: Mapped[list["Trip"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     saved_plans: Mapped[list["SavedPlan"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     subscriptions: Mapped[list["Subscription"]] = relationship(back_populates="user", cascade="all, delete-orphan")
@@ -37,7 +38,7 @@ class Vehicle(Base):
     tank_capacity_gallons: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    user: Mapped[User] = relationship(back_populates="vehicles")
+    user: Mapped[User] = relationship(back_populates="vehicles", foreign_keys=[user_id])
     trips: Mapped[list["Trip"]] = relationship(back_populates="vehicle")
 
 

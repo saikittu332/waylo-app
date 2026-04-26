@@ -10,6 +10,7 @@ import { colors, radii, screen, spacing } from "../constants/theme";
 import { mockTripRequest } from "../data/mockTrip";
 import { defaultVehicle } from "../data/mockVehicleSpecs";
 import { apiTripToCompletedTrip, deleteVehicle, getSavedPlans, getSubscription, getTrips, getVehicles, updateUser } from "../services/api";
+import { getCurrentLocationPlace } from "../services/locationService";
 import { CURRENT_LOCATION_PLACE, geocodeAddress, hasMapboxToken } from "../services/mapService";
 import { getSubscriptionState } from "../services/subscriptionService";
 import { routeMetaLabel, routeTitle } from "../utils/placeLabels";
@@ -80,7 +81,11 @@ export default function HomeScreen({ navigation, route }) {
         setPlannedTrips((current) => current.filter((item) => item.id !== route.params.completedTrip.savedPlanId));
         navigation.setParams({ completedTrip: undefined });
       }
-    }, [navigation, route.params?.assistantName, route.params?.completedTrip, route.params?.savedPlan, route.params?.user, route.params?.vehicle])
+      if (route.params?.deletedPlanId) {
+        setPlannedTrips((current) => current.filter((item) => item.id !== route.params.deletedPlanId));
+        navigation.setParams({ deletedPlanId: undefined });
+      }
+    }, [navigation, route.params?.assistantName, route.params?.completedTrip, route.params?.deletedPlanId, route.params?.savedPlan, route.params?.user, route.params?.vehicle])
   );
 
   useFocusEffect(
@@ -98,7 +103,7 @@ export default function HomeScreen({ navigation, route }) {
           if (!active) return;
           if (apiVehicles.length > 0) {
             setVehicles(apiVehicles);
-            setSelectedVehicle((current) => apiVehicles.find((item) => item.id === current?.id) || apiVehicles[0]);
+            setSelectedVehicle((current) => apiVehicles.find((item) => item.id === user?.active_vehicle_id) || apiVehicles.find((item) => item.id === current?.id) || apiVehicles[0]);
           }
           setPlannedTrips(apiPlans);
           setCompletedTrips(
@@ -215,6 +220,7 @@ export default function HomeScreen({ navigation, route }) {
 function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, from, setFrom, fromPlace, setFromPlace, to, setTo, toPlace, setToPlace, mode, setMode, showVehiclePicker, setShowVehiclePicker, setSelectedVehicle, plannedTrips, completedTrips }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [locationSearchState, setLocationSearchState] = useState({ from: false, to: false });
+  const [locating, setLocating] = useState(false);
   const popoverAnim = React.useRef(new Animated.Value(0)).current;
   const isSearchingLocations = locationSearchState.from || locationSearchState.to;
 
@@ -243,6 +249,32 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
         destinationPlace: toPlace
       }
     });
+  }
+
+  async function useCurrentLocation() {
+    setLocating(true);
+    try {
+      const place = await getCurrentLocationPlace();
+      setFrom("Current Location");
+      setFromPlace(place);
+    } catch (error) {
+      setFrom(error.message || "Location unavailable");
+      setFromPlace(CURRENT_LOCATION_PLACE);
+    } finally {
+      setLocating(false);
+    }
+  }
+
+  async function selectVehicleForTrip(item) {
+    setSelectedVehicle(item);
+    setShowVehiclePicker(false);
+    if (user?.id && item.id) {
+      try {
+        await updateUser(user.id, { active_vehicle_id: item.id });
+      } catch (error) {
+        console.warn("Waylo API active vehicle update unavailable:", error.message);
+      }
+    }
   }
 
   return (
@@ -298,6 +330,8 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
           onChangeText={setFrom}
           onSearchStateChange={(loading) => setLocationSearchState((current) => ({ ...current, from: loading }))}
           onSelectPlace={setFromPlace}
+          onUseCurrentLocation={useCurrentLocation}
+          locating={locating}
           pinColor="#367CFF"
           suggestions={locationSuggestions}
         />
@@ -338,8 +372,7 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
               <Pressable
                 key={item.vehicleName}
                 onPress={() => {
-                  setSelectedVehicle(item);
-                  setShowVehiclePicker(false);
+                  selectVehicleForTrip(item);
                 }}
                 style={styles.vehicleOption}
               >
@@ -441,7 +474,7 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
                   badge="Saved"
                   title={plan.title || routeTitle(plan.from, plan.to)}
                   date={routeMetaLabel(plan)}
-                  onPress={() => navigation.navigate("TripResults", { assistantName, user, vehicle, tripRequest: { from: plan.from, to: plan.to, mode: plan.mode } })}
+                  onPress={() => navigation.navigate("TripDetail", { plan, type: "ready" })}
                 />
                 {index < visiblePlans.length - 1 && <View style={styles.listDivider} />}
               </React.Fragment>
@@ -458,7 +491,7 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
                   badge="Done"
                   title={trip.title || routeTitle(trip.from, trip.to)}
                   date={routeMetaLabel(trip)}
-                  onPress={() => navigation.navigate("TripSummary", { tripPlan: trip.tripPlan, completedTrip: trip })}
+                  onPress={() => navigation.navigate("TripDetail", { completedTrip: trip, plan: trip, type: "completed" })}
                 />
                 {index < completedTrips.length - 1 && <View style={styles.listDivider} />}
               </React.Fragment>
@@ -829,7 +862,7 @@ function PlanLine({ label, included }) {
   );
 }
 
-function TripField({ label, value, onChangeText, onSelectPlace, onSearchStateChange, pinColor, suggestions = [] }) {
+function TripField({ label, value, onChangeText, onSelectPlace, onSearchStateChange, onUseCurrentLocation, locating, pinColor, suggestions = [] }) {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [remoteSuggestions, setRemoteSuggestions] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -899,6 +932,16 @@ function TripField({ label, value, onChangeText, onSelectPlace, onSearchStateCha
       </View>
       {showSuggestions && (
         <View style={styles.locationSuggestions}>
+          {onUseCurrentLocation && (
+            <Pressable onPress={onUseCurrentLocation} style={styles.locationSuggestion}>
+              <Ionicons color={colors.blue} name="locate-outline" size={16} />
+              <View style={styles.recentText}>
+                <Text style={styles.locationSuggestionText}>{locating ? "Finding your location..." : "Use my current location"}</Text>
+                <Text style={styles.locationSuggestionMeta}>Requires location permission in Expo Go</Text>
+              </View>
+            </Pressable>
+          )}
+          {onUseCurrentLocation && <View style={styles.listDivider} />}
           {isSearching && (
             <View style={styles.locationSuggestion}>
               <Ionicons color={colors.muted} name="sync-outline" size={16} />

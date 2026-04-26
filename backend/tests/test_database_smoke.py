@@ -84,6 +84,13 @@ def test_create_user_vehicle_trip_and_get_trips_by_user(client: TestClient) -> N
     assert vehicle["user_id"] == user["id"]
     assert vehicle["vehicle_name"] == "Toyota Camry 2021"
 
+    active_vehicle_response = client.patch(
+        f"/users/{user['id']}",
+        json={"active_vehicle_id": vehicle["id"]},
+    )
+    assert active_vehicle_response.status_code == 200
+    assert active_vehicle_response.json()["active_vehicle_id"] == vehicle["id"]
+
     vehicles_response = client.get("/vehicles", params={"user_id": user["id"]})
     assert vehicles_response.status_code == 200
     assert vehicles_response.json()[0]["id"] == vehicle["id"]
@@ -163,7 +170,18 @@ def test_create_user_vehicle_trip_and_get_trips_by_user(client: TestClient) -> N
         },
     )
     assert saved_plan_response.status_code == 201
+    saved_plan = saved_plan_response.json()
+
+    update_saved_plan_response = client.patch(
+        f"/saved-plans/{saved_plan['id']}",
+        json={"title": "SF to LA ready route"},
+    )
+    assert update_saved_plan_response.status_code == 200
+    assert update_saved_plan_response.json()["title"] == "SF to LA ready route"
 
     saved_plans_response = client.get("/saved-plans", params={"user_id": user["id"]})
     assert saved_plans_response.status_code == 200
     assert saved_plans_response.json()[0]["trip_id"] == trip["id"]
+
+    delete_saved_plan_response = client.delete(f"/saved-plans/{saved_plan['id']}")
+    assert delete_saved_plan_response.status_code == 204

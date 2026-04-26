@@ -9,6 +9,7 @@ import TripResultsScreen from "../screens/TripResultsScreen";
 import StopDetailsScreen from "../screens/StopDetailsScreen";
 import NavigationScreen from "../screens/NavigationScreen";
 import TripSummaryScreen from "../screens/TripSummaryScreen";
+import TripDetailScreen from "../screens/TripDetailScreen";
 import PaywallScreen from "../screens/PaywallScreen";
 import { colors } from "../constants/theme";
 
@@ -39,6 +40,7 @@ export default function AppNavigator() {
       <Stack.Screen name="StopDetails" component={StopDetailsScreen} options={{ title: "Stop Details" }} />
       <Stack.Screen name="Navigation" component={NavigationScreen} options={{ headerShown: false }} />
       <Stack.Screen name="TripSummary" component={TripSummaryScreen} options={{ title: "Trip Summary" }} />
+      <Stack.Screen name="TripDetail" component={TripDetailScreen} options={{ title: "Trip Details" }} />
       <Stack.Screen name="Paywall" component={PaywallScreen} options={{ title: "Waylo Premium" }} />
     </Stack.Navigator>
   );
