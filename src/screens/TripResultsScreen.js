@@ -4,9 +4,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import InsightCard from "../components/InsightCard";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
+import RoutePreviewMap from "../components/RoutePreviewMap";
 import StatItem from "../components/StatItem";
 import StopCard from "../components/StopCard";
-import { colors, radii, screen, shadows, spacing } from "../constants/theme";
+import { colors, screen, spacing } from "../constants/theme";
 import { defaultVehicle } from "../data/mockVehicleSpecs";
 import { apiSavedPlanToApp, savePlan, planTrip } from "../services/api";
 import { getSubscriptionState } from "../services/subscriptionService";
@@ -18,12 +19,26 @@ export default function TripResultsScreen({ navigation, route }) {
   const vehicle = route.params?.vehicle || defaultVehicle;
   const tripRequest = route.params?.tripRequest;
   const [tripPlan, setTripPlan] = useState(null);
+  const [routeError, setRouteError] = useState("");
+  const [loadingRoute, setLoadingRoute] = useState(true);
   const [stopDecisions, setStopDecisions] = useState({});
   const subscription = getSubscriptionState();
 
   useEffect(() => {
-    planTrip({ ...tripRequest, vehicle, user }).then(setTripPlan);
+    loadTripPlan();
   }, [tripRequest, user, vehicle]);
+
+  function loadTripPlan() {
+    setLoadingRoute(true);
+    setRouteError("");
+    planTrip({ ...tripRequest, vehicle, user })
+      .then(setTripPlan)
+      .catch((error) => {
+        setTripPlan(null);
+        setRouteError(error.message || "Waylo could not build this route preview.");
+      })
+      .finally(() => setLoadingRoute(false));
+  }
 
   useEffect(() => {
     const decision = route.params?.stopDecision;
@@ -32,10 +47,25 @@ export default function TripResultsScreen({ navigation, route }) {
     }
   }, [route.params?.stopDecision]);
 
-  if (!tripPlan) {
+  if (loadingRoute) {
     return (
       <SafeAreaView style={styles.safe}>
         <Text style={styles.loading}>Building your smart trip plan...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (routeError) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.errorWrap}>
+          <PremiumCard style={styles.errorCard}>
+            <Text style={styles.errorTitle}>Route preview unavailable</Text>
+            <Text style={styles.errorCopy}>{routeError}</Text>
+            <PrimaryButton title="Retry Route" onPress={loadTripPlan} />
+            <PrimaryButton title="Back to Trip Input" variant="secondary" onPress={() => navigation.goBack()} />
+          </PremiumCard>
+        </View>
       </SafeAreaView>
     );
   }
@@ -81,13 +111,11 @@ export default function TripResultsScreen({ navigation, route }) {
           <Text style={styles.routeMeta}>Mode: {plannedRoute.mode} | Est. Time: {formatHours(plannedRoute.durationHours)}</Text>
         </PremiumCard>
 
-        <View style={styles.mapCard}>
-          <View style={styles.mapLand} />
-          <View style={styles.routePath} />
-          <MapPin label="San Francisco" style={styles.pinStart} color={colors.green} />
-          <MapPin label="Fresno" style={styles.pinMiddle} color={colors.orange} />
-          <MapPin label={destination.replace(", CA", "")} style={styles.pinEnd} color={colors.red} />
-        </View>
+        <RoutePreviewMap
+          destinationLabel={destination.replace(", CA", "")}
+          originLabel={plannedRoute.from === "Current Location" ? "San Francisco" : plannedRoute.from}
+          route={plannedRoute}
+        />
 
         <PremiumCard style={styles.planCard}>
           <Text style={styles.planTitle}>AI Trip Plan <Text style={styles.premiumText}>({subscription.planName})</Text></Text>
@@ -139,15 +167,6 @@ export default function TripResultsScreen({ navigation, route }) {
   );
 }
 
-function MapPin({ label, color, style }) {
-  return (
-    <View style={[styles.mapPinWrap, style]}>
-      <View style={[styles.mapPin, { backgroundColor: color }]} />
-      <Text style={styles.mapPinText}>{label}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   safe: {
     backgroundColor: colors.appBackground,
@@ -167,6 +186,26 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     margin: spacing.lg
   },
+  errorWrap: {
+    alignSelf: "center",
+    maxWidth: screen.maxWidth,
+    padding: screen.padding,
+    width: "100%"
+  },
+  errorCard: {
+    gap: spacing.md
+  },
+  errorTitle: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: "800"
+  },
+  errorCopy: {
+    color: colors.muted,
+    fontSize: 14,
+    fontWeight: "600",
+    lineHeight: 20
+  },
   headerCard: {
     alignItems: "center",
     paddingVertical: spacing.md
@@ -181,62 +220,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     marginTop: 4
-  },
-  mapCard: {
-    backgroundColor: colors.mapBlue,
-    borderRadius: radii.xl,
-    height: 420,
-    overflow: "hidden",
-    ...shadows.card
-  },
-  mapLand: {
-    backgroundColor: colors.mapGreen,
-    borderRadius: 220,
-    height: 450,
-    left: -70,
-    position: "absolute",
-    top: -10,
-    transform: [{ rotate: "-16deg" }],
-    width: 310
-  },
-  routePath: {
-    borderColor: "#2F80ED",
-    borderRadius: 120,
-    borderWidth: 7,
-    height: 285,
-    left: 118,
-    position: "absolute",
-    top: 82,
-    transform: [{ rotate: "-24deg" }],
-    width: 105
-  },
-  mapPinWrap: {
-    position: "absolute"
-  },
-  mapPin: {
-    borderColor: colors.surface,
-    borderRadius: radii.pill,
-    borderWidth: 3,
-    height: 28,
-    width: 28
-  },
-  mapPinText: {
-    color: colors.navy,
-    fontSize: 11,
-    fontWeight: "800",
-    marginTop: 2
-  },
-  pinStart: {
-    left: 45,
-    top: 86
-  },
-  pinMiddle: {
-    left: 130,
-    top: 205
-  },
-  pinEnd: {
-    bottom: 62,
-    right: 44
   },
   planCard: {
     alignSelf: "flex-end",

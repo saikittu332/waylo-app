@@ -8,10 +8,11 @@ Tagline: Drive smart. Spend less.
 
 - Onboarding, phone OTP placeholder, assistant naming, vehicle setup, trip input, AI trip results, stop details, navigation mode, trip summary, and paywall screens.
 - Mock Firebase phone auth service.
-- Mock Mapbox route preview through a map service abstraction that can later support Google Maps.
+- Real Mapbox Geocoding and Directions API route preview through a map service abstraction that can later support Google Maps.
 - Mock subscription logic isolated for future Stripe integration.
 - Rule-based trip intelligence for fuel range, safe range, rest stops, fuel cost, and estimated savings.
-- Mock map visuals and AI stop recommendations until Mapbox and AI planning are integrated.
+- Native Mapbox map rendering when running a custom development build, with a styled fallback map card for Expo Go and web.
+- Mock AI stop recommendations until fuel, places, and AI planning services are integrated.
 - Real FastAPI persistence for users, vehicles, trips, saved plans, and subscriptions when the backend is running.
 
 ## Run locally
@@ -22,6 +23,47 @@ npx expo start
 ```
 
 Then open the Expo app on a simulator, emulator, physical device, or web target.
+
+## Mapbox route previews
+
+Waylo uses Mapbox for real address suggestions and route preview distance/duration. Add your public Mapbox token before starting Expo:
+
+```text
+EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN=pk.your_public_token_here
+```
+
+Windows PowerShell example:
+
+```powershell
+$env:EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN="pk.your_public_token_here"
+npx expo start
+```
+
+If you are also testing against the local backend from a physical phone, set both environment variables:
+
+```powershell
+$env:EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN="pk.your_public_token_here"
+$env:EXPO_PUBLIC_WAYLO_API_URL="http://YOUR_COMPUTER_IP:8000"
+npx expo start
+```
+
+What works in Expo Go:
+
+- Mapbox Geocoding API location suggestions.
+- Mapbox Directions API route distance and duration.
+- Waylo fuel range, safe range, fuel cost, rest stop, and savings calculations using real route distance.
+- Styled fallback route preview card.
+
+What requires a custom development build:
+
+- Native `@rnmapbox/maps` map rendering and route polyline drawing.
+
+`@rnmapbox/maps` is configured as an Expo config plugin in `app.json`. Because it contains native code, stock Expo Go cannot render the native Mapbox map. Use an EAS development build when Apple Developer access is available:
+
+```powershell
+npx eas build --profile development --platform ios
+npm run start:dev-client
+```
 
 ## Firebase Phone Auth
 
@@ -105,11 +147,11 @@ $env:EXPO_PUBLIC_WAYLO_API_URL="http://192.168.1.25:8000"
 npx expo start
 ```
 
-The backend currently includes User, Vehicle, Trip, SavedPlan, and Subscription models plus API endpoints used by the MVP app. Stripe, Mapbox, Firebase, and AI planning are intentionally not integrated yet.
+The backend currently includes User, Vehicle, Trip, SavedPlan, and Subscription models plus API endpoints used by the MVP app. Trip planning now persists Mapbox-backed route distance and duration when the frontend has a valid Mapbox token. Stripe, full Firebase phone auth in Expo Go, turn-by-turn navigation, fuel price APIs, and AI planning are intentionally not integrated yet.
 
 ## Future integration points
 
 - `src/services/authService.js`: replace the mock phone OTP flow with Firebase Phone Auth.
-- `src/services/mapService.js`: connect Mapbox Directions and rendering, or add Google Maps behind the same service contract.
+- `src/services/mapService.js`: Mapbox Geocoding/Directions live here; add Google Maps behind the same service contract later.
 - `src/services/api.js`: keep expanding FastAPI integration beyond persistence into real planning once AI and map services exist.
 - `src/services/subscriptionService.js`: replace mock premium state with Stripe-backed entitlements.

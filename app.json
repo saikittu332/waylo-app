@@ -24,7 +24,8 @@
     },
     "plugins": [
       "@react-native-firebase/app",
-      "@react-native-firebase/auth"
+      "@react-native-firebase/auth",
+      "@rnmapbox/maps"
     ],
     "web": {
       "bundler": "metro"

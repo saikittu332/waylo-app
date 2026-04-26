@@ -1,6 +1,6 @@
 import { Platform } from "react-native";
 import { mockRoute, mockStops, mockTripRequest } from "../data/mockTrip";
-import { getRoutePreview } from "./mapService";
+import { CURRENT_LOCATION_PLACE, geocodeAddress, getRoutePreview } from "./mapService";
 import { getVisibleStops } from "./subscriptionService";
 import {
   calculateRange,
@@ -169,7 +169,10 @@ export async function savePlan({ userId, tripId, route, vehicle, insights }) {
         distanceMiles: route.distanceMiles,
         durationHours: route.durationHours,
         estimatedFuelCost: insights.estimatedFuelCost,
-        estimatedSavings: insights.estimatedSavings
+        estimatedSavings: insights.estimatedSavings,
+        mapProvider: route.map?.provider,
+        routeSummary: route.map?.summary,
+        routeGeometry: route.map?.geometry || null
       }
     }),
     method: "POST"
@@ -203,10 +206,23 @@ export async function getSubscription(userId) {
   };
 }
 
-export async function planTrip({ from, to, mode, vehicle, user }) {
-  const destination = to || mockTripRequest.to;
-  const routeDistance = destination.toLowerCase().includes("angeles") ? 383 : mockRoute.distanceMiles;
-  const routeDuration = destination.toLowerCase().includes("angeles") ? 6.75 : mockRoute.durationHours;
+async function resolvePlace(label, selectedPlace) {
+  if (selectedPlace?.coordinates) return selectedPlace;
+  const text = label || "Current Location";
+  if (text.toLowerCase() === "current location") return CURRENT_LOCATION_PLACE;
+  const matches = await geocodeAddress(text);
+  if (!matches.length) {
+    throw new Error(`Waylo could not find "${text}". Try a city, address, or landmark.`);
+  }
+  return matches[0];
+}
+
+export async function planTrip({ from, to, mode, vehicle, user, originPlace, destinationPlace }) {
+  const origin = await resolvePlace(from || mockTripRequest.from, originPlace);
+  const destination = await resolvePlace(to || mockTripRequest.to, destinationPlace);
+  const routePreview = await getRoutePreview(origin.coordinates, destination.coordinates, mode || "driving");
+  const routeDistance = routePreview.distanceMiles;
+  const routeDuration = routePreview.durationHours;
   const range = calculateRange(vehicle.highwayMpg, vehicle.tankCapacity);
   const safeRange = calculateSafeRange(range);
   const fuelStops = generateFuelStops(routeDistance, safeRange);
@@ -223,10 +239,12 @@ export async function planTrip({ from, to, mode, vehicle, user }) {
     ...mockRoute,
     distanceMiles: routeDistance,
     durationHours: routeDuration,
-    from: from || mockTripRequest.from,
-    to: destination,
+    from: origin.label,
+    to: destination.label,
     mode: mode || mockTripRequest.mode,
-    map: getRoutePreview()
+    origin,
+    destination,
+    map: routePreview
   };
 
   const insights = {

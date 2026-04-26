@@ -10,18 +10,17 @@ import { colors, radii, screen, spacing } from "../constants/theme";
 import { mockTripRequest } from "../data/mockTrip";
 import { defaultVehicle } from "../data/mockVehicleSpecs";
 import { deleteVehicle, getSavedPlans, getSubscription, getVehicles, updateUser } from "../services/api";
+import { CURRENT_LOCATION_PLACE, geocodeAddress, hasMapboxToken } from "../services/mapService";
 import { getSubscriptionState } from "../services/subscriptionService";
 
 const modes = ["Fastest", "Cheapest", "Scenic", "Comfort"];
 const locationSuggestions = [
-  "Current Location",
-  "San Francisco, CA",
-  "Los Angeles, CA",
-  "Yosemite, CA",
-  "Las Vegas, NV",
-  "Grand Canyon, AZ",
-  "Denver, CO",
-  "Portland, OR"
+  CURRENT_LOCATION_PLACE,
+  { id: "sf-fallback", label: "San Francisco, CA", coordinates: [-122.4194, 37.7749] },
+  { id: "la-fallback", label: "Los Angeles, CA", coordinates: [-118.2437, 34.0522] },
+  { id: "yosemite-fallback", label: "Yosemite, CA", coordinates: [-119.5383, 37.8651] },
+  { id: "vegas-fallback", label: "Las Vegas, NV", coordinates: [-115.1398, 36.1699] },
+  { id: "grand-canyon-fallback", label: "Grand Canyon, AZ", coordinates: [-112.1401, 36.0544] }
 ];
 const tabs = [
   { label: "Home", icon: "home" },
@@ -44,6 +43,8 @@ export default function HomeScreen({ navigation, route }) {
   const [activeTab, setActiveTab] = useState("Home");
   const [from, setFrom] = useState("Current Location");
   const [to, setTo] = useState(mockTripRequest.to);
+  const [fromPlace, setFromPlace] = useState(CURRENT_LOCATION_PLACE);
+  const [toPlace, setToPlace] = useState(null);
   const [mode, setMode] = useState(mockTripRequest.mode);
   const [vehicles, setVehicles] = useState(initialVehicles);
   const [selectedVehicle, setSelectedVehicle] = useState(vehicle);
@@ -118,8 +119,12 @@ export default function HomeScreen({ navigation, route }) {
             navigation={navigation}
             from={from}
             setFrom={setFrom}
+            fromPlace={fromPlace}
+            setFromPlace={setFromPlace}
             to={to}
             setTo={setTo}
+            toPlace={toPlace}
+            setToPlace={setToPlace}
             mode={mode}
             setMode={setMode}
             showVehiclePicker={showVehiclePicker}
@@ -183,9 +188,11 @@ export default function HomeScreen({ navigation, route }) {
   );
 }
 
-function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, from, setFrom, to, setTo, mode, setMode, showVehiclePicker, setShowVehiclePicker, setSelectedVehicle, plannedTrips }) {
+function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, from, setFrom, fromPlace, setFromPlace, to, setTo, toPlace, setToPlace, mode, setMode, showVehiclePicker, setShowVehiclePicker, setSelectedVehicle, plannedTrips }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [locationSearchState, setLocationSearchState] = useState({ from: false, to: false });
   const popoverAnim = React.useRef(new Animated.Value(0)).current;
+  const isSearchingLocations = locationSearchState.from || locationSearchState.to;
 
   React.useEffect(() => {
     if (notificationsOpen) {
@@ -200,7 +207,18 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
 
   function continuePlan() {
     setShowVehiclePicker(false);
-    navigation.navigate("TripResults", { assistantName, user, vehicle, tripRequest: { from, to, mode } });
+    navigation.navigate("TripResults", {
+      assistantName,
+      user,
+      vehicle,
+      tripRequest: {
+        from,
+        to,
+        mode,
+        originPlace: fromPlace,
+        destinationPlace: toPlace
+      }
+    });
   }
 
   return (
@@ -250,8 +268,24 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
       </View>
       <PremiumCard style={styles.tripCard}>
         <Text style={styles.cardTitle}>Plan Your Trip</Text>
-        <TripField label="From" value={from} onChangeText={setFrom} pinColor="#367CFF" suggestions={locationSuggestions} />
-        <TripField label="To" value={to} onChangeText={setTo} pinColor={colors.red} suggestions={locationSuggestions.filter((item) => item !== "Current Location")} />
+        <TripField
+          label="From"
+          value={from}
+          onChangeText={setFrom}
+          onSearchStateChange={(loading) => setLocationSearchState((current) => ({ ...current, from: loading }))}
+          onSelectPlace={setFromPlace}
+          pinColor="#367CFF"
+          suggestions={locationSuggestions}
+        />
+        <TripField
+          label="To"
+          value={to}
+          onChangeText={setTo}
+          onSearchStateChange={(loading) => setLocationSearchState((current) => ({ ...current, to: loading }))}
+          onSelectPlace={setToPlace}
+          pinColor={colors.red}
+          suggestions={locationSuggestions.filter((item) => item.id !== CURRENT_LOCATION_PLACE.id)}
+        />
         <Text style={styles.label}>Trip Mode</Text>
         <View style={styles.modes}>
           {modes.map((item) => (
@@ -299,7 +333,8 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
           </View>
         )}
         <PrimaryButton
-          title="Plan Smart Trip"
+          disabled={isSearchingLocations}
+          title={isSearchingLocations ? "Searching locations..." : "Plan Smart Trip"}
           onPress={continuePlan}
         />
       </PremiumCard>
@@ -710,11 +745,54 @@ function PlanLine({ label, included }) {
   );
 }
 
-function TripField({ label, value, onChangeText, pinColor, suggestions = [] }) {
+function TripField({ label, value, onChangeText, onSelectPlace, onSearchStateChange, pinColor, suggestions = [] }) {
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const filteredSuggestions = suggestions
-    .filter((item) => item.toLowerCase().includes(value.trim().toLowerCase()))
+  const [remoteSuggestions, setRemoteSuggestions] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const trimmedValue = value.trim();
+  const fallbackSuggestions = suggestions
+    .filter((item) => item.label.toLowerCase().includes(trimmedValue.toLowerCase()))
     .slice(0, 4);
+  const visibleSuggestions = hasMapboxToken() && trimmedValue.length >= 2 ? remoteSuggestions : fallbackSuggestions;
+
+  React.useEffect(() => {
+    if (!showSuggestions || trimmedValue.length < 2 || trimmedValue.toLowerCase() === "current location") {
+      setRemoteSuggestions([]);
+      setSearchError("");
+      setIsSearching(false);
+      onSearchStateChange?.(false);
+      return undefined;
+    }
+
+    let active = true;
+    setIsSearching(true);
+    setSearchError("");
+    onSearchStateChange?.(true);
+    const timer = setTimeout(() => {
+      geocodeAddress(trimmedValue)
+        .then((places) => {
+          if (!active) return;
+          setRemoteSuggestions(places);
+        })
+        .catch((error) => {
+          if (!active) return;
+          setRemoteSuggestions([]);
+          setSearchError(error.code === "MAPBOX_TOKEN_MISSING" ? "Add a Mapbox token to search real places." : "Could not search locations right now.");
+        })
+        .finally(() => {
+          if (!active) return;
+          setIsSearching(false);
+          onSearchStateChange?.(false);
+        });
+    }, 350);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+      onSearchStateChange?.(false);
+    };
+  }, [showSuggestions, trimmedValue]);
 
   return (
     <View style={styles.tripFieldWrap}>
@@ -726,6 +804,7 @@ function TripField({ label, value, onChangeText, pinColor, suggestions = [] }) {
           value={value}
           onChangeText={(text) => {
             onChangeText(text);
+            onSelectPlace?.(null);
             setShowSuggestions(true);
           }}
           style={styles.input}
@@ -734,21 +813,37 @@ function TripField({ label, value, onChangeText, pinColor, suggestions = [] }) {
           <Ionicons color={colors.navy} name={showSuggestions ? "chevron-up" : "add"} size={18} />
         </Pressable>
       </View>
-      {showSuggestions && filteredSuggestions.length > 0 && (
+      {showSuggestions && (
         <View style={styles.locationSuggestions}>
-          {filteredSuggestions.map((item) => (
+          {isSearching && (
+            <View style={styles.locationSuggestion}>
+              <Ionicons color={colors.muted} name="sync-outline" size={16} />
+              <Text style={styles.locationSuggestionText}>Searching Mapbox...</Text>
+            </View>
+          )}
+          {!isSearching && visibleSuggestions.map((item) => (
             <Pressable
-              key={`${label}-${item}`}
+              key={`${label}-${item.id || item.label}`}
               onPress={() => {
-                onChangeText(item);
+                onChangeText(item.label);
+                onSelectPlace?.(item);
                 setShowSuggestions(false);
               }}
               style={styles.locationSuggestion}
             >
-              <Ionicons color={pinColor} name={item === "Current Location" ? "navigate-outline" : "location-outline"} size={16} />
-              <Text style={styles.locationSuggestionText}>{item}</Text>
+              <Ionicons color={pinColor} name={item.id === "current-location" ? "navigate-outline" : "location-outline"} size={16} />
+              <View style={styles.recentText}>
+                <Text style={styles.locationSuggestionText}>{item.label}</Text>
+                {!!item.address && item.address !== item.label && <Text style={styles.locationSuggestionMeta}>{item.address}</Text>}
+              </View>
             </Pressable>
           ))}
+          {!isSearching && visibleSuggestions.length === 0 && (
+            <View style={styles.locationSuggestion}>
+              <Ionicons color={colors.muted} name="information-circle-outline" size={16} />
+              <Text style={styles.locationSuggestionText}>{searchError || "No matching places found."}</Text>
+            </View>
+          )}
         </View>
       )}
     </View>
@@ -1027,6 +1122,12 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     fontWeight: "700"
+  },
+  locationSuggestionMeta: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "600",
+    marginTop: 2
   },
   pin: {
     borderRadius: radii.pill,
