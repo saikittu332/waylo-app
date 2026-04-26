@@ -66,6 +66,7 @@ def test_create_user_vehicle_trip_and_get_trips_by_user(client: TestClient) -> N
     assert user_response.status_code == 201
     user = user_response.json()
     assert user["phone"] == unique_phone
+    assert user["firebase_uid"] is None
 
     vehicle_response = client.post(
         "/vehicles",

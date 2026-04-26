@@ -34,6 +34,14 @@ Bundle ID: com.saikittu332.waylo
 Config file: ./GoogleService-Info.plist
 ```
 
+Backend Firebase Admin verification expects a local service account JSON at:
+
+```text
+backend/firebase-service-account.json
+```
+
+Do not commit that JSON file. It is ignored by git.
+
 Create an iOS development build:
 
 ```powershell

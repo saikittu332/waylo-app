@@ -36,6 +36,18 @@ copy .env.example .env
 postgresql+psycopg://postgres:postgres@localhost:5432/waylo
 ```
 
+For Firebase token verification, place the Firebase Admin SDK service account JSON at:
+
+```text
+backend/firebase-service-account.json
+```
+
+That file is intentionally ignored by git. If you keep it somewhere else, update:
+
+```text
+FIREBASE_SERVICE_ACCOUNT_PATH=./firebase-service-account.json
+```
+
 Run Alembic migrations:
 
 ```bash
@@ -86,6 +98,8 @@ The initial Alembic migration creates all current persistence tables:
 - `trips`
 - `saved_plans`
 - `subscriptions`
+
+`users` also stores a nullable `firebase_uid` so existing local users can be linked after Firebase login.
 
 ## Current Scope
 

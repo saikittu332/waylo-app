@@ -88,6 +88,13 @@ export async function loginWithPhone(phone) {
   });
 }
 
+export async function loginWithFirebaseToken(idToken) {
+  return request("/auth/firebase-login", {
+    body: JSON.stringify({ id_token: idToken }),
+    method: "POST"
+  });
+}
+
 export async function updateUser(userId, payload) {
   return request(`/users/${userId}`, {
     body: JSON.stringify(payload),

@@ -8,8 +8,10 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
+from app.firebase_auth import verify_firebase_id_token
 from app.models import SavedPlan, Subscription, Trip, User, Vehicle
 from app.schemas import (
+    FirebaseLoginRequest,
     LoginRequest,
     LoginResponse,
     SavedPlanCreate,
@@ -45,6 +47,34 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> LoginResponse
 
     # Placeholder token until Firebase/JWT auth is integrated.
     return LoginResponse(access_token=f"mock-token-{user.id}", user=user)
+
+
+@app.post("/auth/firebase-login", response_model=LoginResponse)
+def firebase_login(payload: FirebaseLoginRequest, db: Session = Depends(get_db)) -> LoginResponse:
+    try:
+        decoded_token = verify_firebase_id_token(payload.id_token)
+    except Exception as exc:
+        raise HTTPException(status_code=401, detail="Invalid Firebase ID token.") from exc
+
+    firebase_uid = decoded_token.get("uid")
+    phone = decoded_token.get("phone_number")
+    if not firebase_uid or not phone:
+        raise HTTPException(status_code=401, detail="Firebase token is missing uid or phone number.")
+
+    user = db.scalar(select(User).where(User.firebase_uid == firebase_uid))
+    if user is None:
+        user = db.scalar(select(User).where(User.phone == phone))
+
+    if user is None:
+        user = User(phone=phone, firebase_uid=firebase_uid, assistant_name="Waylo")
+        db.add(user)
+    else:
+        user.firebase_uid = firebase_uid
+        user.phone = phone
+
+    db.commit()
+    db.refresh(user)
+    return LoginResponse(access_token=payload.id_token, token_type="firebase", user=user)
 
 
 @app.post("/users", response_model=UserRead, status_code=status.HTTP_201_CREATED)

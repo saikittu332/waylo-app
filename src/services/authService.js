@@ -1,4 +1,4 @@
-import { loginWithPhone } from "./api";
+import { loginWithFirebaseToken, loginWithPhone } from "./api";
 
 function getNativeFirebaseAuth() {
   try {
@@ -26,7 +26,9 @@ export async function sendPhoneOtp(phoneNumber) {
 export async function verifyOtp(confirmation, code) {
   if (confirmation?.confirm) {
     const credential = await confirmation.confirm(code);
+    const idToken = await credential.user.getIdToken();
     return {
+      idToken,
       uid: credential.user.uid,
       phoneNumber: credential.user.phoneNumber
     };
@@ -43,6 +45,9 @@ export async function verifyOtp(confirmation, code) {
 
 export async function completePhoneLogin(phoneNumber, firebaseUser) {
   try {
+    if (firebaseUser?.idToken) {
+      return await loginWithFirebaseToken(firebaseUser.idToken);
+    }
     return await loginWithPhone(firebaseUser?.phoneNumber || phoneNumber);
   } catch (error) {
     console.warn("Waylo API login unavailable:", error.message);

@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class UserCreate(BaseModel):
     phone: str = Field(min_length=7, max_length=32)
+    firebase_uid: Optional[str] = None
     name: Optional[str] = None
     assistant_name: str = "Waylo"
 
@@ -26,6 +27,10 @@ class UserRead(UserCreate):
 class LoginRequest(BaseModel):
     phone: str
     otp_code: Optional[str] = None
+
+
+class FirebaseLoginRequest(BaseModel):
+    id_token: str
 
 
 class LoginResponse(BaseModel):

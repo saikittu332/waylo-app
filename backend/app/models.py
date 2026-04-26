@@ -13,6 +13,7 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    firebase_uid: Mapped[Optional[str]] = mapped_column(String(128), unique=True, index=True, nullable=True)
     phone: Mapped[str] = mapped_column(String(32), unique=True, index=True)
     name: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
     assistant_name: Mapped[str] = mapped_column(String(80), default="Waylo")
