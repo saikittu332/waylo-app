@@ -11,6 +11,7 @@ import {
   generateFuelStops,
   generateRestStops
 } from "../utils/tripCalculator";
+import { routeTitle } from "../utils/placeLabels";
 
 const DEFAULT_API_URL = Platform.OS === "android" ? "http://10.0.2.2:8000" : "http://127.0.0.1:8000";
 export const API_BASE_URL = process.env.EXPO_PUBLIC_WAYLO_API_URL || DEFAULT_API_URL;
@@ -69,14 +70,20 @@ export function appVehicleToApi(vehicle, userId) {
 }
 
 export function apiSavedPlanToApp(plan) {
+  const payload = plan.plan_payload || {};
   return {
     id: plan.id,
     tripId: plan.trip_id,
-    title: plan.title,
+    title: payload.title || routeTitle(plan.origin, plan.destination),
     from: plan.origin,
     to: plan.destination,
     mode: plan.trip_mode,
-    vehicleName: plan.plan_payload?.vehicleName || "Saved vehicle",
+    vehicleName: payload.vehicleName || "Saved vehicle",
+    distanceMiles: payload.distanceMiles,
+    durationHours: payload.durationHours,
+    estimatedFuelCost: payload.estimatedFuelCost,
+    estimatedSavings: payload.estimatedSavings,
+    routePayload: payload.route || null,
     savedAt: "Saved in Waylo"
   };
 }
@@ -159,17 +166,26 @@ export async function savePlan({ userId, tripId, route, vehicle, insights }) {
     body: JSON.stringify({
       user_id: userId,
       trip_id: tripId || null,
-      title: `${route.from} -> ${route.to}`,
+      title: routeTitle(route.from, route.to),
       origin: route.from,
       destination: route.to,
       trip_mode: route.mode,
       notes: "Saved from the Waylo mobile app",
       plan_payload: {
+        title: routeTitle(route.from, route.to),
         vehicleName: vehicle.vehicleName,
         distanceMiles: route.distanceMiles,
         durationHours: route.durationHours,
         estimatedFuelCost: insights.estimatedFuelCost,
         estimatedSavings: insights.estimatedSavings,
+        route: {
+          from: route.from,
+          to: route.to,
+          mode: route.mode,
+          distanceMiles: route.distanceMiles,
+          durationHours: route.durationHours,
+          map: route.map || null
+        },
         mapProvider: route.map?.provider,
         routeSummary: route.map?.summary,
         routeGeometry: route.map?.geometry || null

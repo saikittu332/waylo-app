@@ -35,7 +35,7 @@ export default function AppNavigator() {
         options={{ headerShown: false, gestureEnabled: false }}
       />
       <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="TripResults" component={TripResultsScreen} options={{ title: "AI Trip Plan" }} />
+      <Stack.Screen name="TripResults" component={TripResultsScreen} options={{ title: "Smart Trip Plan" }} />
       <Stack.Screen name="StopDetails" component={StopDetailsScreen} options={{ title: "Stop Details" }} />
       <Stack.Screen name="Navigation" component={NavigationScreen} options={{ headerShown: false }} />
       <Stack.Screen name="TripSummary" component={TripSummaryScreen} options={{ title: "Trip Summary" }} />

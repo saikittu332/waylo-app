@@ -12,6 +12,7 @@ import { defaultVehicle } from "../data/mockVehicleSpecs";
 import { deleteVehicle, getSavedPlans, getSubscription, getVehicles, updateUser } from "../services/api";
 import { CURRENT_LOCATION_PLACE, geocodeAddress, hasMapboxToken } from "../services/mapService";
 import { getSubscriptionState } from "../services/subscriptionService";
+import { routeMetaLabel, routeTitle } from "../utils/placeLabels";
 
 const modes = ["Fastest", "Cheapest", "Scenic", "Comfort"];
 const locationSuggestions = [
@@ -30,11 +31,6 @@ const tabs = [
   { label: "Profile", icon: "person" }
 ];
 
-const completedTrips = [
-  { id: "past-yosemite", title: "San Francisco -> Yosemite", date: "May 20, 2024", from: "San Francisco", to: "Yosemite, CA", mode: "Scenic" },
-  { id: "past-grand-canyon", title: "Las Vegas -> Grand Canyon", date: "May 18, 2024", from: "Las Vegas", to: "Grand Canyon, AZ", mode: "Comfort" }
-];
-
 export default function HomeScreen({ navigation, route }) {
   const [user, setUser] = useState(route.params?.user || null);
   const [assistantName, setAssistantName] = useState(route.params?.assistantName || "Waylo");
@@ -51,6 +47,7 @@ export default function HomeScreen({ navigation, route }) {
   const [showVehiclePicker, setShowVehiclePicker] = useState(false);
   const [subscription, setSubscription] = useState(getSubscriptionState());
   const [plannedTrips, setPlannedTrips] = useState([]);
+  const [completedTrips, setCompletedTrips] = useState([]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -75,7 +72,15 @@ export default function HomeScreen({ navigation, route }) {
         });
         navigation.setParams({ savedPlan: undefined });
       }
-    }, [navigation, route.params?.assistantName, route.params?.savedPlan, route.params?.user, route.params?.vehicle])
+      if (route.params?.completedTrip) {
+        setCompletedTrips((current) => {
+          const exists = current.some((item) => item.id === route.params.completedTrip.id);
+          return exists ? current.map((item) => (item.id === route.params.completedTrip.id ? route.params.completedTrip : item)) : [route.params.completedTrip, ...current];
+        });
+        setPlannedTrips((current) => current.filter((item) => item.id !== route.params.completedTrip.savedPlanId));
+        navigation.setParams({ completedTrip: undefined });
+      }
+    }, [navigation, route.params?.assistantName, route.params?.completedTrip, route.params?.savedPlan, route.params?.user, route.params?.vehicle])
   );
 
   useFocusEffect(
@@ -131,6 +136,7 @@ export default function HomeScreen({ navigation, route }) {
             setShowVehiclePicker={setShowVehiclePicker}
             setSelectedVehicle={setSelectedVehicle}
             plannedTrips={plannedTrips}
+            completedTrips={completedTrips}
           />
         )}
         {activeTab === "Trips" && (
@@ -143,6 +149,7 @@ export default function HomeScreen({ navigation, route }) {
             to={to}
             mode={mode}
             plannedTrips={plannedTrips}
+            completedTrips={completedTrips}
           />
         )}
         {activeTab === "Navigate" && (
@@ -165,7 +172,18 @@ export default function HomeScreen({ navigation, route }) {
             navigation={navigation}
           />
         )}
-        {activeTab === "Profile" && <ProfileContent assistantName={assistantName} setAssistantName={setAssistantName} user={user} setUser={setUser} navigation={navigation} subscription={subscription} setSubscription={setSubscription} />}
+        {activeTab === "Profile" && (
+          <ProfileContent
+            assistantName={assistantName}
+            setAssistantName={setAssistantName}
+            user={user}
+            setUser={setUser}
+            navigation={navigation}
+            subscription={subscription}
+            setSubscription={setSubscription}
+            tripCount={plannedTrips.length + completedTrips.length}
+          />
+        )}
       </ScrollView>
 
       <View style={styles.tabBar}>
@@ -188,7 +206,7 @@ export default function HomeScreen({ navigation, route }) {
   );
 }
 
-function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, from, setFrom, fromPlace, setFromPlace, to, setTo, toPlace, setToPlace, mode, setMode, showVehiclePicker, setShowVehiclePicker, setSelectedVehicle, plannedTrips }) {
+function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, from, setFrom, fromPlace, setFromPlace, to, setTo, toPlace, setToPlace, mode, setMode, showVehiclePicker, setShowVehiclePicker, setSelectedVehicle, plannedTrips, completedTrips }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [locationSearchState, setLocationSearchState] = useState({ from: false, to: false });
   const popoverAnim = React.useRef(new Animated.Value(0)).current;
@@ -348,6 +366,7 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
         mode={mode}
         compact
         plannedTrips={plannedTrips}
+        completedTrips={completedTrips}
       />
     </>
   );
@@ -379,7 +398,7 @@ function NotificationRow({ icon, title, detail }) {
   );
 }
 
-function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode, compact, plannedTrips = [] }) {
+function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode, compact, plannedTrips = [], completedTrips = [] }) {
   const [selectedSection, setSelectedSection] = useState("Ready");
   const visiblePlans = compact ? plannedTrips.slice(0, 1) : plannedTrips;
   const showingReady = selectedSection === "Ready";
@@ -414,8 +433,8 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
               <React.Fragment key={plan.id}>
                 <RecentTrip
                   badge="Saved"
-                  title={plan.title}
-                  date={`${plan.mode} route | ${plan.vehicleName}`}
+                  title={plan.title || routeTitle(plan.from, plan.to)}
+                  date={routeMetaLabel(plan)}
                   onPress={() => navigation.navigate("TripResults", { assistantName, user, vehicle, tripRequest: { from: plan.from, to: plan.to, mode: plan.mode } })}
                 />
                 {index < visiblePlans.length - 1 && <View style={styles.listDivider} />}
@@ -423,12 +442,23 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
             ))
           )
         )}
-        {!compact && !showingReady && completedTrips.map((trip, index) => (
-          <React.Fragment key={trip.id}>
-            <RecentTrip title={trip.title} date={trip.date} onPress={() => navigation.navigate("TripResults", { assistantName, user, vehicle, tripRequest: { from: trip.from, to: trip.to, mode: trip.mode } })} />
-            {index < completedTrips.length - 1 && <View style={styles.listDivider} />}
-          </React.Fragment>
-        ))}
+        {!compact && !showingReady && (
+          completedTrips.length === 0 ? (
+            <Text style={styles.emptyText}>Finished trips will appear here after you end navigation and save the summary.</Text>
+          ) : (
+            completedTrips.map((trip, index) => (
+              <React.Fragment key={trip.id}>
+                <RecentTrip
+                  badge="Done"
+                  title={trip.title || routeTitle(trip.from, trip.to)}
+                  date={routeMetaLabel(trip)}
+                  onPress={() => navigation.navigate("TripSummary", { tripPlan: trip.tripPlan, completedTrip: trip })}
+                />
+                {index < completedTrips.length - 1 && <View style={styles.listDivider} />}
+              </React.Fragment>
+            ))
+          )
+        )}
       </PremiumCard>
     </>
   );
@@ -436,14 +466,20 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
 
 function NavigateContent({ navigation, plannedTrips }) {
   function startSavedPlan(plan) {
+    const route = plan.routePayload || {
+      from: plan.from,
+      to: plan.to,
+      mode: plan.mode,
+      distanceMiles: plan.distanceMiles || 383,
+      durationHours: plan.durationHours || 6.75
+    };
     navigation.navigate("Navigation", {
       tripPlan: {
-        route: {
-          from: plan.from,
-          to: plan.to,
-          mode: plan.mode,
-          distanceMiles: 383,
-          durationHours: 6.75
+        savedPlanId: plan.id,
+        route,
+        insights: {
+          estimatedFuelCost: plan.estimatedFuelCost,
+          estimatedSavings: plan.estimatedSavings
         },
         fullStops: [
           { id: "quick-fuel", type: "fuel", name: "Best Fuel Stop" }
@@ -478,8 +514,8 @@ function NavigateContent({ navigation, plannedTrips }) {
               <React.Fragment key={plan.id}>
                 <View style={styles.navPlanRow}>
                   <View style={styles.recentText}>
-                    <Text style={styles.recentTitle}>{plan.title}</Text>
-                    <Text style={styles.recentDate}>{plan.mode} route | {plan.vehicleName}</Text>
+                    <Text style={styles.recentTitle}>{plan.title || routeTitle(plan.from, plan.to)}</Text>
+                    <Text style={styles.recentDate}>{routeMetaLabel(plan)}</Text>
                   </View>
                   <Pressable
                     onPress={() => startSavedPlan(plan)}
@@ -551,7 +587,7 @@ function VehicleContent({ assistantName, user, vehicles, selectedVehicle, setVeh
   );
 }
 
-function ProfileContent({ assistantName, setAssistantName, user, setUser, navigation, subscription, setSubscription }) {
+function ProfileContent({ assistantName, setAssistantName, user, setUser, navigation, subscription, setSubscription, tripCount }) {
   const [profileName, setProfileName] = useState(user?.name || "Sai");
   const [assistantDraft, setAssistantDraft] = useState(assistantName);
   const phone = user?.phone || "+1 (555) 123-4567";
@@ -627,7 +663,7 @@ function ProfileContent({ assistantName, setAssistantName, user, setUser, naviga
             <Text style={styles.profileMeta}>Assistant name: {assistantName}</Text>
           </>
         )}
-        <Text style={styles.profileMeta}>Saved trips: 2</Text>
+        <Text style={styles.profileMeta}>Saved trips: {tripCount}</Text>
       </PremiumCard>
       <PremiumCard style={styles.subscriptionCard}>
         <View style={styles.planHeader}>

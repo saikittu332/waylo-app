@@ -4,12 +4,18 @@ import { colors, radii, shadows, spacing } from "../constants/theme";
 import { hasMapboxToken } from "../services/mapService";
 
 export default function RoutePreviewFallback({ route, originLabel, destinationLabel }) {
+  const distance = route?.distanceMiles ? `${Math.round(route.distanceMiles)} mi` : "Route preview";
   return (
     <View style={styles.mapCard}>
+      <View style={styles.water} />
       <View style={styles.mapLand} />
+      <View style={styles.highwayShadow} />
+      <View style={styles.highway} />
       <View style={styles.routePath} />
       <MapPin label={originLabel || "Origin"} style={styles.pinStart} color={colors.green} />
-      <MapPin label={route?.map?.provider === "mapbox" ? "Mapbox route" : "Preview"} style={styles.pinMiddle} color={colors.orange} />
+      <View style={styles.routeBadge}>
+        <Text style={styles.routeBadgeText}>{distance}</Text>
+      </View>
       <MapPin label={destinationLabel || "Destination"} style={styles.pinEnd} color={colors.red} />
       <View style={styles.fallbackBadge}>
         <Text style={styles.fallbackBadgeText}>
@@ -31,32 +37,77 @@ function MapPin({ label, color, style }) {
 
 const styles = StyleSheet.create({
   mapCard: {
-    backgroundColor: colors.mapBlue,
+    backgroundColor: "#DDEFFC",
     borderRadius: radii.xl,
     height: 420,
     overflow: "hidden",
     ...shadows.card
   },
-  mapLand: {
-    backgroundColor: colors.mapGreen,
-    borderRadius: 220,
-    height: 450,
-    left: -70,
+  water: {
+    backgroundColor: "#BFE0F4",
+    borderRadius: 240,
+    height: 340,
     position: "absolute",
-    top: -10,
-    transform: [{ rotate: "-16deg" }],
-    width: 310
+    right: -120,
+    top: 20,
+    width: 260
+  },
+  mapLand: {
+    backgroundColor: "#DCEED8",
+    borderRadius: 220,
+    height: 470,
+    left: -95,
+    position: "absolute",
+    top: -25,
+    transform: [{ rotate: "-10deg" }],
+    width: 355
+  },
+  highwayShadow: {
+    backgroundColor: "rgba(255,255,255,0.82)",
+    borderRadius: 999,
+    height: 410,
+    left: 178,
+    position: "absolute",
+    top: 15,
+    transform: [{ rotate: "27deg" }],
+    width: 48
+  },
+  highway: {
+    backgroundColor: "#F9FBFF",
+    borderColor: "rgba(11,45,92,0.08)",
+    borderRadius: 999,
+    borderWidth: 1,
+    height: 420,
+    left: 190,
+    position: "absolute",
+    top: 8,
+    transform: [{ rotate: "27deg" }],
+    width: 24
   },
   routePath: {
-    borderColor: "#2F80ED",
-    borderRadius: 120,
-    borderWidth: 7,
-    height: 285,
-    left: 118,
+    backgroundColor: "#2F80ED",
+    borderRadius: 999,
+    height: 315,
+    left: 190,
     position: "absolute",
-    top: 82,
-    transform: [{ rotate: "-24deg" }],
-    width: 105
+    top: 58,
+    transform: [{ rotate: "27deg" }],
+    width: 7
+  },
+  routeBadge: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.pill,
+    left: 150,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5,
+    position: "absolute",
+    top: 192,
+    ...shadows.soft
+  },
+  routeBadgeText: {
+    color: colors.navy,
+    fontSize: 11,
+    fontWeight: "800"
   },
   fallbackBadge: {
     backgroundColor: "rgba(255,255,255,0.92)",
@@ -92,12 +143,8 @@ const styles = StyleSheet.create({
     left: 45,
     top: 86
   },
-  pinMiddle: {
-    left: 130,
-    top: 205
-  },
   pinEnd: {
-    bottom: 62,
-    right: 44
+    bottom: 74,
+    right: 42
   }
 });

@@ -12,6 +12,7 @@ import { defaultVehicle } from "../data/mockVehicleSpecs";
 import { apiSavedPlanToApp, savePlan, planTrip } from "../services/api";
 import { getSubscriptionState } from "../services/subscriptionService";
 import { formatCurrency, formatHours } from "../utils/tripCalculator";
+import { routeTitle, shortPlaceLabel } from "../utils/placeLabels";
 
 export default function TripResultsScreen({ navigation, route }) {
   const assistantName = route.params?.assistantName || "Waylo";
@@ -73,7 +74,7 @@ export default function TripResultsScreen({ navigation, route }) {
   const { route: plannedRoute, ruleBasedPlan, insights, stops } = tripPlan;
   const finalStops = stops.filter((stop) => stopDecisions[stop.id] === "added");
   const destination = plannedRoute.to || "Los Angeles, CA";
-  const routeLabel = `${plannedRoute.from === "Current Location" ? "San Francisco" : plannedRoute.from} -> ${destination.replace(", CA", "")}`;
+  const routeLabel = routeTitle(plannedRoute.from, destination);
   const savedPlan = {
     id: `${plannedRoute.from}-${destination}-${plannedRoute.mode}`.replace(/\s+/g, "-").toLowerCase(),
     title: routeLabel,
@@ -81,6 +82,11 @@ export default function TripResultsScreen({ navigation, route }) {
     to: destination,
     mode: plannedRoute.mode,
     vehicleName: vehicle.vehicleName,
+    distanceMiles: plannedRoute.distanceMiles,
+    durationHours: plannedRoute.durationHours,
+    estimatedFuelCost: insights.estimatedFuelCost,
+    estimatedSavings: insights.estimatedSavings,
+    routePayload: plannedRoute,
     savedAt: "Saved just now"
   };
 
@@ -112,14 +118,14 @@ export default function TripResultsScreen({ navigation, route }) {
         </PremiumCard>
 
         <RoutePreviewMap
-          destinationLabel={destination.replace(", CA", "")}
-          originLabel={plannedRoute.from === "Current Location" ? "San Francisco" : plannedRoute.from}
+          destinationLabel={shortPlaceLabel(destination)}
+          originLabel={shortPlaceLabel(plannedRoute.from)}
           route={plannedRoute}
         />
 
         <PremiumCard style={styles.planCard}>
-          <Text style={styles.planTitle}>AI Trip Plan <Text style={styles.premiumText}>({subscription.planName})</Text></Text>
-          <Text style={styles.planSubtitle}>Optimized for lowest cost and fewer stops</Text>
+          <Text style={styles.planTitle}>Smart Trip Plan <Text style={styles.premiumText}>({subscription.planName})</Text></Text>
+          <Text style={styles.planSubtitle}>Rule-based preview using real route distance</Text>
           <InsightCard title="Fuel Plan" value={`${Math.max(ruleBasedPlan.fuelStops.length, 1)} stops | Best prices`} accent="green" />
           <InsightCard title="Rest Stops" value={`${Math.max(ruleBasedPlan.restStops.length, 1)} stops | Stay fresh`} />
           <InsightCard title="Food Stops" value="2 stops | Top rated" accent="orange" />
@@ -156,7 +162,7 @@ export default function TripResultsScreen({ navigation, route }) {
           <StatItem label="Est. Fuel Cost" value={formatCurrency(insights.estimatedFuelCost)} />
         </PremiumCard>
 
-        <PrimaryButton title="Start Navigation" onPress={() => navigation.navigate("Navigation", { tripPlan: { ...tripPlan, finalStops } })} />
+        <PrimaryButton title="Start Navigation" onPress={() => navigation.navigate("Navigation", { tripPlan: { ...tripPlan, savedPlanId: savedPlan.id, finalStops } })} />
         <PrimaryButton
           title="Save for Later"
           variant="secondary"
