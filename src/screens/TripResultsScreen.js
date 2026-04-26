@@ -7,7 +7,7 @@ import PrimaryButton from "../components/PrimaryButton";
 import RoutePreviewMap from "../components/RoutePreviewMap";
 import StatItem from "../components/StatItem";
 import StopCard from "../components/StopCard";
-import { colors, screen, spacing } from "../constants/theme";
+import { colors, radii, screen, spacing } from "../constants/theme";
 import { defaultVehicle } from "../data/mockVehicleSpecs";
 import { apiSavedPlanToApp, savePlan, planTrip } from "../services/api";
 import { getSubscriptionState } from "../services/subscriptionService";
