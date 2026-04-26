@@ -1,6 +1,7 @@
 import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
 import { colors, radii, screen, spacing, typography } from "../constants/theme";
@@ -15,11 +16,16 @@ export default function TripSummaryScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <Text style={styles.completed}>Trip Completed!</Text>
-        <Text style={styles.message}>Great job. You've reached your destination.</Text>
-      </View>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <View style={styles.completeIcon}>
+            <Ionicons color={colors.surface} name="checkmark" size={24} />
+          </View>
+          <View style={styles.headerCopy}>
+            <Text style={styles.completed}>Trip Completed</Text>
+            <Text style={styles.message}>Great job. You've reached your destination.</Text>
+          </View>
+        </View>
         <PremiumCard style={styles.summaryCard}>
           <Text style={styles.routeTitle}>San Francisco -> {routeSummary?.to?.replace(", CA", "") || "Los Angeles"}</Text>
           <Text style={styles.date}>May 24, 2024</Text>
@@ -66,14 +72,26 @@ const styles = StyleSheet.create({
   header: {
     alignItems: "center",
     backgroundColor: colors.navy,
-    borderBottomLeftRadius: 26,
-    borderBottomRightRadius: 26,
-    minHeight: 148,
-    paddingTop: 36
+    borderRadius: radii.xl,
+    flexDirection: "row",
+    gap: spacing.md,
+    minHeight: 104,
+    padding: spacing.md
+  },
+  completeIcon: {
+    alignItems: "center",
+    backgroundColor: colors.green,
+    borderRadius: radii.pill,
+    height: 52,
+    justifyContent: "center",
+    width: 52
+  },
+  headerCopy: {
+    flex: 1
   },
   completed: {
     color: colors.surface,
-    fontSize: 22,
+    fontSize: 21,
     fontWeight: "800"
   },
   message: {
@@ -82,15 +100,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     lineHeight: 20,
     marginTop: spacing.xs,
-    textAlign: "center",
-    width: 260
+    maxWidth: 260
   },
   container: {
     alignSelf: "center",
     gap: spacing.md,
     maxWidth: screen.maxWidth,
     padding: screen.padding,
-    paddingTop: spacing.lg,
     paddingBottom: spacing.xl * 2,
     width: "100%"
   },
