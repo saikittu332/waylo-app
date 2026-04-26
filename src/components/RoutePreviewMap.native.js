@@ -1,17 +1,23 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import MapboxGL from "@rnmapbox/maps";
 import RoutePreviewFallback from "./RoutePreviewFallback";
 import { colors, radii, shadows } from "../constants/theme";
 import { getMapboxAccessToken, hasMapboxToken } from "../services/mapService";
 
-MapboxGL.setAccessToken(getMapboxAccessToken());
+let MapboxGL = null;
+try {
+  const mapboxModule = require("@rnmapbox/maps");
+  MapboxGL = mapboxModule.default || mapboxModule;
+  MapboxGL.setAccessToken?.(getMapboxAccessToken());
+} catch (error) {
+  MapboxGL = null;
+}
 
 export default function RoutePreviewMap({ route, originLabel, destinationLabel }) {
   const geometry = route?.map?.geometry;
   const origin = route?.origin?.coordinates;
   const destination = route?.destination?.coordinates;
-  const canRenderNativeMap = hasMapboxToken() && geometry && origin && destination;
+  const canRenderNativeMap = MapboxGL && hasMapboxToken() && geometry && origin && destination;
 
   if (!canRenderNativeMap) {
     return <RoutePreviewFallback destinationLabel={destinationLabel} originLabel={originLabel} route={route} />;
