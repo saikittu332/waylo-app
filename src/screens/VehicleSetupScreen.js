@@ -16,6 +16,7 @@ export default function VehicleSetupScreen({ navigation, route }) {
   const assistantName = route.params?.assistantName || "Waylo";
   const user = route.params?.user;
   const isNewVehicle = route.params?.mode === "new";
+  const isEditingExisting = Boolean(route.params?.vehicle) && !isNewVehicle;
   const emptyVehicle = { vehicleName: "", fuelType: "gas", cityMpg: "", highwayMpg: "", tankCapacity: "" };
   const initialVehicle = isNewVehicle ? emptyVehicle : route.params?.vehicle || defaultVehicle;
   const existingVehicles = route.params?.vehicles || [route.params?.vehicle || defaultVehicle];
@@ -82,7 +83,7 @@ export default function VehicleSetupScreen({ navigation, route }) {
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View style={styles.topRow}>
           <View>
-            <Text style={styles.heading}>{isNewVehicle ? "Add a vehicle" : "Edit vehicle"}</Text>
+            <Text style={styles.heading}>{isEditingExisting ? "Edit vehicle" : "Add your vehicle"}</Text>
             <Text style={styles.subheading}>Waylo uses these specs to estimate range and cost.</Text>
           </View>
           <Pressable onPress={cancelEdit} hitSlop={8} style={styles.closeButton}>

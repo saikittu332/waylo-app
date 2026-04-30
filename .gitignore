@@ -3,6 +3,8 @@ node_modules/
 dist/
 dist-test/
 dist-web-test/
+dist-ios-test/
+dist-android-test/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

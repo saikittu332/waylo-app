@@ -5,7 +5,9 @@ import { Ionicons } from "@expo/vector-icons";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
 import { colors, radii, screen, spacing, typography } from "../constants/theme";
+import { apiTripToCompletedTrip, completeTrip } from "../services/api";
 import { formatCurrency, formatHours } from "../utils/tripCalculator";
+import { routeTitle } from "../utils/placeLabels";
 
 export default function TripSummaryScreen({ navigation, route }) {
   const tripPlan = route.params?.tripPlan;
@@ -13,6 +15,41 @@ export default function TripSummaryScreen({ navigation, route }) {
   const fuelCost = tripPlan?.insights?.estimatedFuelCost || 52.36;
   const savings = tripPlan?.insights?.estimatedSavings || 14.28;
   const fuelUsed = tripPlan?.insights?.fuelUsed || 11.2;
+  const completedTrip = route.params?.completedTrip || {
+    id: `completed-${tripPlan?.savedPlanId || routeSummary?.from || "route"}-${Date.now()}`,
+    savedPlanId: tripPlan?.savedPlanId,
+    title: routeTitle(routeSummary?.from || "San Francisco", routeSummary?.to || "Los Angeles"),
+    from: routeSummary?.from || "San Francisco",
+    to: routeSummary?.to || "Los Angeles",
+    mode: routeSummary?.mode || "Cheapest",
+    vehicleName: tripPlan?.vehicleName || "Toyota Camry 2021",
+    distanceMiles: routeSummary?.distanceMiles || 383,
+    durationHours: routeSummary?.durationHours || 6.75,
+    estimatedFuelCost: fuelCost,
+    estimatedSavings: savings,
+    tripPlan
+  };
+
+  async function saveCompletedTrip() {
+    let nextCompletedTrip = completedTrip;
+    const tripId = tripPlan?.persistedTrip?.id;
+    if (tripId) {
+      try {
+        const updatedTrip = await completeTrip(tripId);
+        nextCompletedTrip = {
+          ...apiTripToCompletedTrip(updatedTrip, tripPlan?.vehicleName || completedTrip.vehicleName),
+          savedPlanId: tripPlan?.savedPlanId,
+          tripPlan: {
+            ...tripPlan,
+            persistedTrip: updatedTrip
+          }
+        };
+      } catch (error) {
+        console.warn("Waylo API trip completion unavailable:", error.message);
+      }
+    }
+    navigation.navigate("Home", { completedTrip: nextCompletedTrip });
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -27,7 +64,7 @@ export default function TripSummaryScreen({ navigation, route }) {
           </View>
         </View>
         <PremiumCard style={styles.summaryCard}>
-          <Text style={styles.routeTitle}>San Francisco -> {routeSummary?.to?.replace(", CA", "") || "Los Angeles"}</Text>
+          <Text style={styles.routeTitle}>{completedTrip.title}</Text>
           <Text style={styles.date}>May 24, 2024</Text>
           <SummaryRow label="Distance" value={`${routeSummary?.distanceMiles || 383} mi`} />
           <SummaryRow label="Total Time" value={formatHours(routeSummary?.durationHours || 6.75)} />
@@ -48,7 +85,7 @@ export default function TripSummaryScreen({ navigation, route }) {
           </View>
         </PremiumCard>
 
-        <PrimaryButton title="Save Trip" onPress={() => navigation.navigate("Home")} />
+        <PrimaryButton title="Save Trip" onPress={saveCompletedTrip} />
         <PrimaryButton title="Share Summary" variant="secondary" onPress={() => navigation.navigate("Home")} />
       </ScrollView>
     </SafeAreaView>

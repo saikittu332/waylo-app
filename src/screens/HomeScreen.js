@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Alert, Animated, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { Animated, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { CommonActions, useFocusEffect } from "@react-navigation/native";
@@ -9,19 +9,19 @@ import TripModeChip from "../components/TripModeChip";
 import { colors, radii, screen, spacing } from "../constants/theme";
 import { mockTripRequest } from "../data/mockTrip";
 import { defaultVehicle } from "../data/mockVehicleSpecs";
-import { deleteVehicle, getSavedPlans, getSubscription, getVehicles, updateUser } from "../services/api";
+import { apiTripToCompletedTrip, deleteVehicle, getSavedPlans, getSubscription, getTrips, getVehicles, updateUser } from "../services/api";
+import { CURRENT_LOCATION_PLACE, geocodeAddress, hasMapboxToken } from "../services/mapService";
 import { getSubscriptionState } from "../services/subscriptionService";
+import { routeMetaLabel, routeTitle } from "../utils/placeLabels";
 
 const modes = ["Fastest", "Cheapest", "Scenic", "Comfort"];
 const locationSuggestions = [
-  "Current Location",
-  "San Francisco, CA",
-  "Los Angeles, CA",
-  "Yosemite, CA",
-  "Las Vegas, NV",
-  "Grand Canyon, AZ",
-  "Denver, CO",
-  "Portland, OR"
+  CURRENT_LOCATION_PLACE,
+  { id: "sf-fallback", label: "San Francisco, CA", coordinates: [-122.4194, 37.7749] },
+  { id: "la-fallback", label: "Los Angeles, CA", coordinates: [-118.2437, 34.0522] },
+  { id: "yosemite-fallback", label: "Yosemite, CA", coordinates: [-119.5383, 37.8651] },
+  { id: "vegas-fallback", label: "Las Vegas, NV", coordinates: [-115.1398, 36.1699] },
+  { id: "grand-canyon-fallback", label: "Grand Canyon, AZ", coordinates: [-112.1401, 36.0544] }
 ];
 const tabs = [
   { label: "Home", icon: "home" },
@@ -29,11 +29,6 @@ const tabs = [
   { label: "Navigate", icon: "navigate" },
   { label: "Vehicle", icon: "car-sport" },
   { label: "Profile", icon: "person" }
-];
-
-const completedTrips = [
-  { id: "past-yosemite", title: "San Francisco -> Yosemite", date: "May 20, 2024", from: "San Francisco", to: "Yosemite, CA", mode: "Scenic" },
-  { id: "past-grand-canyon", title: "Las Vegas -> Grand Canyon", date: "May 18, 2024", from: "Las Vegas", to: "Grand Canyon, AZ", mode: "Comfort" }
 ];
 
 export default function HomeScreen({ navigation, route }) {
@@ -44,12 +39,15 @@ export default function HomeScreen({ navigation, route }) {
   const [activeTab, setActiveTab] = useState("Home");
   const [from, setFrom] = useState("Current Location");
   const [to, setTo] = useState(mockTripRequest.to);
+  const [fromPlace, setFromPlace] = useState(CURRENT_LOCATION_PLACE);
+  const [toPlace, setToPlace] = useState(null);
   const [mode, setMode] = useState(mockTripRequest.mode);
   const [vehicles, setVehicles] = useState(initialVehicles);
   const [selectedVehicle, setSelectedVehicle] = useState(vehicle);
   const [showVehiclePicker, setShowVehiclePicker] = useState(false);
   const [subscription, setSubscription] = useState(getSubscriptionState());
   const [plannedTrips, setPlannedTrips] = useState([]);
+  const [completedTrips, setCompletedTrips] = useState([]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -74,7 +72,15 @@ export default function HomeScreen({ navigation, route }) {
         });
         navigation.setParams({ savedPlan: undefined });
       }
-    }, [navigation, route.params?.assistantName, route.params?.savedPlan, route.params?.user, route.params?.vehicle])
+      if (route.params?.completedTrip) {
+        setCompletedTrips((current) => {
+          const exists = current.some((item) => item.id === route.params.completedTrip.id);
+          return exists ? current.map((item) => (item.id === route.params.completedTrip.id ? route.params.completedTrip : item)) : [route.params.completedTrip, ...current];
+        });
+        setPlannedTrips((current) => current.filter((item) => item.id !== route.params.completedTrip.savedPlanId));
+        navigation.setParams({ completedTrip: undefined });
+      }
+    }, [navigation, route.params?.assistantName, route.params?.completedTrip, route.params?.savedPlan, route.params?.user, route.params?.vehicle])
   );
 
   useFocusEffect(
@@ -83,9 +89,10 @@ export default function HomeScreen({ navigation, route }) {
       async function loadPersistedData() {
         if (!user?.id) return;
         try {
-          const [apiVehicles, apiPlans, apiSubscription] = await Promise.all([
+          const [apiVehicles, apiPlans, apiTrips, apiSubscription] = await Promise.all([
             getVehicles(user.id),
             getSavedPlans(user.id),
+            getTrips(user.id),
             getSubscription(user.id)
           ]);
           if (!active) return;
@@ -94,6 +101,11 @@ export default function HomeScreen({ navigation, route }) {
             setSelectedVehicle((current) => apiVehicles.find((item) => item.id === current?.id) || apiVehicles[0]);
           }
           setPlannedTrips(apiPlans);
+          setCompletedTrips(
+            apiTrips
+              .filter((trip) => trip.status === "completed")
+              .map((trip) => apiTripToCompletedTrip(trip, apiVehicles.find((item) => item.id === trip.vehicle_id)?.vehicleName || selectedVehicle?.vehicleName))
+          );
           if (apiSubscription) setSubscription(apiSubscription);
         } catch (error) {
           console.warn("Waylo API home refresh unavailable:", error.message);
@@ -118,14 +130,19 @@ export default function HomeScreen({ navigation, route }) {
             navigation={navigation}
             from={from}
             setFrom={setFrom}
+            fromPlace={fromPlace}
+            setFromPlace={setFromPlace}
             to={to}
             setTo={setTo}
+            toPlace={toPlace}
+            setToPlace={setToPlace}
             mode={mode}
             setMode={setMode}
             showVehiclePicker={showVehiclePicker}
             setShowVehiclePicker={setShowVehiclePicker}
             setSelectedVehicle={setSelectedVehicle}
             plannedTrips={plannedTrips}
+            completedTrips={completedTrips}
           />
         )}
         {activeTab === "Trips" && (
@@ -138,6 +155,7 @@ export default function HomeScreen({ navigation, route }) {
             to={to}
             mode={mode}
             plannedTrips={plannedTrips}
+            completedTrips={completedTrips}
           />
         )}
         {activeTab === "Navigate" && (
@@ -160,7 +178,18 @@ export default function HomeScreen({ navigation, route }) {
             navigation={navigation}
           />
         )}
-        {activeTab === "Profile" && <ProfileContent assistantName={assistantName} setAssistantName={setAssistantName} user={user} setUser={setUser} navigation={navigation} subscription={subscription} setSubscription={setSubscription} />}
+        {activeTab === "Profile" && (
+          <ProfileContent
+            assistantName={assistantName}
+            setAssistantName={setAssistantName}
+            user={user}
+            setUser={setUser}
+            navigation={navigation}
+            subscription={subscription}
+            setSubscription={setSubscription}
+            tripCount={plannedTrips.length + completedTrips.length}
+          />
+        )}
       </ScrollView>
 
       <View style={styles.tabBar}>
@@ -183,9 +212,11 @@ export default function HomeScreen({ navigation, route }) {
   );
 }
 
-function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, from, setFrom, to, setTo, mode, setMode, showVehiclePicker, setShowVehiclePicker, setSelectedVehicle, plannedTrips }) {
+function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, from, setFrom, fromPlace, setFromPlace, to, setTo, toPlace, setToPlace, mode, setMode, showVehiclePicker, setShowVehiclePicker, setSelectedVehicle, plannedTrips, completedTrips }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [locationSearchState, setLocationSearchState] = useState({ from: false, to: false });
   const popoverAnim = React.useRef(new Animated.Value(0)).current;
+  const isSearchingLocations = locationSearchState.from || locationSearchState.to;
 
   React.useEffect(() => {
     if (notificationsOpen) {
@@ -200,7 +231,18 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
 
   function continuePlan() {
     setShowVehiclePicker(false);
-    navigation.navigate("TripResults", { assistantName, user, vehicle, tripRequest: { from, to, mode } });
+    navigation.navigate("TripResults", {
+      assistantName,
+      user,
+      vehicle,
+      tripRequest: {
+        from,
+        to,
+        mode,
+        originPlace: fromPlace,
+        destinationPlace: toPlace
+      }
+    });
   }
 
   return (
@@ -250,8 +292,24 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
       </View>
       <PremiumCard style={styles.tripCard}>
         <Text style={styles.cardTitle}>Plan Your Trip</Text>
-        <TripField label="From" value={from} onChangeText={setFrom} pinColor="#367CFF" suggestions={locationSuggestions} />
-        <TripField label="To" value={to} onChangeText={setTo} pinColor={colors.red} suggestions={locationSuggestions.filter((item) => item !== "Current Location")} />
+        <TripField
+          label="From"
+          value={from}
+          onChangeText={setFrom}
+          onSearchStateChange={(loading) => setLocationSearchState((current) => ({ ...current, from: loading }))}
+          onSelectPlace={setFromPlace}
+          pinColor="#367CFF"
+          suggestions={locationSuggestions}
+        />
+        <TripField
+          label="To"
+          value={to}
+          onChangeText={setTo}
+          onSearchStateChange={(loading) => setLocationSearchState((current) => ({ ...current, to: loading }))}
+          onSelectPlace={setToPlace}
+          pinColor={colors.red}
+          suggestions={locationSuggestions.filter((item) => item.id !== CURRENT_LOCATION_PLACE.id)}
+        />
         <Text style={styles.label}>Trip Mode</Text>
         <View style={styles.modes}>
           {modes.map((item) => (
@@ -299,7 +357,8 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
           </View>
         )}
         <PrimaryButton
-          title="Plan Smart Trip"
+          disabled={isSearchingLocations}
+          title={isSearchingLocations ? "Searching locations..." : "Plan Smart Trip"}
           onPress={continuePlan}
         />
       </PremiumCard>
@@ -313,6 +372,7 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
         mode={mode}
         compact
         plannedTrips={plannedTrips}
+        completedTrips={completedTrips}
       />
     </>
   );
@@ -344,7 +404,7 @@ function NotificationRow({ icon, title, detail }) {
   );
 }
 
-function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode, compact, plannedTrips = [] }) {
+function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode, compact, plannedTrips = [], completedTrips = [] }) {
   const [selectedSection, setSelectedSection] = useState("Ready");
   const visiblePlans = compact ? plannedTrips.slice(0, 1) : plannedTrips;
   const showingReady = selectedSection === "Ready";
@@ -379,8 +439,8 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
               <React.Fragment key={plan.id}>
                 <RecentTrip
                   badge="Saved"
-                  title={plan.title}
-                  date={`${plan.mode} route | ${plan.vehicleName}`}
+                  title={plan.title || routeTitle(plan.from, plan.to)}
+                  date={routeMetaLabel(plan)}
                   onPress={() => navigation.navigate("TripResults", { assistantName, user, vehicle, tripRequest: { from: plan.from, to: plan.to, mode: plan.mode } })}
                 />
                 {index < visiblePlans.length - 1 && <View style={styles.listDivider} />}
@@ -388,12 +448,23 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
             ))
           )
         )}
-        {!compact && !showingReady && completedTrips.map((trip, index) => (
-          <React.Fragment key={trip.id}>
-            <RecentTrip title={trip.title} date={trip.date} onPress={() => navigation.navigate("TripResults", { assistantName, user, vehicle, tripRequest: { from: trip.from, to: trip.to, mode: trip.mode } })} />
-            {index < completedTrips.length - 1 && <View style={styles.listDivider} />}
-          </React.Fragment>
-        ))}
+        {!compact && !showingReady && (
+          completedTrips.length === 0 ? (
+            <Text style={styles.emptyText}>Finished trips will appear here after you end navigation and save the summary.</Text>
+          ) : (
+            completedTrips.map((trip, index) => (
+              <React.Fragment key={trip.id}>
+                <RecentTrip
+                  badge="Done"
+                  title={trip.title || routeTitle(trip.from, trip.to)}
+                  date={routeMetaLabel(trip)}
+                  onPress={() => navigation.navigate("TripSummary", { tripPlan: trip.tripPlan, completedTrip: trip })}
+                />
+                {index < completedTrips.length - 1 && <View style={styles.listDivider} />}
+              </React.Fragment>
+            ))
+          )
+        )}
       </PremiumCard>
     </>
   );
@@ -401,14 +472,22 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
 
 function NavigateContent({ navigation, plannedTrips }) {
   function startSavedPlan(plan) {
+    const route = plan.routePayload || {
+      from: plan.from,
+      to: plan.to,
+      mode: plan.mode,
+      distanceMiles: plan.distanceMiles || 383,
+      durationHours: plan.durationHours || 6.75
+    };
     navigation.navigate("Navigation", {
       tripPlan: {
-        route: {
-          from: plan.from,
-          to: plan.to,
-          mode: plan.mode,
-          distanceMiles: 383,
-          durationHours: 6.75
+        savedPlanId: plan.id,
+        persistedTrip: plan.tripId ? { id: plan.tripId } : null,
+        vehicleName: plan.vehicleName,
+        route,
+        insights: {
+          estimatedFuelCost: plan.estimatedFuelCost,
+          estimatedSavings: plan.estimatedSavings
         },
         fullStops: [
           { id: "quick-fuel", type: "fuel", name: "Best Fuel Stop" }
@@ -443,8 +522,8 @@ function NavigateContent({ navigation, plannedTrips }) {
               <React.Fragment key={plan.id}>
                 <View style={styles.navPlanRow}>
                   <View style={styles.recentText}>
-                    <Text style={styles.recentTitle}>{plan.title}</Text>
-                    <Text style={styles.recentDate}>{plan.mode} route | {plan.vehicleName}</Text>
+                    <Text style={styles.recentTitle}>{plan.title || routeTitle(plan.from, plan.to)}</Text>
+                    <Text style={styles.recentDate}>{routeMetaLabel(plan)}</Text>
                   </View>
                   <Pressable
                     onPress={() => startSavedPlan(plan)}
@@ -465,9 +544,12 @@ function NavigateContent({ navigation, plannedTrips }) {
 }
 
 function VehicleContent({ assistantName, user, vehicles, selectedVehicle, setVehicles, setSelectedVehicle, navigation }) {
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deleteMessage, setDeleteMessage] = useState("");
+
   async function removeVehicle(item) {
     if (vehicles.length <= 1) {
-      Alert.alert("Keep one vehicle", "Waylo needs at least one vehicle to estimate route range and fuel cost. Add a new vehicle first, then delete this one.");
+      setDeleteMessage("Waylo needs at least one vehicle to estimate route range and fuel cost. Add another vehicle first, then delete this one.");
       return;
     }
     try {
@@ -477,8 +559,9 @@ function VehicleContent({ assistantName, user, vehicles, selectedVehicle, setVeh
       if ((item.id && selectedVehicle?.id === item.id) || selectedVehicle?.vehicleName === item.vehicleName) {
         setSelectedVehicle(remainingVehicles[0]);
       }
+      setPendingDelete(null);
     } catch (error) {
-      Alert.alert("Could not delete vehicle", error.message);
+      setDeleteMessage(error.message || "Could not delete vehicle.");
     }
   }
 
@@ -505,18 +588,54 @@ function VehicleContent({ assistantName, user, vehicles, selectedVehicle, setVeh
               <Ionicons color={colors.surface} name="create-outline" size={17} />
               <Text style={styles.vehicleActionPrimaryText}>Edit</Text>
             </Pressable>
-            <Pressable onPress={() => removeVehicle(item)} style={styles.vehicleActionDanger}>
+            <Pressable
+              onPress={() => {
+                if (vehicles.length <= 1) {
+                  setDeleteMessage("Waylo needs at least one vehicle to estimate route range and fuel cost. Add another vehicle first, then delete this one.");
+                  return;
+                }
+                setPendingDelete(item);
+              }}
+              style={styles.vehicleActionDanger}
+            >
               <Ionicons color={colors.red} name="trash-outline" size={17} />
               <Text style={styles.vehicleActionDangerText}>Delete</Text>
             </Pressable>
           </View>
         </PremiumCard>
       ))}
+      <Modal transparent visible={Boolean(pendingDelete) || Boolean(deleteMessage)} animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <PremiumCard style={styles.confirmCard}>
+            <View style={styles.confirmIcon}>
+              <Ionicons color={colors.red} name="trash-outline" size={24} />
+            </View>
+            <Text style={styles.cardTitle}>{pendingDelete ? "Delete vehicle?" : "Keep one vehicle"}</Text>
+            <Text style={styles.profileMeta}>
+              {pendingDelete
+                ? `${pendingDelete.vehicleName} will be removed from your vehicle list. Existing trips stay saved.`
+                : deleteMessage}
+            </Text>
+            {pendingDelete ? (
+              <View style={styles.confirmActions}>
+                <Pressable onPress={() => setPendingDelete(null)} style={styles.confirmSecondary}>
+                  <Text style={styles.confirmSecondaryText}>Cancel</Text>
+                </Pressable>
+                <Pressable onPress={() => removeVehicle(pendingDelete)} style={styles.confirmDanger}>
+                  <Text style={styles.confirmDangerText}>Delete</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <PrimaryButton title="Got it" onPress={() => setDeleteMessage("")} />
+            )}
+          </PremiumCard>
+        </View>
+      </Modal>
     </>
   );
 }
 
-function ProfileContent({ assistantName, setAssistantName, user, setUser, navigation, subscription, setSubscription }) {
+function ProfileContent({ assistantName, setAssistantName, user, setUser, navigation, subscription, setSubscription, tripCount }) {
   const [profileName, setProfileName] = useState(user?.name || "Sai");
   const [assistantDraft, setAssistantDraft] = useState(assistantName);
   const phone = user?.phone || "+1 (555) 123-4567";
@@ -592,7 +711,7 @@ function ProfileContent({ assistantName, setAssistantName, user, setUser, naviga
             <Text style={styles.profileMeta}>Assistant name: {assistantName}</Text>
           </>
         )}
-        <Text style={styles.profileMeta}>Saved trips: 2</Text>
+        <Text style={styles.profileMeta}>Saved trips: {tripCount}</Text>
       </PremiumCard>
       <PremiumCard style={styles.subscriptionCard}>
         <View style={styles.planHeader}>
@@ -710,11 +829,54 @@ function PlanLine({ label, included }) {
   );
 }
 
-function TripField({ label, value, onChangeText, pinColor, suggestions = [] }) {
+function TripField({ label, value, onChangeText, onSelectPlace, onSearchStateChange, pinColor, suggestions = [] }) {
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const filteredSuggestions = suggestions
-    .filter((item) => item.toLowerCase().includes(value.trim().toLowerCase()))
+  const [remoteSuggestions, setRemoteSuggestions] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const trimmedValue = value.trim();
+  const fallbackSuggestions = suggestions
+    .filter((item) => item.label.toLowerCase().includes(trimmedValue.toLowerCase()))
     .slice(0, 4);
+  const visibleSuggestions = hasMapboxToken() && trimmedValue.length >= 2 ? remoteSuggestions : fallbackSuggestions;
+
+  React.useEffect(() => {
+    if (!showSuggestions || trimmedValue.length < 2 || trimmedValue.toLowerCase() === "current location") {
+      setRemoteSuggestions([]);
+      setSearchError("");
+      setIsSearching(false);
+      onSearchStateChange?.(false);
+      return undefined;
+    }
+
+    let active = true;
+    setIsSearching(true);
+    setSearchError("");
+    onSearchStateChange?.(true);
+    const timer = setTimeout(() => {
+      geocodeAddress(trimmedValue)
+        .then((places) => {
+          if (!active) return;
+          setRemoteSuggestions(places);
+        })
+        .catch((error) => {
+          if (!active) return;
+          setRemoteSuggestions([]);
+          setSearchError(error.code === "MAPBOX_TOKEN_MISSING" ? "Add a Mapbox token to search real places." : "Could not search locations right now.");
+        })
+        .finally(() => {
+          if (!active) return;
+          setIsSearching(false);
+          onSearchStateChange?.(false);
+        });
+    }, 350);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+      onSearchStateChange?.(false);
+    };
+  }, [showSuggestions, trimmedValue]);
 
   return (
     <View style={styles.tripFieldWrap}>
@@ -726,6 +888,7 @@ function TripField({ label, value, onChangeText, pinColor, suggestions = [] }) {
           value={value}
           onChangeText={(text) => {
             onChangeText(text);
+            onSelectPlace?.(null);
             setShowSuggestions(true);
           }}
           style={styles.input}
@@ -734,21 +897,37 @@ function TripField({ label, value, onChangeText, pinColor, suggestions = [] }) {
           <Ionicons color={colors.navy} name={showSuggestions ? "chevron-up" : "add"} size={18} />
         </Pressable>
       </View>
-      {showSuggestions && filteredSuggestions.length > 0 && (
+      {showSuggestions && (
         <View style={styles.locationSuggestions}>
-          {filteredSuggestions.map((item) => (
+          {isSearching && (
+            <View style={styles.locationSuggestion}>
+              <Ionicons color={colors.muted} name="sync-outline" size={16} />
+              <Text style={styles.locationSuggestionText}>Searching Mapbox...</Text>
+            </View>
+          )}
+          {!isSearching && visibleSuggestions.map((item) => (
             <Pressable
-              key={`${label}-${item}`}
+              key={`${label}-${item.id || item.label}`}
               onPress={() => {
-                onChangeText(item);
+                onChangeText(item.label);
+                onSelectPlace?.(item);
                 setShowSuggestions(false);
               }}
               style={styles.locationSuggestion}
             >
-              <Ionicons color={pinColor} name={item === "Current Location" ? "navigate-outline" : "location-outline"} size={16} />
-              <Text style={styles.locationSuggestionText}>{item}</Text>
+              <Ionicons color={pinColor} name={item.id === "current-location" ? "navigate-outline" : "location-outline"} size={16} />
+              <View style={styles.recentText}>
+                <Text style={styles.locationSuggestionText}>{item.label}</Text>
+                {!!item.address && item.address !== item.label && <Text style={styles.locationSuggestionMeta}>{item.address}</Text>}
+              </View>
             </Pressable>
           ))}
+          {!isSearching && visibleSuggestions.length === 0 && (
+            <View style={styles.locationSuggestion}>
+              <Ionicons color={colors.muted} name="information-circle-outline" size={16} />
+              <Text style={styles.locationSuggestionText}>{searchError || "No matching places found."}</Text>
+            </View>
+          )}
         </View>
       )}
     </View>
@@ -1027,6 +1206,12 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     fontWeight: "700"
+  },
+  locationSuggestionMeta: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "600",
+    marginTop: 2
   },
   pin: {
     borderRadius: radii.pill,
@@ -1453,6 +1638,58 @@ const styles = StyleSheet.create({
     color: colors.green,
     fontSize: 13,
     fontWeight: "700"
+  },
+  modalBackdrop: {
+    alignItems: "center",
+    backgroundColor: "rgba(11, 31, 59, 0.34)",
+    flex: 1,
+    justifyContent: "center",
+    padding: screen.padding
+  },
+  confirmCard: {
+    alignItems: "stretch",
+    gap: spacing.md,
+    maxWidth: screen.maxWidth - screen.padding * 2,
+    width: "100%"
+  },
+  confirmIcon: {
+    alignItems: "center",
+    backgroundColor: "rgba(239,68,68,0.1)",
+    borderRadius: radii.pill,
+    height: 52,
+    justifyContent: "center",
+    width: 52
+  },
+  confirmActions: {
+    flexDirection: "row",
+    gap: spacing.sm
+  },
+  confirmSecondary: {
+    alignItems: "center",
+    borderColor: colors.border,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    flex: 1,
+    justifyContent: "center",
+    minHeight: 48
+  },
+  confirmSecondaryText: {
+    color: colors.navy,
+    fontSize: 14,
+    fontWeight: "800"
+  },
+  confirmDanger: {
+    alignItems: "center",
+    backgroundColor: colors.red,
+    borderRadius: radii.pill,
+    flex: 1,
+    justifyContent: "center",
+    minHeight: 48
+  },
+  confirmDangerText: {
+    color: colors.surface,
+    fontSize: 14,
+    fontWeight: "800"
   },
   subscriptionCard: {
     gap: spacing.md

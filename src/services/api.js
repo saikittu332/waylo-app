@@ -1,6 +1,6 @@
 import { Platform } from "react-native";
 import { mockRoute, mockStops, mockTripRequest } from "../data/mockTrip";
-import { getRoutePreview } from "./mapService";
+import { CURRENT_LOCATION_PLACE, geocodeAddress, getRoutePreview } from "./mapService";
 import { getVisibleStops } from "./subscriptionService";
 import {
   calculateRange,
@@ -11,6 +11,7 @@ import {
   generateFuelStops,
   generateRestStops
 } from "../utils/tripCalculator";
+import { routeTitle } from "../utils/placeLabels";
 
 const DEFAULT_API_URL = Platform.OS === "android" ? "http://10.0.2.2:8000" : "http://127.0.0.1:8000";
 export const API_BASE_URL = process.env.EXPO_PUBLIC_WAYLO_API_URL || DEFAULT_API_URL;
@@ -69,15 +70,51 @@ export function appVehicleToApi(vehicle, userId) {
 }
 
 export function apiSavedPlanToApp(plan) {
+  const payload = plan.plan_payload || {};
   return {
     id: plan.id,
     tripId: plan.trip_id,
-    title: plan.title,
+    title: payload.title || routeTitle(plan.origin, plan.destination),
     from: plan.origin,
     to: plan.destination,
     mode: plan.trip_mode,
-    vehicleName: plan.plan_payload?.vehicleName || "Saved vehicle",
+    vehicleName: payload.vehicleName || "Saved vehicle",
+    distanceMiles: payload.distanceMiles,
+    durationHours: payload.durationHours,
+    estimatedFuelCost: payload.estimatedFuelCost,
+    estimatedSavings: payload.estimatedSavings,
+    routePayload: payload.route || null,
     savedAt: "Saved in Waylo"
+  };
+}
+
+export function apiTripToCompletedTrip(trip, vehicleName = "Saved vehicle") {
+  return {
+    id: trip.id,
+    tripId: trip.id,
+    title: routeTitle(trip.origin, trip.destination),
+    from: trip.origin,
+    to: trip.destination,
+    mode: trip.trip_mode,
+    vehicleName,
+    distanceMiles: trip.distance_miles,
+    durationHours: trip.duration_hours,
+    estimatedFuelCost: trip.estimated_fuel_cost,
+    estimatedSavings: trip.estimated_savings,
+    tripPlan: {
+      persistedTrip: trip,
+      route: {
+        from: trip.origin,
+        to: trip.destination,
+        mode: trip.trip_mode,
+        distanceMiles: trip.distance_miles,
+        durationHours: trip.duration_hours
+      },
+      insights: {
+        estimatedFuelCost: trip.estimated_fuel_cost,
+        estimatedSavings: trip.estimated_savings
+      }
+    }
   };
 }
 
@@ -154,22 +191,49 @@ export async function createTripRecord({ userId, vehicle, route, insights }) {
   });
 }
 
+export async function updateTrip(tripId, payload) {
+  return request(`/trips/${tripId}`, {
+    body: JSON.stringify(payload),
+    method: "PATCH"
+  });
+}
+
+export async function completeTrip(tripId) {
+  return updateTrip(tripId, { status: "completed" });
+}
+
+export async function getTrips(userId) {
+  return request(`/trips?user_id=${encodeURIComponent(userId)}`);
+}
+
 export async function savePlan({ userId, tripId, route, vehicle, insights }) {
   return request("/saved-plans", {
     body: JSON.stringify({
       user_id: userId,
       trip_id: tripId || null,
-      title: `${route.from} -> ${route.to}`,
+      title: routeTitle(route.from, route.to),
       origin: route.from,
       destination: route.to,
       trip_mode: route.mode,
       notes: "Saved from the Waylo mobile app",
       plan_payload: {
+        title: routeTitle(route.from, route.to),
         vehicleName: vehicle.vehicleName,
         distanceMiles: route.distanceMiles,
         durationHours: route.durationHours,
         estimatedFuelCost: insights.estimatedFuelCost,
-        estimatedSavings: insights.estimatedSavings
+        estimatedSavings: insights.estimatedSavings,
+        route: {
+          from: route.from,
+          to: route.to,
+          mode: route.mode,
+          distanceMiles: route.distanceMiles,
+          durationHours: route.durationHours,
+          map: route.map || null
+        },
+        mapProvider: route.map?.provider,
+        routeSummary: route.map?.summary,
+        routeGeometry: route.map?.geometry || null
       }
     }),
     method: "POST"
@@ -203,10 +267,23 @@ export async function getSubscription(userId) {
   };
 }
 
-export async function planTrip({ from, to, mode, vehicle, user }) {
-  const destination = to || mockTripRequest.to;
-  const routeDistance = destination.toLowerCase().includes("angeles") ? 383 : mockRoute.distanceMiles;
-  const routeDuration = destination.toLowerCase().includes("angeles") ? 6.75 : mockRoute.durationHours;
+async function resolvePlace(label, selectedPlace) {
+  if (selectedPlace?.coordinates) return selectedPlace;
+  const text = label || "Current Location";
+  if (text.toLowerCase() === "current location") return CURRENT_LOCATION_PLACE;
+  const matches = await geocodeAddress(text);
+  if (!matches.length) {
+    throw new Error(`Waylo could not find "${text}". Try a city, address, or landmark.`);
+  }
+  return matches[0];
+}
+
+export async function planTrip({ from, to, mode, vehicle, user, originPlace, destinationPlace }) {
+  const origin = await resolvePlace(from || mockTripRequest.from, originPlace);
+  const destination = await resolvePlace(to || mockTripRequest.to, destinationPlace);
+  const routePreview = await getRoutePreview(origin.coordinates, destination.coordinates, mode || "driving");
+  const routeDistance = routePreview.distanceMiles;
+  const routeDuration = routePreview.durationHours;
   const range = calculateRange(vehicle.highwayMpg, vehicle.tankCapacity);
   const safeRange = calculateSafeRange(range);
   const fuelStops = generateFuelStops(routeDistance, safeRange);
@@ -223,10 +300,12 @@ export async function planTrip({ from, to, mode, vehicle, user }) {
     ...mockRoute,
     distanceMiles: routeDistance,
     durationHours: routeDuration,
-    from: from || mockTripRequest.from,
-    to: destination,
+    from: origin.label,
+    to: destination.label,
     mode: mode || mockTripRequest.mode,
-    map: getRoutePreview()
+    origin,
+    destination,
+    map: routePreview
   };
 
   const insights = {

@@ -76,6 +76,14 @@ class TripCreate(BaseModel):
     estimated_savings: Optional[float] = None
 
 
+class TripUpdate(BaseModel):
+    status: Optional[str] = None
+    distance_miles: Optional[float] = None
+    duration_hours: Optional[float] = None
+    estimated_fuel_cost: Optional[float] = None
+    estimated_savings: Optional[float] = None
+
+
 class TripRead(TripCreate):
     id: uuid.UUID
     created_at: datetime
