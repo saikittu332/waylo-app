@@ -1,7 +1,6 @@
 import { Platform } from "react-native";
 import { mockRoute, mockStops, mockTripRequest } from "../data/mockTrip";
 import { CURRENT_LOCATION_PLACE, geocodeAddress, getRoutePreview } from "./mapService";
-import { getVisibleStops } from "./subscriptionService";
 import {
   calculateRange,
   calculateSafeRange,
@@ -266,28 +265,6 @@ export async function deleteSavedPlan(planId) {
   });
 }
 
-export async function createSubscription(userId, premium) {
-  return request("/subscriptions", {
-    body: JSON.stringify({
-      user_id: userId,
-      plan_name: premium ? "Premium" : "Free",
-      status: "active",
-      is_premium: Boolean(premium)
-    }),
-    method: "POST"
-  });
-}
-
-export async function getSubscription(userId) {
-  const subscriptions = await request(`/subscriptions?user_id=${encodeURIComponent(userId)}`);
-  const latest = subscriptions[0];
-  if (!latest) return null;
-  return {
-    isPremium: latest.is_premium,
-    planName: latest.plan_name
-  };
-}
-
 async function resolvePlace(label, selectedPlace) {
   if (selectedPlace?.coordinates) return selectedPlace;
   const text = label || "Current Location";
@@ -347,7 +324,7 @@ export async function planTrip({ from, to, mode, vehicle, user, originPlace, des
   return {
     persistedTrip,
     route,
-    stops: getVisibleStops(mockStops),
+    stops: mockStops,
     fullStops: mockStops,
     ruleBasedPlan: {
       fuelStops,

@@ -9,10 +9,9 @@ import TripModeChip from "../components/TripModeChip";
 import { colors, radii, screen, spacing } from "../constants/theme";
 import { mockTripRequest } from "../data/mockTrip";
 import { defaultVehicle } from "../data/mockVehicleSpecs";
-import { apiTripToCompletedTrip, deleteVehicle, getSavedPlans, getSubscription, getTrips, getVehicles, updateUser } from "../services/api";
+import { apiTripToCompletedTrip, deleteVehicle, getSavedPlans, getTrips, getVehicles, updateUser } from "../services/api";
 import { getCurrentLocationPlace } from "../services/locationService";
 import { CURRENT_LOCATION_PLACE, geocodeAddress, hasMapboxToken } from "../services/mapService";
-import { getSubscriptionState } from "../services/subscriptionService";
 import { routeMetaLabel, routeTitle } from "../utils/placeLabels";
 
 const modes = ["Fastest", "Cheapest", "Scenic", "Comfort"];
@@ -46,7 +45,6 @@ export default function HomeScreen({ navigation, route }) {
   const [vehicles, setVehicles] = useState(initialVehicles);
   const [selectedVehicle, setSelectedVehicle] = useState(vehicle);
   const [showVehiclePicker, setShowVehiclePicker] = useState(false);
-  const [subscription, setSubscription] = useState(getSubscriptionState());
   const [plannedTrips, setPlannedTrips] = useState([]);
   const [completedTrips, setCompletedTrips] = useState([]);
 
@@ -55,7 +53,6 @@ export default function HomeScreen({ navigation, route }) {
       if (route.params?.user) {
         setUser(route.params.user);
       }
-      setSubscription(getSubscriptionState());
       if (route.params?.assistantName) {
         setAssistantName(route.params.assistantName);
       }
@@ -94,11 +91,10 @@ export default function HomeScreen({ navigation, route }) {
       async function loadPersistedData() {
         if (!user?.id) return;
         try {
-          const [apiVehicles, apiPlans, apiTrips, apiSubscription] = await Promise.all([
+          const [apiVehicles, apiPlans, apiTrips] = await Promise.all([
             getVehicles(user.id),
             getSavedPlans(user.id),
-            getTrips(user.id),
-            getSubscription(user.id)
+            getTrips(user.id)
           ]);
           if (!active) return;
           if (apiVehicles.length > 0) {
@@ -111,7 +107,6 @@ export default function HomeScreen({ navigation, route }) {
               .filter((trip) => trip.status === "completed")
               .map((trip) => apiTripToCompletedTrip(trip, apiVehicles.find((item) => item.id === trip.vehicle_id)?.vehicleName || selectedVehicle?.vehicleName))
           );
-          if (apiSubscription) setSubscription(apiSubscription);
         } catch (error) {
           console.warn("Waylo API home refresh unavailable:", error.message);
         }
@@ -190,8 +185,6 @@ export default function HomeScreen({ navigation, route }) {
             user={user}
             setUser={setUser}
             navigation={navigation}
-            subscription={subscription}
-            setSubscription={setSubscription}
             tripCount={plannedTrips.length + completedTrips.length}
           />
         )}
@@ -668,7 +661,7 @@ function VehicleContent({ assistantName, user, vehicles, selectedVehicle, setVeh
   );
 }
 
-function ProfileContent({ assistantName, setAssistantName, user, setUser, navigation, subscription, setSubscription, tripCount }) {
+function ProfileContent({ assistantName, setAssistantName, user, setUser, navigation, tripCount }) {
   const [profileName, setProfileName] = useState(user?.name || "Sai");
   const [assistantDraft, setAssistantDraft] = useState(assistantName);
   const phone = user?.phone || "+1 (555) 123-4567";
@@ -746,25 +739,6 @@ function ProfileContent({ assistantName, setAssistantName, user, setUser, naviga
         )}
         <Text style={styles.profileMeta}>Saved trips: {tripCount}</Text>
       </PremiumCard>
-      <PremiumCard style={styles.subscriptionCard}>
-        <View style={styles.planHeader}>
-          <View>
-            <Text style={styles.cardTitle}>Waylo {subscription.planName}</Text>
-            <Text style={styles.profileMeta}>Current plan</Text>
-          </View>
-          <View style={styles.planBadge}>
-            <Text style={styles.planBadgeText}>{subscription.planName}</Text>
-          </View>
-        </View>
-        <Text style={styles.profileMeta}>{subscription.isPremium ? "Full AI optimization, smart stops, and savings insights are enabled." : "Basic route planning and 1 fuel suggestion per trip."}</Text>
-        <View style={styles.planRows}>
-          <PlanLine label="Basic route" included />
-          <PlanLine label="1 fuel suggestion" included />
-          <PlanLine label="Full AI fuel optimization" included={subscription.isPremium} />
-          <PlanLine label="Multiple smart stops" included={subscription.isPremium} />
-        </View>
-        <PrimaryButton title={subscription.isPremium ? "Manage Premium" : "View Premium Plan"} variant="secondary" onPress={() => navigation.navigate("Paywall", { user })} />
-      </PremiumCard>
       <PremiumCard style={styles.profileCard}>
         <Text style={styles.cardTitle}>Preferences</Text>
         <PreferenceRow label="Fuel savings alerts" value={fuelAlerts} onValueChange={setFuelAlerts} />
@@ -778,7 +752,7 @@ function ProfileContent({ assistantName, setAssistantName, user, setUser, naviga
       <PremiumCard style={styles.accountCard}>
         <View>
           <Text style={styles.cardTitle}>Account</Text>
-          <Text style={styles.profileMeta}>Return to the welcome screen and clear this mock session.</Text>
+          <Text style={styles.profileMeta}>Return to the welcome screen and end this local session.</Text>
         </View>
         <PrimaryButton title="Sign Out" variant="secondary" onPress={signOut} />
       </PremiumCard>
@@ -845,19 +819,6 @@ function ReminderPreference({ enabled, interval, onIntervalChange, onToggle }) {
           })}
         </View>
       )}
-    </View>
-  );
-}
-
-function PlanLine({ label, included }) {
-  return (
-    <View style={styles.planLine}>
-      <Ionicons
-        color={included ? colors.green : colors.mutedLight}
-        name={included ? "checkmark-circle" : "lock-closed-outline"}
-        size={17}
-      />
-      <Text style={styles.planLineText}>{label}</Text>
     </View>
   );
 }
@@ -1733,38 +1694,6 @@ const styles = StyleSheet.create({
     color: colors.surface,
     fontSize: 14,
     fontWeight: "800"
-  },
-  subscriptionCard: {
-    gap: spacing.md
-  },
-  planHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between"
-  },
-  planBadge: {
-    backgroundColor: colors.paleBlue,
-    borderRadius: radii.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs
-  },
-  planBadgeText: {
-    color: colors.blue,
-    fontSize: 12,
-    fontWeight: "700"
-  },
-  planRows: {
-    gap: spacing.sm
-  },
-  planLine: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.sm
-  },
-  planLineText: {
-    color: colors.muted,
-    fontSize: 13,
-    fontWeight: "700"
   },
   profileInputWrap: {
     gap: spacing.xs

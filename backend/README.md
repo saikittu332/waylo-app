@@ -97,7 +97,6 @@ The initial Alembic migration creates all current persistence tables:
 - `vehicles`
 - `trips`
 - `saved_plans`
-- `subscriptions`
 
 `users` also stores a nullable `firebase_uid` so existing local users can be linked after Firebase login.
 
@@ -107,11 +106,10 @@ The initial Alembic migration creates all current persistence tables:
 - Vehicle model
 - Trip model
 - SavedPlan model
-- Subscription model
 - Basic CRUD-style endpoints
 - Alembic migration support
 - Environment-based config
 - Local Docker PostgreSQL setup
 - API persistence smoke tests
 
-Stripe, Mapbox, Firebase, and AI planning are intentionally not integrated yet.
+Mapbox route preview, Firebase verification scaffolding, and rule-based planning are present. Turn-by-turn navigation, fuel price APIs, and AI planning are intentionally not integrated yet.

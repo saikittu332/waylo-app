@@ -116,17 +116,3 @@ class SavedPlanRead(SavedPlanCreate):
 
     model_config = ConfigDict(from_attributes=True)
 
-
-class SubscriptionCreate(BaseModel):
-    user_id: uuid.UUID
-    plan_name: str = "Free"
-    status: str = "active"
-    is_premium: bool = False
-    current_period_end: Optional[datetime] = None
-
-
-class SubscriptionRead(SubscriptionCreate):
-    id: uuid.UUID
-    created_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)

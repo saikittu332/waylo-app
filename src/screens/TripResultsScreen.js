@@ -10,7 +10,6 @@ import StopCard from "../components/StopCard";
 import { colors, radii, screen, spacing } from "../constants/theme";
 import { defaultVehicle } from "../data/mockVehicleSpecs";
 import { apiSavedPlanToApp, savePlan, planTrip } from "../services/api";
-import { getSubscriptionState } from "../services/subscriptionService";
 import { formatCurrency, formatHours } from "../utils/tripCalculator";
 import { routeTitle, shortPlaceLabel } from "../utils/placeLabels";
 
@@ -23,7 +22,6 @@ export default function TripResultsScreen({ navigation, route }) {
   const [routeError, setRouteError] = useState("");
   const [loadingRoute, setLoadingRoute] = useState(true);
   const [stopDecisions, setStopDecisions] = useState({});
-  const subscription = getSubscriptionState();
 
   useEffect(() => {
     loadTripPlan();
@@ -124,7 +122,7 @@ export default function TripResultsScreen({ navigation, route }) {
         />
 
         <PremiumCard style={styles.planCard}>
-          <Text style={styles.planTitle}>Smart Trip Plan <Text style={styles.premiumText}>({subscription.planName})</Text></Text>
+          <Text style={styles.planTitle}>Smart Trip Plan</Text>
           <Text style={styles.planSubtitle}>Rule-based preview using real route distance</Text>
           <InsightCard title="Fuel Plan" value={`${Math.max(ruleBasedPlan.fuelStops.length, 1)} stops | Best prices`} accent="green" />
           <InsightCard title="Rest Stops" value={`${Math.max(ruleBasedPlan.restStops.length, 1)} stops | Stay fresh`} />

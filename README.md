@@ -6,14 +6,13 @@ Tagline: Drive smart. Spend less.
 
 ## What is included
 
-- Onboarding, phone OTP placeholder, assistant naming, vehicle setup, trip input, AI trip results, stop details, navigation mode, trip summary, and paywall screens.
+- Onboarding, phone OTP placeholder, assistant naming, vehicle setup, trip input, smart trip results, stop details, navigation mode, and trip summary screens.
 - Mock Firebase phone auth service.
 - Real Mapbox Geocoding and Directions API route preview through a map service abstraction that can later support Google Maps.
-- Mock subscription logic isolated for future Stripe integration.
 - Rule-based trip intelligence for fuel range, safe range, rest stops, fuel cost, and estimated savings.
 - Native Mapbox map rendering when running a custom development build, with a styled fallback map card for Expo Go and web.
 - Mock AI stop recommendations until fuel, places, and AI planning services are integrated.
-- Real FastAPI persistence for users, vehicles, trips, saved plans, and subscriptions when the backend is running.
+- Real FastAPI persistence for users, vehicles, trips, and saved plans when the backend is running.
 
 ## Run locally
 
@@ -147,11 +146,10 @@ $env:EXPO_PUBLIC_WAYLO_API_URL="http://192.168.1.25:8000"
 npx expo start
 ```
 
-The backend currently includes User, Vehicle, Trip, SavedPlan, and Subscription models plus API endpoints used by the MVP app. Trip planning now persists Mapbox-backed route distance and duration when the frontend has a valid Mapbox token. Stripe, full Firebase phone auth in Expo Go, turn-by-turn navigation, fuel price APIs, and AI planning are intentionally not integrated yet.
+The backend currently includes User, Vehicle, Trip, and SavedPlan models plus API endpoints used by the MVP app. Trip planning now persists Mapbox-backed route distance and duration when the frontend has a valid Mapbox token. Full Firebase phone auth in Expo Go, turn-by-turn navigation, fuel price APIs, and AI planning are intentionally not integrated yet.
 
 ## Future integration points
 
 - `src/services/authService.js`: replace the mock phone OTP flow with Firebase Phone Auth.
 - `src/services/mapService.js`: Mapbox Geocoding/Directions live here; add Google Maps behind the same service contract later.
 - `src/services/api.js`: keep expanding FastAPI integration beyond persistence into real planning once AI and map services exist.
-- `src/services/subscriptionService.js`: replace mock premium state with Stripe-backed entitlements.

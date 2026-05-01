@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.firebase_auth import verify_firebase_id_token
-from app.models import SavedPlan, Subscription, Trip, User, Vehicle
+from app.models import SavedPlan, Trip, User, Vehicle
 from app.schemas import (
     FirebaseLoginRequest,
     LoginRequest,
@@ -17,8 +17,6 @@ from app.schemas import (
     SavedPlanCreate,
     SavedPlanRead,
     SavedPlanUpdate,
-    SubscriptionCreate,
-    SubscriptionRead,
     TripCreate,
     TripRead,
     TripUpdate,
@@ -217,23 +215,6 @@ def delete_saved_plan(saved_plan_id: uuid.UUID, db: Session = Depends(get_db)) -
         raise HTTPException(status_code=404, detail="Saved plan not found.")
     db.delete(saved_plan)
     db.commit()
-
-
-@app.post("/subscriptions", response_model=SubscriptionRead, status_code=status.HTTP_201_CREATED)
-def create_subscription(payload: SubscriptionCreate, db: Session = Depends(get_db)) -> Subscription:
-    ensure_user_exists(db, payload.user_id)
-    subscription = Subscription(**payload.model_dump())
-    db.add(subscription)
-    db.commit()
-    db.refresh(subscription)
-    return subscription
-
-
-@app.get("/subscriptions", response_model=list[SubscriptionRead])
-def list_subscriptions(user_id: uuid.UUID = Query(), db: Session = Depends(get_db)) -> list[Subscription]:
-    ensure_user_exists(db, user_id)
-    query = select(Subscription).where(Subscription.user_id == user_id).order_by(Subscription.created_at.desc())
-    return list(db.scalars(query).all())
 
 
 def ensure_user_exists(db: Session, user_id: uuid.UUID) -> None:
