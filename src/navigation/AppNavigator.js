@@ -22,7 +22,7 @@ export default function AppNavigator() {
         headerShadowVisible: false,
         headerStyle: { backgroundColor: colors.appBackground },
         headerTintColor: colors.navy,
-        headerTitleStyle: { fontWeight: "800" },
+        headerTitleStyle: { fontWeight: "700" },
         contentStyle: { backgroundColor: colors.appBackground }
       }}
     >

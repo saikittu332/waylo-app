@@ -15,6 +15,7 @@ export default function TripSummaryScreen({ navigation, route }) {
   const fuelCost = tripPlan?.insights?.estimatedFuelCost || 52.36;
   const savings = tripPlan?.insights?.estimatedSavings || 14.28;
   const fuelUsed = tripPlan?.insights?.fuelUsed || 11.2;
+  const stopsMade = tripPlan?.finalStops?.length || tripPlan?.fullStops?.length || 0;
   const completedTrip = route.params?.completedTrip || {
     id: `completed-${tripPlan?.savedPlanId || routeSummary?.from || "route"}-${Date.now()}`,
     savedPlanId: tripPlan?.savedPlanId,
@@ -81,7 +82,7 @@ export default function TripSummaryScreen({ navigation, route }) {
 
           <View style={styles.stopsMade}>
             <Text style={styles.stopsTitle}>Stops Made</Text>
-            <Text style={styles.stopsText}>2 Fuel stops | 2 Breaks</Text>
+            <Text style={styles.stopsText}>{stopsMade || 0} planned stops</Text>
           </View>
         </PremiumCard>
 
@@ -129,7 +130,7 @@ const styles = StyleSheet.create({
   completed: {
     color: colors.surface,
     fontSize: 21,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   message: {
     color: "#DDE7F5",
@@ -152,7 +153,7 @@ const styles = StyleSheet.create({
   },
   routeTitle: {
     ...typography.body,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   date: {
     color: colors.muted,
@@ -168,12 +169,12 @@ const styles = StyleSheet.create({
   summaryLabel: {
     color: colors.muted,
     fontSize: 14,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   summaryValue: {
     color: colors.navy,
     fontSize: 16,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   savingsCard: {
     alignItems: "center",
@@ -188,7 +189,7 @@ const styles = StyleSheet.create({
   savingsLabel: {
     color: "#087A3A",
     fontSize: 16,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   savingsSub: {
     color: "#087A3A",
@@ -198,7 +199,7 @@ const styles = StyleSheet.create({
   savingsValue: {
     color: "#087A3A",
     fontSize: 24,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   stopsMade: {
     gap: 3
@@ -206,7 +207,7 @@ const styles = StyleSheet.create({
   stopsTitle: {
     color: colors.text,
     fontSize: 14,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   stopsText: {
     color: colors.muted,

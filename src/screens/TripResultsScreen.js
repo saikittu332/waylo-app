@@ -97,7 +97,9 @@ export default function TripResultsScreen({ navigation, route }) {
           tripId: tripPlan.persistedTrip?.id,
           route: plannedRoute,
           vehicle,
-          insights
+          insights,
+          finalStops,
+          stopDecisions
         });
         nextSavedPlan = apiSavedPlanToApp(persisted);
       } catch (error) {
@@ -140,7 +142,7 @@ export default function TripResultsScreen({ navigation, route }) {
         <PremiumCard style={styles.stopsCard}>
           <View style={styles.stopsHeader}>
             <Text style={styles.stopsTitle}>Recommended Stops</Text>
-            <Text style={styles.stopsMeta}>{finalStops.length} final</Text>
+            <Text style={styles.stopsMeta}>{finalStops.length} selected</Text>
           </View>
           {stops.map((stop) => (
             <StopCard
@@ -161,7 +163,7 @@ export default function TripResultsScreen({ navigation, route }) {
         </PremiumCard>
 
         <PrimaryButton
-          title="Start Navigation"
+          title="Start Drive Preview"
           onPress={() => navigation.navigate("Navigation", {
             tripPlan: {
               ...tripPlan,
@@ -198,7 +200,7 @@ const styles = StyleSheet.create({
   loading: {
     color: colors.navy,
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "700",
     margin: spacing.lg
   },
   errorWrap: {
@@ -213,7 +215,7 @@ const styles = StyleSheet.create({
   errorTitle: {
     color: colors.text,
     fontSize: 20,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   errorCopy: {
     color: colors.muted,
@@ -228,7 +230,7 @@ const styles = StyleSheet.create({
   routeTitle: {
     color: colors.text,
     fontSize: 16,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   routeMeta: {
     color: colors.muted,
@@ -244,7 +246,7 @@ const styles = StyleSheet.create({
   planTitle: {
     color: colors.text,
     fontSize: 14,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   premiumText: {
     color: colors.green,
@@ -267,7 +269,7 @@ const styles = StyleSheet.create({
   savingsLabel: {
     color: "#0E7A4A",
     fontSize: 12,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   savingsSub: {
     color: "#0E7A4A",
@@ -277,7 +279,7 @@ const styles = StyleSheet.create({
   savingsValue: {
     color: "#0E7A4A",
     fontSize: 18,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   summaryBar: {
     alignItems: "center",
@@ -294,7 +296,7 @@ const styles = StyleSheet.create({
   stopsTitle: {
     color: colors.text,
     fontSize: 16,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   stopsMeta: {
     color: colors.muted,

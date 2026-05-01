@@ -26,7 +26,7 @@ const locationSuggestions = [
 const tabs = [
   { label: "Home", icon: "home" },
   { label: "Trips", icon: "map" },
-  { label: "Navigate", icon: "navigate" },
+  { label: "Drive", icon: "navigate" },
   { label: "Vehicle", icon: "car-sport" },
   { label: "Profile", icon: "person" }
 ];
@@ -158,7 +158,7 @@ export default function HomeScreen({ navigation, route }) {
             completedTrips={completedTrips}
           />
         )}
-        {activeTab === "Navigate" && (
+        {activeTab === "Drive" && (
           <NavigateContent
             assistantName={assistantName}
             user={user}
@@ -438,7 +438,7 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
   return (
     <>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{compact ? "Saved Plans" : "Trips"}</Text>
+        <Text style={styles.sectionTitle}>{compact ? "Upcoming Drives" : "Trips"}</Text>
       </View>
       <PremiumCard style={styles.recentCard}>
         {!compact && (
@@ -450,16 +450,16 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
                 style={[styles.tripSectionTab, selectedSection === section && styles.tripSectionTabActive]}
               >
                 <Text style={[styles.tripSectionText, selectedSection === section && styles.tripSectionTextActive]}>
-                  {section === "Ready" ? "Ready to Drive" : "Completed"}
+                  {section === "Ready" ? "Upcoming" : "Completed"}
                 </Text>
               </Pressable>
             ))}
           </View>
         )}
-        {compact && <Text style={styles.groupLabel}>Ready to Drive</Text>}
+        {compact && <Text style={styles.groupLabel}>Upcoming</Text>}
         {(compact || showingReady) && (
           visiblePlans.length === 0 ? (
-            <Text style={styles.emptyText}>Saved trip plans will appear here.</Text>
+            <Text style={styles.emptyText}>Saved routes will appear here after you build a trip plan.</Text>
           ) : (
             visiblePlans.map((plan, index) => (
               <React.Fragment key={plan.id}>
@@ -525,7 +525,7 @@ function NavigateContent({ navigation, plannedTrips }) {
   return (
     <>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Navigate</Text>
+        <Text style={styles.sectionTitle}>Drive Preview</Text>
       </View>
       <View style={styles.liveMapCard}>
         <View style={styles.mapLandMass} />
@@ -537,10 +537,10 @@ function NavigateContent({ navigation, plannedTrips }) {
         </View>
         <View style={styles.mapCaption}>
           <Text style={styles.mapCaptionTitle}>Current location</Text>
-          <Text style={styles.mapCaptionText}>Live route view placeholder</Text>
+          <Text style={styles.mapCaptionText}>Choose an upcoming drive to preview the route.</Text>
         </View>
         <PremiumCard style={styles.routeSheet}>
-          <Text style={styles.groupLabel}>Ready Routes</Text>
+          <Text style={styles.groupLabel}>Upcoming routes</Text>
           {plannedTrips.length === 0 ? (
             <Text style={styles.emptyText}>No saved plans yet. Build a route and tap Save for Later.</Text>
           ) : (
@@ -668,9 +668,41 @@ function ProfileContent({ assistantName, setAssistantName, user, setUser, naviga
   const [editing, setEditing] = useState(false);
   const [nameError, setNameError] = useState("");
   const [assistantNameError, setAssistantNameError] = useState("");
-  const [fuelAlerts, setFuelAlerts] = useState(true);
-  const [restReminders, setRestReminders] = useState(true);
-  const [restInterval, setRestInterval] = useState("2.5 hours");
+  const [fuelAlerts, setFuelAlerts] = useState(user?.fuelSavingsAlerts ?? user?.fuel_savings_alerts ?? true);
+  const [restReminders, setRestReminders] = useState(user?.restRemindersEnabled ?? user?.rest_reminders_enabled ?? true);
+  const [restInterval, setRestInterval] = useState(`${user?.restReminderHours ?? user?.rest_reminder_hours ?? 2.5} hours`);
+
+  async function persistPreferences(next) {
+    const nextUser = {
+      ...user,
+      fuel_savings_alerts: next.fuel_savings_alerts ?? fuelAlerts,
+      rest_reminders_enabled: next.rest_reminders_enabled ?? restReminders,
+      rest_reminder_hours: next.rest_reminder_hours ?? Number(restInterval.replace(" hours", ""))
+    };
+    setUser?.(nextUser);
+    if (!user?.id) return;
+    try {
+      const updated = await updateUser(user.id, next);
+      setUser?.(updated);
+    } catch (error) {
+      console.warn("Waylo API preference update unavailable:", error.message);
+    }
+  }
+
+  function updateFuelAlerts(value) {
+    setFuelAlerts(value);
+    persistPreferences({ fuel_savings_alerts: value });
+  }
+
+  function updateRestReminders(value) {
+    setRestReminders(value);
+    persistPreferences({ rest_reminders_enabled: value });
+  }
+
+  function updateRestInterval(value) {
+    setRestInterval(value);
+    persistPreferences({ rest_reminder_hours: Number(value.replace(" hours", "")) });
+  }
 
   function toggleEditing() {
     if (!editing) {
@@ -741,12 +773,12 @@ function ProfileContent({ assistantName, setAssistantName, user, setUser, naviga
       </PremiumCard>
       <PremiumCard style={styles.profileCard}>
         <Text style={styles.cardTitle}>Preferences</Text>
-        <PreferenceRow label="Fuel savings alerts" value={fuelAlerts} onValueChange={setFuelAlerts} />
+        <PreferenceRow label="Fuel savings alerts" value={fuelAlerts} onValueChange={updateFuelAlerts} />
         <ReminderPreference
           enabled={restReminders}
           interval={restInterval}
-          onIntervalChange={setRestInterval}
-          onToggle={setRestReminders}
+          onIntervalChange={updateRestInterval}
+          onToggle={updateRestReminders}
         />
       </PremiumCard>
       <PremiumCard style={styles.accountCard}>
@@ -970,7 +1002,7 @@ const styles = StyleSheet.create({
   greeting: {
     color: colors.navy,
     fontSize: 19,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   assistant: {
     color: colors.muted,
@@ -1035,7 +1067,7 @@ const styles = StyleSheet.create({
   heroEyebrow: {
     color: "#8EE7C8",
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "700",
     letterSpacing: 0.5,
     textTransform: "uppercase"
   },
@@ -1052,7 +1084,7 @@ const styles = StyleSheet.create({
   heroTitle: {
     color: colors.surface,
     fontSize: 24,
-    fontWeight: "800",
+    fontWeight: "700",
     marginTop: 4
   },
   heroCopy: {
@@ -1088,7 +1120,7 @@ const styles = StyleSheet.create({
   miniMetricValue: {
     color: colors.surface,
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "700",
     marginTop: 1
   },
   notificationPanel: {
@@ -1131,7 +1163,7 @@ const styles = StyleSheet.create({
   notificationHeading: {
     color: colors.text,
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "700",
     textTransform: "uppercase"
   },
   notificationRow: {
@@ -1152,7 +1184,7 @@ const styles = StyleSheet.create({
   notificationTitle: {
     color: colors.text,
     fontSize: 14,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   notificationDetail: {
     color: colors.muted,
@@ -1167,7 +1199,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     color: colors.text,
     fontSize: 20,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   label: {
     color: colors.text,
@@ -1232,7 +1264,7 @@ const styles = StyleSheet.create({
   fieldAction: {
     color: colors.navy,
     fontSize: 18,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   modes: {
     flexDirection: "row",
@@ -1247,7 +1279,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: colors.text,
     fontSize: 16,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   viewAll: {
     color: colors.blue,
@@ -1264,7 +1296,7 @@ const styles = StyleSheet.create({
   groupLabel: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "700",
     paddingHorizontal: spacing.sm,
     paddingTop: spacing.xs,
     textTransform: "uppercase"
@@ -1295,7 +1327,7 @@ const styles = StyleSheet.create({
   tripSectionText: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   tripSectionTextActive: {
     color: colors.navy
@@ -1365,7 +1397,7 @@ const styles = StyleSheet.create({
   tabLabel: {
     color: colors.muted,
     fontSize: 10,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   activeTab: {
     color: colors.navy
@@ -1402,12 +1434,12 @@ const styles = StyleSheet.create({
   selectedVehicleLabel: {
     color: colors.muted,
     fontSize: 11,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   selectedVehicleName: {
     color: colors.text,
     fontSize: 14,
-    fontWeight: "800",
+    fontWeight: "700",
     marginTop: 2
   },
   vehiclePicker: {
@@ -1482,7 +1514,7 @@ const styles = StyleSheet.create({
   vehicleActionPrimaryText: {
     color: colors.surface,
     fontSize: 14,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   vehicleActionDanger: {
     alignItems: "center",
@@ -1500,7 +1532,7 @@ const styles = StyleSheet.create({
   vehicleActionDangerText: {
     color: colors.red,
     fontSize: 14,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   navigateHero: {
     alignItems: "center",
@@ -1589,7 +1621,7 @@ const styles = StyleSheet.create({
   mapCaptionTitle: {
     color: colors.text,
     fontSize: 15,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   mapCaptionText: {
     color: colors.muted,
@@ -1620,7 +1652,7 @@ const styles = StyleSheet.create({
   startMiniText: {
     color: colors.surface,
     fontSize: 12,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   vehiclePhoto: {
     alignItems: "center",
@@ -1680,7 +1712,7 @@ const styles = StyleSheet.create({
   confirmSecondaryText: {
     color: colors.navy,
     fontSize: 14,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   confirmDanger: {
     alignItems: "center",
@@ -1693,7 +1725,7 @@ const styles = StyleSheet.create({
   confirmDangerText: {
     color: colors.surface,
     fontSize: 14,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   profileInputWrap: {
     gap: spacing.xs

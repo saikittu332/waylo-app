@@ -6,7 +6,7 @@ Tagline: Drive smart. Spend less.
 
 ## What is included
 
-- Onboarding, phone OTP placeholder, assistant naming, vehicle setup, trip input, smart trip results, stop details, navigation mode, and trip summary screens.
+- Onboarding, phone OTP development fallback, assistant naming, vehicle setup, trip input, smart trip results, stop details, drive preview, and trip summary screens.
 - Mock Firebase phone auth service.
 - Real Mapbox Geocoding and Directions API route preview through a map service abstraction that can later support Google Maps.
 - Rule-based trip intelligence for fuel range, safe range, rest stops, fuel cost, and estimated savings.
@@ -150,6 +150,6 @@ The backend currently includes User, Vehicle, Trip, and SavedPlan models plus AP
 
 ## Future integration points
 
-- `src/services/authService.js`: replace the mock phone OTP flow with Firebase Phone Auth.
+- `src/services/authService.js`: replace the Expo Go phone-login fallback with Firebase Phone Auth when an EAS development build is available.
 - `src/services/mapService.js`: Mapbox Geocoding/Directions live here; add Google Maps behind the same service contract later.
 - `src/services/api.js`: keep expanding FastAPI integration beyond persistence into real planning once AI and map services exist.

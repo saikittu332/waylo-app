@@ -109,7 +109,7 @@ export default function VehicleSetupScreen({ navigation, route }) {
             <Ionicons color={colors.blue} name="car-sport" size={76} />
           </View>
           <Text style={styles.vehicleName}>{vehicle.vehicleName || "Choose or add your vehicle"}</Text>
-          <Text style={styles.verified}>Verified mock specs</Text>
+          <Text style={styles.verified}>Editable fuel economy specs</Text>
           <View style={styles.statsRow}>
             <StatItem label="City MPG" value={String(vehicle.cityMpg)} />
             <View style={styles.divider} />
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   label: {
     color: colors.text,
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "700",
     marginBottom: spacing.xs
   },
   searchBox: {
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   searchInput: {
     color: colors.text,
     flex: 1,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   vehicleCard: {
     gap: spacing.sm
@@ -265,12 +265,12 @@ const styles = StyleSheet.create({
   vehicleName: {
     color: colors.text,
     fontSize: 18,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   verified: {
     color: colors.green,
     fontSize: 13,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   statsRow: {
     alignItems: "center",
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
   },
   fuelText: {
     color: colors.text,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   activeFuelText: {
     color: colors.surface
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   fieldInput: {
     backgroundColor: colors.surface,
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
   suggestionsTitle: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "700",
     textTransform: "uppercase"
   },
   suggestion: {
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
   },
   suggestionName: {
     color: colors.text,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   suggestionMeta: {
     color: colors.muted,

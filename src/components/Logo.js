@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
     alignItems: "center"
   },
   text: {
-    fontWeight: "800",
+    fontWeight: "700",
     letterSpacing: 0,
     marginTop: -2
   },

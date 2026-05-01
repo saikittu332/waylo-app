@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   },
   chipText: {
     color: colors.text,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   activeChipText: {
     color: colors.surface

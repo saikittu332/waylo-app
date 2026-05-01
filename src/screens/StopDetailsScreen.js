@@ -46,10 +46,10 @@ export default function StopDetailsScreen({ navigation, route }) {
           </View>
 
           <Text style={styles.sectionTitle}>Why we recommend this stop?</Text>
-          <Checklist text="Good fuel price" />
-          <Checklist text="Clean restrooms" />
-          <Checklist text="Highly rated by travelers" />
-          <Checklist text="Convenient detour (2 min)" />
+          <Checklist text={stop.recommendation || "Good fit for this route plan"} />
+          <Checklist text={stop.type === "fuel" ? "Fuel timing protects your safe range" : "Low-friction stop near your route"} />
+          <Checklist text="Useful amenities for a longer drive" />
+          <Checklist text="Can be added or skipped before you save the route" />
         </PremiumCard>
 
         <PrimaryButton title={decision === "added" ? "Added to Route" : "Add to Route"} onPress={() => chooseStop("added")} />
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: colors.text,
     fontSize: 15,
-    fontWeight: "800",
+    fontWeight: "700",
     marginTop: spacing.md
   },
   checkRow: {

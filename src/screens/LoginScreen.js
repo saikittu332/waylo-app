@@ -8,13 +8,24 @@ import { colors, radii, screen, spacing, typography } from "../constants/theme";
 import { completePhoneLogin, sendPhoneOtp, verifyOtp } from "../services/authService";
 
 export default function LoginScreen({ navigation }) {
-  const [phone, setPhone] = useState("+1 (555) 123-4567");
+  const [phone, setPhone] = useState("");
   const [otpSent, setOtpSent] = useState(false);
-  const [code, setCode] = useState(["2", "4", "6", "8", "1", "2"]);
+  const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [confirmation, setConfirmation] = useState(null);
+  const [error, setError] = useState("");
 
   async function handleContinue() {
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length < 10) {
+      setError("Enter a valid US phone number.");
+      return;
+    }
+    if (otpSent && code.join("").length !== 6) {
+      setError("Enter the 6-digit verification code.");
+      return;
+    }
+    setError("");
     setLoading(true);
     if (!otpSent) {
       const nextConfirmation = await sendPhoneOtp(phone);
@@ -42,9 +53,10 @@ export default function LoginScreen({ navigation }) {
           <Text style={styles.label}>Phone number</Text>
           <View style={styles.phoneRow}>
             <Text style={styles.flag}>US</Text>
-            <TextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" style={styles.phoneInput} />
+            <TextInput placeholder="+1 (555) 123-4567" placeholderTextColor={colors.mutedLight} value={phone} onChangeText={setPhone} keyboardType="phone-pad" style={styles.phoneInput} />
           </View>
           <PrimaryButton title={otpSent ? "Verify OTP" : "Send OTP"} loading={loading} onPress={handleContinue} />
+          {!!error && <Text style={styles.errorText}>{error}</Text>}
 
           <Text style={styles.label}>Enter OTP</Text>
           <View style={styles.otpRow}>
@@ -104,7 +116,7 @@ const styles = StyleSheet.create({
   label: {
     color: colors.text,
     fontSize: 13,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   phoneRow: {
     alignItems: "center",
@@ -118,7 +130,7 @@ const styles = StyleSheet.create({
   },
   flag: {
     color: colors.navy,
-    fontWeight: "800",
+    fontWeight: "700",
     marginRight: spacing.md
   },
   phoneInput: {
@@ -139,7 +151,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: colors.navy,
     fontSize: 18,
-    fontWeight: "800",
+    fontWeight: "700",
     height: 46,
     textAlign: "center",
     width: 46
@@ -147,8 +159,13 @@ const styles = StyleSheet.create({
   resend: {
     color: colors.mutedLight,
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "700",
     textAlign: "center"
+  },
+  errorText: {
+    color: colors.red,
+    fontSize: 12,
+    fontWeight: "600"
   },
   terms: {
     color: colors.mutedLight,

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, Float, ForeignKey, String, Text, func
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -18,6 +18,9 @@ class User(Base):
     name: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
     assistant_name: Mapped[str] = mapped_column(String(80), default="Waylo")
     active_vehicle_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("vehicles.id", ondelete="SET NULL"), nullable=True)
+    fuel_savings_alerts: Mapped[bool] = mapped_column(Boolean, default=True)
+    rest_reminders_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    rest_reminder_hours: Mapped[float] = mapped_column(Float, default=2.5)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     vehicles: Mapped[list["Vehicle"]] = relationship(back_populates="user", cascade="all, delete-orphan", foreign_keys="Vehicle.user_id")
@@ -77,4 +80,3 @@ class SavedPlan(Base):
 
     user: Mapped[User] = relationship(back_populates="saved_plans")
     trip: Mapped[Optional["Trip"]] = relationship(back_populates="saved_plans")
-

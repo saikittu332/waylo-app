@@ -55,7 +55,7 @@ export default function TripDetailScreen({ navigation, route }) {
         {!isCompleted && (
           <>
             <PrimaryButton
-              title="Start Navigation"
+              title="Start Drive Preview"
               onPress={() => navigation.navigate("Navigation", {
                 tripPlan: {
                   savedPlanId: plan?.id,
@@ -72,7 +72,7 @@ export default function TripDetailScreen({ navigation, route }) {
                     estimatedFuelCost: plan?.estimatedFuelCost,
                     estimatedSavings: plan?.estimatedSavings
                   },
-                  fullStops: [{ id: "quick-fuel", type: "fuel", name: "Best Fuel Stop" }]
+                  fullStops: plan?.finalStops?.length ? plan.finalStops : [{ id: "quick-fuel", type: "fuel", name: "Best Fuel Stop" }]
                 }
               })}
             />
@@ -103,13 +103,13 @@ const styles = StyleSheet.create({
   eyebrow: {
     color: colors.green,
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "700",
     textTransform: "uppercase"
   },
   title: {
     color: colors.text,
     fontSize: 22,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   meta: {
     color: colors.muted,
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: colors.text,
     fontSize: 16,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   body: {
     color: colors.muted,

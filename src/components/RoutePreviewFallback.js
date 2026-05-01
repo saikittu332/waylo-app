@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   routeBadgeText: {
     color: colors.navy,
     fontSize: 11,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   fallbackBadge: {
     backgroundColor: "rgba(255,255,255,0.92)",
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
   mapPinText: {
     color: colors.navy,
     fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "700",
     marginTop: 2
   },
   pinStart: {

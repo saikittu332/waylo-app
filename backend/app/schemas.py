@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class UserCreate(BaseModel):
@@ -11,12 +11,26 @@ class UserCreate(BaseModel):
     name: Optional[str] = None
     assistant_name: str = "Waylo"
     active_vehicle_id: Optional[uuid.UUID] = None
+    fuel_savings_alerts: bool = True
+    rest_reminders_enabled: bool = True
+    rest_reminder_hours: float = Field(default=2.5, ge=1.0, le=6.0)
+
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, value: str) -> str:
+        digits = "".join(character for character in value if character.isdigit())
+        if len(digits) < 10:
+            raise ValueError("Phone number must include at least 10 digits.")
+        return value
 
 
 class UserUpdate(BaseModel):
     name: Optional[str] = None
     assistant_name: Optional[str] = None
     active_vehicle_id: Optional[uuid.UUID] = None
+    fuel_savings_alerts: Optional[bool] = None
+    rest_reminders_enabled: Optional[bool] = None
+    rest_reminder_hours: Optional[float] = Field(default=None, ge=1.0, le=6.0)
 
 
 class UserRead(UserCreate):
@@ -29,6 +43,14 @@ class UserRead(UserCreate):
 class LoginRequest(BaseModel):
     phone: str
     otp_code: Optional[str] = None
+
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, value: str) -> str:
+        digits = "".join(character for character in value if character.isdigit())
+        if len(digits) < 10:
+            raise ValueError("Phone number must include at least 10 digits.")
+        return value
 
 
 class FirebaseLoginRequest(BaseModel):
@@ -43,19 +65,19 @@ class LoginResponse(BaseModel):
 
 class VehicleCreate(BaseModel):
     user_id: uuid.UUID
-    vehicle_name: str
+    vehicle_name: str = Field(min_length=2, max_length=160)
     fuel_type: str = "gas"
-    city_mpg: Optional[float] = None
-    highway_mpg: Optional[float] = None
-    tank_capacity_gallons: Optional[float] = None
+    city_mpg: Optional[float] = Field(default=None, ge=0, le=250)
+    highway_mpg: Optional[float] = Field(default=None, ge=0, le=250)
+    tank_capacity_gallons: Optional[float] = Field(default=None, ge=0, le=80)
 
 
 class VehicleUpdate(BaseModel):
-    vehicle_name: Optional[str] = None
+    vehicle_name: Optional[str] = Field(default=None, min_length=2, max_length=160)
     fuel_type: Optional[str] = None
-    city_mpg: Optional[float] = None
-    highway_mpg: Optional[float] = None
-    tank_capacity_gallons: Optional[float] = None
+    city_mpg: Optional[float] = Field(default=None, ge=0, le=250)
+    highway_mpg: Optional[float] = Field(default=None, ge=0, le=250)
+    tank_capacity_gallons: Optional[float] = Field(default=None, ge=0, le=80)
 
 
 class VehicleRead(VehicleCreate):
@@ -115,4 +137,3 @@ class SavedPlanRead(SavedPlanCreate):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
-

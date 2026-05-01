@@ -60,7 +60,10 @@ export function apiVehicleToApp(vehicle) {
 export function apiUserToApp(user) {
   return {
     ...user,
-    activeVehicleId: user.active_vehicle_id
+    activeVehicleId: user.active_vehicle_id,
+    fuelSavingsAlerts: user.fuel_savings_alerts ?? true,
+    restRemindersEnabled: user.rest_reminders_enabled ?? true,
+    restReminderHours: user.rest_reminder_hours ?? 2.5
   };
 }
 
@@ -89,6 +92,8 @@ export function apiSavedPlanToApp(plan) {
     durationHours: payload.durationHours,
     estimatedFuelCost: payload.estimatedFuelCost,
     estimatedSavings: payload.estimatedSavings,
+    finalStops: payload.finalStops || [],
+    stopDecisions: payload.stopDecisions || {},
     routePayload: payload.route || null,
     savedAt: "Saved in Waylo"
   };
@@ -212,7 +217,7 @@ export async function getTrips(userId) {
   return request(`/trips?user_id=${encodeURIComponent(userId)}`);
 }
 
-export async function savePlan({ userId, tripId, route, vehicle, insights }) {
+export async function savePlan({ userId, tripId, route, vehicle, insights, finalStops = [], stopDecisions = {} }) {
   return request("/saved-plans", {
     body: JSON.stringify({
       user_id: userId,
@@ -229,6 +234,8 @@ export async function savePlan({ userId, tripId, route, vehicle, insights }) {
         durationHours: route.durationHours,
         estimatedFuelCost: insights.estimatedFuelCost,
         estimatedSavings: insights.estimatedSavings,
+        finalStops,
+        stopDecisions,
         route: {
           from: route.from,
           to: route.to,
@@ -285,7 +292,7 @@ export async function planTrip({ from, to, mode, vehicle, user, originPlace, des
   const range = calculateRange(vehicle.highwayMpg, vehicle.tankCapacity);
   const safeRange = calculateSafeRange(range);
   const fuelStops = generateFuelStops(routeDistance, safeRange);
-  const restStops = generateRestStops(routeDuration);
+  const restStops = generateRestStops(routeDuration, user?.restReminderHours || user?.rest_reminder_hours || 2.5);
   const estimatedFuelCost = estimateFuelCost(routeDistance, vehicle.highwayMpg, mockRoute.mockFuelPrice);
   const estimatedSavings = estimateSavings(
     routeDistance,
@@ -321,15 +328,62 @@ export async function planTrip({ from, to, mode, vehicle, user, originPlace, des
     console.warn("Waylo API trip persistence unavailable:", error.message);
   }
 
+  const generatedStops = buildRouteStops({
+    fuelStops,
+    restStops,
+    routeDistance,
+    mode: mode || mockTripRequest.mode
+  });
+
   return {
     persistedTrip,
     route,
-    stops: mockStops,
-    fullStops: mockStops,
+    stops: generatedStops,
+    fullStops: generatedStops,
     ruleBasedPlan: {
       fuelStops,
       restStops
     },
     insights
   };
+}
+
+function buildRouteStops({ fuelStops, restStops, routeDistance, mode }) {
+  const fuelStopCards = fuelStops.map((stop) => {
+    const template = mockStops.find((item) => item.type === "fuel") || {};
+    return {
+      ...template,
+      id: stop.id,
+      name: stop.name,
+      type: "fuel",
+      distanceFromStart: stop.mile,
+      distanceFromCurrent: Math.max(stop.mile - 78, 12),
+      fuelPrice: String(stop.price),
+      recommendation: `Planned near mile ${stop.mile}, before your safe range limit.`
+    };
+  });
+
+  const lastRestStop = restStops[restStops.length - 1];
+  const restStopCards = restStops.map((stop, index) => ({
+    id: stop.id,
+    name: stop.name,
+    type: "rest",
+    distanceFromStart: Math.min(Math.round((stop.hour / Math.max(lastRestStop?.hour || stop.hour, 1)) * routeDistance), Math.round(routeDistance - 20)),
+    distanceFromCurrent: Math.max(Math.round(stop.hour * 62), 18),
+    rating: index === 0 ? "4.2" : "4.0",
+    recommendation: `Timed around ${stop.hour} hours to keep the drive comfortable.`
+  }));
+
+  const foodStop = {
+    ...mockStops.find((item) => item.type === "food"),
+    recommendation: "Useful meal stop near the middle of the route."
+  };
+  const scenicStop = {
+    ...mockStops.find((item) => item.type === "scenic"),
+    recommendation: mode === "Scenic" ? "Added because Scenic mode values a better route experience." : "Optional quick view stop with a low detour."
+  };
+
+  return [...fuelStopCards, ...restStopCards, foodStop, scenicStop]
+    .filter(Boolean)
+    .sort((a, b) => Number(a.distanceFromStart || 0) - Number(b.distanceFromStart || 0));
 }

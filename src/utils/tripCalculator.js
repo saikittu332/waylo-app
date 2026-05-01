@@ -34,9 +34,9 @@ export function generateFuelStops(distanceMiles, safeRange) {
   return stops;
 }
 
-export function generateRestStops(durationHours) {
+export function generateRestStops(durationHours, intervalHours = 2.75) {
   const stops = [];
-  let hour = 2.75;
+  let hour = Number(intervalHours) || 2.75;
 
   while (hour < Number(durationHours)) {
     stops.push({
@@ -44,7 +44,7 @@ export function generateRestStops(durationHours) {
       hour: Number(hour.toFixed(1)),
       name: stops.length === 0 ? "Tehachapi Break Stop" : "Highway Rest Area"
     });
-    hour += 2.75;
+    hour += Number(intervalHours) || 2.75;
   }
 
   return stops;

@@ -53,7 +53,7 @@ def client() -> TestClient:
 
 
 def test_create_user_vehicle_trip_and_get_trips_by_user(client: TestClient) -> None:
-    unique_phone = f"+1555{uuid.uuid4().hex[:10]}"
+    unique_phone = f"+1555{str(uuid.uuid4().int)[:10]}"
 
     user_response = client.post(
         "/users",
@@ -61,6 +61,9 @@ def test_create_user_vehicle_trip_and_get_trips_by_user(client: TestClient) -> N
             "phone": unique_phone,
             "name": "Sai",
             "assistant_name": "Waylo",
+            "fuel_savings_alerts": True,
+            "rest_reminders_enabled": True,
+            "rest_reminder_hours": 2.5,
         },
     )
     assert user_response.status_code == 201
@@ -86,10 +89,12 @@ def test_create_user_vehicle_trip_and_get_trips_by_user(client: TestClient) -> N
 
     active_vehicle_response = client.patch(
         f"/users/{user['id']}",
-        json={"active_vehicle_id": vehicle["id"]},
+        json={"active_vehicle_id": vehicle["id"], "rest_reminder_hours": 3, "fuel_savings_alerts": False},
     )
     assert active_vehicle_response.status_code == 200
     assert active_vehicle_response.json()["active_vehicle_id"] == vehicle["id"]
+    assert active_vehicle_response.json()["rest_reminder_hours"] == 3
+    assert active_vehicle_response.json()["fuel_savings_alerts"] is False
 
     vehicles_response = client.get("/vehicles", params={"user_id": user["id"]})
     assert vehicles_response.status_code == 200
