@@ -209,6 +209,60 @@ export async function updateTrip(tripId, payload) {
   });
 }
 
+export function appStopToApi(stop, tripId, decision = "recommended") {
+  return {
+    trip_id: tripId,
+    stop_type: stop.type,
+    name: stop.name,
+    address: stop.address || null,
+    distance_from_start_miles: Number(stop.distanceFromStart) || null,
+    distance_from_current_miles: Number(stop.distanceFromCurrent) || null,
+    rating: Number(stop.rating) || null,
+    fuel_price: Number(stop.fuelPrice) || null,
+    decision,
+    recommendation: stop.recommendation || null,
+    stop_payload: stop
+  };
+}
+
+export function apiTripStopToApp(stop) {
+  return {
+    ...(stop.stop_payload || {}),
+    id: stop.stop_payload?.id || stop.id,
+    persistedStopId: stop.id,
+    type: stop.stop_type,
+    name: stop.name,
+    address: stop.address,
+    distanceFromStart: stop.distance_from_start_miles,
+    distanceFromCurrent: stop.distance_from_current_miles,
+    rating: stop.rating ? String(stop.rating) : stop.stop_payload?.rating,
+    fuelPrice: stop.fuel_price ? String(stop.fuel_price) : stop.stop_payload?.fuelPrice,
+    recommendation: stop.recommendation,
+    decision: stop.decision
+  };
+}
+
+export async function createTripStop(tripId, stop, decision = "recommended") {
+  const saved = await request("/trip-stops", {
+    body: JSON.stringify(appStopToApi(stop, tripId, decision)),
+    method: "POST"
+  });
+  return apiTripStopToApp(saved);
+}
+
+export async function getTripStops(tripId) {
+  const stops = await request(`/trip-stops?trip_id=${encodeURIComponent(tripId)}`);
+  return stops.map(apiTripStopToApp);
+}
+
+export async function updateTripStop(stopId, payload) {
+  const saved = await request(`/trip-stops/${stopId}`, {
+    body: JSON.stringify(payload),
+    method: "PATCH"
+  });
+  return apiTripStopToApp(saved);
+}
+
 export async function completeTrip(tripId) {
   return updateTrip(tripId, { status: "completed" });
 }
@@ -321,13 +375,6 @@ export async function planTrip({ from, to, mode, vehicle, user, originPlace, des
     estimatedSavings
   };
 
-  let persistedTrip = null;
-  try {
-    persistedTrip = await createTripRecord({ userId: user?.id, vehicle, route, insights });
-  } catch (error) {
-    console.warn("Waylo API trip persistence unavailable:", error.message);
-  }
-
   const generatedStops = buildRouteStops({
     fuelStops,
     restStops,
@@ -335,11 +382,22 @@ export async function planTrip({ from, to, mode, vehicle, user, originPlace, des
     mode: mode || mockTripRequest.mode
   });
 
+  let persistedTrip = null;
+  let persistedStops = [];
+  try {
+    persistedTrip = await createTripRecord({ userId: user?.id, vehicle, route, insights });
+    if (persistedTrip?.id) {
+      persistedStops = await Promise.all(generatedStops.map((stop) => createTripStop(persistedTrip.id, stop)));
+    }
+  } catch (error) {
+    console.warn("Waylo API trip persistence unavailable:", error.message);
+  }
+
   return {
     persistedTrip,
     route,
-    stops: generatedStops,
-    fullStops: generatedStops,
+    stops: persistedStops.length ? persistedStops : generatedStops,
+    fullStops: persistedStops.length ? persistedStops : generatedStops,
     ruleBasedPlan: {
       fuelStops,
       restStops

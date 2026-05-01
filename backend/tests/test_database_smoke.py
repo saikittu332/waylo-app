@@ -161,6 +161,37 @@ def test_create_user_vehicle_trip_and_get_trips_by_user(client: TestClient) -> N
     assert complete_trip_response.status_code == 200
     assert complete_trip_response.json()["status"] == "completed"
 
+    trip_stop_response = client.post(
+        "/trip-stops",
+        json={
+            "trip_id": trip["id"],
+            "stop_type": "fuel",
+            "name": "Best Fuel Stop",
+            "address": "1200 W Tehachapi Blvd",
+            "distance_from_start_miles": 120,
+            "distance_from_current_miles": 42,
+            "rating": 4.3,
+            "fuel_price": 3.49,
+            "decision": "recommended",
+            "recommendation": "Planned before the safe range limit.",
+            "stop_payload": {"id": "fuel-1"},
+        },
+    )
+    assert trip_stop_response.status_code == 201
+    trip_stop = trip_stop_response.json()
+    assert trip_stop["trip_id"] == trip["id"]
+
+    trip_stops_response = client.get("/trip-stops", params={"trip_id": trip["id"]})
+    assert trip_stops_response.status_code == 200
+    assert trip_stops_response.json()[0]["id"] == trip_stop["id"]
+
+    trip_stop_update_response = client.patch(
+        f"/trip-stops/{trip_stop['id']}",
+        json={"decision": "added"},
+    )
+    assert trip_stop_update_response.status_code == 200
+    assert trip_stop_update_response.json()["decision"] == "added"
+
     saved_plan_response = client.post(
         "/saved-plans",
         json={

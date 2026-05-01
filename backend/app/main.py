@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.firebase_auth import verify_firebase_id_token
-from app.models import SavedPlan, Trip, User, Vehicle
+from app.models import SavedPlan, Trip, TripStop, User, Vehicle
 from app.schemas import (
     FirebaseLoginRequest,
     LoginRequest,
@@ -19,6 +19,9 @@ from app.schemas import (
     SavedPlanUpdate,
     TripCreate,
     TripRead,
+    TripStopCreate,
+    TripStopRead,
+    TripStopUpdate,
     TripUpdate,
     UserCreate,
     UserRead,
@@ -175,6 +178,35 @@ def update_trip(trip_id: uuid.UUID, payload: TripUpdate, db: Session = Depends(g
     db.commit()
     db.refresh(trip)
     return trip
+
+
+@app.post("/trip-stops", response_model=TripStopRead, status_code=status.HTTP_201_CREATED)
+def create_trip_stop(payload: TripStopCreate, db: Session = Depends(get_db)) -> TripStop:
+    ensure_trip_exists(db, payload.trip_id)
+    trip_stop = TripStop(**payload.model_dump())
+    db.add(trip_stop)
+    db.commit()
+    db.refresh(trip_stop)
+    return trip_stop
+
+
+@app.get("/trip-stops", response_model=list[TripStopRead])
+def list_trip_stops(trip_id: uuid.UUID = Query(), db: Session = Depends(get_db)) -> list[TripStop]:
+    ensure_trip_exists(db, trip_id)
+    query = select(TripStop).where(TripStop.trip_id == trip_id).order_by(TripStop.distance_from_start_miles.asc())
+    return list(db.scalars(query).all())
+
+
+@app.patch("/trip-stops/{trip_stop_id}", response_model=TripStopRead)
+def update_trip_stop(trip_stop_id: uuid.UUID, payload: TripStopUpdate, db: Session = Depends(get_db)) -> TripStop:
+    trip_stop = db.get(TripStop, trip_stop_id)
+    if trip_stop is None:
+        raise HTTPException(status_code=404, detail="Trip stop not found.")
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(trip_stop, key, value)
+    db.commit()
+    db.refresh(trip_stop)
+    return trip_stop
 
 
 @app.post("/saved-plans", response_model=SavedPlanRead, status_code=status.HTTP_201_CREATED)

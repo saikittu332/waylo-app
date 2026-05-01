@@ -115,6 +115,33 @@ class TripRead(TripCreate):
     model_config = ConfigDict(from_attributes=True)
 
 
+class TripStopCreate(BaseModel):
+    trip_id: uuid.UUID
+    stop_type: str
+    name: str = Field(min_length=2, max_length=180)
+    address: Optional[str] = None
+    distance_from_start_miles: Optional[float] = Field(default=None, ge=0)
+    distance_from_current_miles: Optional[float] = Field(default=None, ge=0)
+    rating: Optional[float] = Field(default=None, ge=0, le=5)
+    fuel_price: Optional[float] = Field(default=None, ge=0)
+    decision: str = "recommended"
+    recommendation: Optional[str] = None
+    stop_payload: dict[str, Any] = Field(default_factory=dict)
+
+
+class TripStopUpdate(BaseModel):
+    decision: Optional[str] = None
+    recommendation: Optional[str] = None
+    stop_payload: Optional[dict[str, Any]] = None
+
+
+class TripStopRead(TripStopCreate):
+    id: uuid.UUID
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class SavedPlanCreate(BaseModel):
     user_id: uuid.UUID
     trip_id: Optional[uuid.UUID] = None

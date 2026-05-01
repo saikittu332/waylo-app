@@ -87,6 +87,8 @@ The smoke test runs Alembic migrations and verifies:
 - create user
 - create vehicle
 - create trip
+- create trip stop
+- update trip stop decision
 - get trips by user
 - update profile planning preferences
 
@@ -97,6 +99,7 @@ The initial Alembic migration creates all current persistence tables:
 - `users`
 - `vehicles`
 - `trips`
+- `trip_stops`
 - `saved_plans`
 
 `users` also stores a nullable `firebase_uid`, active vehicle selection, and planning preferences for fuel alerts and rest reminder timing.
@@ -107,6 +110,7 @@ The initial Alembic migration creates all current persistence tables:
 - Vehicle model
 - Trip model
 - SavedPlan model
+- TripStop model
 - User planning preferences
 - Basic CRUD-style endpoints
 - Alembic migration support

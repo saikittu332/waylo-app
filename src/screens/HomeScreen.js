@@ -214,6 +214,7 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [locationSearchState, setLocationSearchState] = useState({ from: false, to: false });
   const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState("");
   const popoverAnim = React.useRef(new Animated.Value(0)).current;
   const isSearchingLocations = locationSearchState.from || locationSearchState.to;
 
@@ -250,8 +251,9 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
       const place = await getCurrentLocationPlace();
       setFrom("Current Location");
       setFromPlace(place);
+      setLocationError("");
     } catch (error) {
-      setFrom(error.message || "Location unavailable");
+      setLocationError(error.message || "Location unavailable. Choose an origin manually.");
       setFromPlace(CURRENT_LOCATION_PLACE);
     } finally {
       setLocating(false);
@@ -325,6 +327,7 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
           onSelectPlace={setFromPlace}
           onUseCurrentLocation={useCurrentLocation}
           locating={locating}
+          helperText={locationError}
           pinColor="#367CFF"
           suggestions={locationSuggestions}
         />
@@ -855,7 +858,7 @@ function ReminderPreference({ enabled, interval, onIntervalChange, onToggle }) {
   );
 }
 
-function TripField({ label, value, onChangeText, onSelectPlace, onSearchStateChange, onUseCurrentLocation, locating, pinColor, suggestions = [] }) {
+function TripField({ label, value, onChangeText, onSelectPlace, onSearchStateChange, onUseCurrentLocation, locating, helperText, pinColor, suggestions = [] }) {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [remoteSuggestions, setRemoteSuggestions] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -966,6 +969,7 @@ function TripField({ label, value, onChangeText, onSelectPlace, onSearchStateCha
           )}
         </View>
       )}
+      {!!helperText && <Text style={styles.fieldHelper}>{helperText}</Text>}
     </View>
   );
 }
@@ -1265,6 +1269,12 @@ const styles = StyleSheet.create({
     color: colors.navy,
     fontSize: 18,
     fontWeight: "700"
+  },
+  fieldHelper: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "600",
+    lineHeight: 17
   },
   modes: {
     flexDirection: "row",
