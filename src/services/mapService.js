@@ -7,9 +7,9 @@ export const CURRENT_LOCATION_PLACE = {
   id: "current-location",
   label: "Current Location",
   name: "Current Location",
-  address: "Using San Francisco as the MVP current-location placeholder",
+  address: "Set manually until live location permission is enabled",
   coordinates: [-122.4194, 37.7749],
-  provider: "placeholder"
+  provider: "manual"
 };
 
 const activeProvider = mapProviders.MAPBOX;

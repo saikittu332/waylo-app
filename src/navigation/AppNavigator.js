@@ -9,7 +9,7 @@ import TripResultsScreen from "../screens/TripResultsScreen";
 import StopDetailsScreen from "../screens/StopDetailsScreen";
 import NavigationScreen from "../screens/NavigationScreen";
 import TripSummaryScreen from "../screens/TripSummaryScreen";
-import PaywallScreen from "../screens/PaywallScreen";
+import TripDetailScreen from "../screens/TripDetailScreen";
 import { colors } from "../constants/theme";
 
 const Stack = createNativeStackNavigator();
@@ -22,7 +22,7 @@ export default function AppNavigator() {
         headerShadowVisible: false,
         headerStyle: { backgroundColor: colors.appBackground },
         headerTintColor: colors.navy,
-        headerTitleStyle: { fontWeight: "800" },
+        headerTitleStyle: { fontWeight: "700" },
         contentStyle: { backgroundColor: colors.appBackground }
       }}
     >
@@ -39,7 +39,7 @@ export default function AppNavigator() {
       <Stack.Screen name="StopDetails" component={StopDetailsScreen} options={{ title: "Stop Details" }} />
       <Stack.Screen name="Navigation" component={NavigationScreen} options={{ headerShown: false }} />
       <Stack.Screen name="TripSummary" component={TripSummaryScreen} options={{ title: "Trip Summary" }} />
-      <Stack.Screen name="Paywall" component={PaywallScreen} options={{ title: "Waylo Premium" }} />
+      <Stack.Screen name="TripDetail" component={TripDetailScreen} options={{ title: "Trip Details" }} />
     </Stack.Navigator>
   );
 }

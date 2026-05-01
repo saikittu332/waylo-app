@@ -21,9 +21,9 @@ export function suggestFuelStops(distanceMiles, vehicle) {
   return stops;
 }
 
-export function suggestRestStops(durationHours) {
+export function suggestRestStops(durationHours, intervalHours = 2.75) {
   const stops = [];
-  let nextStopHour = 2.75;
+  let nextStopHour = Number(intervalHours) || 2.75;
 
   while (nextStopHour < durationHours) {
     stops.push({
@@ -31,7 +31,7 @@ export function suggestRestStops(durationHours) {
       hour: Number(nextStopHour.toFixed(1)),
       reason: "Keeps the drive comfortable and alert"
     });
-    nextStopHour += 2.75;
+    nextStopHour += Number(intervalHours) || 2.75;
   }
 
   return stops;

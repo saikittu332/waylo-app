@@ -39,7 +39,7 @@ export async function verifyOtp(confirmation, code) {
     uid: "mock-user-id",
     verificationId: confirmation?.verificationId || "mock-verification-id",
     code,
-    phoneNumber: "+15551234567"
+    phoneNumber: confirmation?.phoneNumber
   };
 }
 

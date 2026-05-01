@@ -9,17 +9,19 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.firebase_auth import verify_firebase_id_token
-from app.models import SavedPlan, Subscription, Trip, User, Vehicle
+from app.models import SavedPlan, Trip, TripStop, User, Vehicle
 from app.schemas import (
     FirebaseLoginRequest,
     LoginRequest,
     LoginResponse,
     SavedPlanCreate,
     SavedPlanRead,
-    SubscriptionCreate,
-    SubscriptionRead,
+    SavedPlanUpdate,
     TripCreate,
     TripRead,
+    TripStopCreate,
+    TripStopRead,
+    TripStopUpdate,
     TripUpdate,
     UserCreate,
     UserRead,
@@ -96,6 +98,8 @@ def update_user(user_id: uuid.UUID, payload: UserUpdate, db: Session = Depends(g
     user = db.get(User, user_id)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found.")
+    if payload.active_vehicle_id:
+        ensure_vehicle_exists(db, payload.active_vehicle_id)
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(user, key, value)
     db.commit()
@@ -176,6 +180,35 @@ def update_trip(trip_id: uuid.UUID, payload: TripUpdate, db: Session = Depends(g
     return trip
 
 
+@app.post("/trip-stops", response_model=TripStopRead, status_code=status.HTTP_201_CREATED)
+def create_trip_stop(payload: TripStopCreate, db: Session = Depends(get_db)) -> TripStop:
+    ensure_trip_exists(db, payload.trip_id)
+    trip_stop = TripStop(**payload.model_dump())
+    db.add(trip_stop)
+    db.commit()
+    db.refresh(trip_stop)
+    return trip_stop
+
+
+@app.get("/trip-stops", response_model=list[TripStopRead])
+def list_trip_stops(trip_id: uuid.UUID = Query(), db: Session = Depends(get_db)) -> list[TripStop]:
+    ensure_trip_exists(db, trip_id)
+    query = select(TripStop).where(TripStop.trip_id == trip_id).order_by(TripStop.distance_from_start_miles.asc())
+    return list(db.scalars(query).all())
+
+
+@app.patch("/trip-stops/{trip_stop_id}", response_model=TripStopRead)
+def update_trip_stop(trip_stop_id: uuid.UUID, payload: TripStopUpdate, db: Session = Depends(get_db)) -> TripStop:
+    trip_stop = db.get(TripStop, trip_stop_id)
+    if trip_stop is None:
+        raise HTTPException(status_code=404, detail="Trip stop not found.")
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(trip_stop, key, value)
+    db.commit()
+    db.refresh(trip_stop)
+    return trip_stop
+
+
 @app.post("/saved-plans", response_model=SavedPlanRead, status_code=status.HTTP_201_CREATED)
 def create_saved_plan(payload: SavedPlanCreate, db: Session = Depends(get_db)) -> SavedPlan:
     ensure_user_exists(db, payload.user_id)
@@ -195,21 +228,25 @@ def list_saved_plans(user_id: uuid.UUID = Query(), db: Session = Depends(get_db)
     return list(db.scalars(query).all())
 
 
-@app.post("/subscriptions", response_model=SubscriptionRead, status_code=status.HTTP_201_CREATED)
-def create_subscription(payload: SubscriptionCreate, db: Session = Depends(get_db)) -> Subscription:
-    ensure_user_exists(db, payload.user_id)
-    subscription = Subscription(**payload.model_dump())
-    db.add(subscription)
+@app.patch("/saved-plans/{saved_plan_id}", response_model=SavedPlanRead)
+def update_saved_plan(saved_plan_id: uuid.UUID, payload: SavedPlanUpdate, db: Session = Depends(get_db)) -> SavedPlan:
+    saved_plan = db.get(SavedPlan, saved_plan_id)
+    if saved_plan is None:
+        raise HTTPException(status_code=404, detail="Saved plan not found.")
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(saved_plan, key, value)
     db.commit()
-    db.refresh(subscription)
-    return subscription
+    db.refresh(saved_plan)
+    return saved_plan
 
 
-@app.get("/subscriptions", response_model=list[SubscriptionRead])
-def list_subscriptions(user_id: uuid.UUID = Query(), db: Session = Depends(get_db)) -> list[Subscription]:
-    ensure_user_exists(db, user_id)
-    query = select(Subscription).where(Subscription.user_id == user_id).order_by(Subscription.created_at.desc())
-    return list(db.scalars(query).all())
+@app.delete("/saved-plans/{saved_plan_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_saved_plan(saved_plan_id: uuid.UUID, db: Session = Depends(get_db)) -> None:
+    saved_plan = db.get(SavedPlan, saved_plan_id)
+    if saved_plan is None:
+        raise HTTPException(status_code=404, detail="Saved plan not found.")
+    db.delete(saved_plan)
+    db.commit()
 
 
 def ensure_user_exists(db: Session, user_id: uuid.UUID) -> None:

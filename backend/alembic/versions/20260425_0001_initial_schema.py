@@ -45,20 +45,6 @@ def upgrade() -> None:
     op.create_index(op.f("ix_vehicles_user_id"), "vehicles", ["user_id"], unique=False)
 
     op.create_table(
-        "subscriptions",
-        sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("plan_name", sa.String(length=80), nullable=False),
-        sa.Column("status", sa.String(length=40), nullable=False),
-        sa.Column("is_premium", sa.Boolean(), nullable=False),
-        sa.Column("current_period_end", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
-        sa.PrimaryKeyConstraint("id"),
-    )
-    op.create_index(op.f("ix_subscriptions_user_id"), "subscriptions", ["user_id"], unique=False)
-
-    op.create_table(
         "trips",
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False),
@@ -102,8 +88,6 @@ def downgrade() -> None:
     op.drop_table("saved_plans")
     op.drop_index(op.f("ix_trips_user_id"), table_name="trips")
     op.drop_table("trips")
-    op.drop_index(op.f("ix_subscriptions_user_id"), table_name="subscriptions")
-    op.drop_table("subscriptions")
     op.drop_index(op.f("ix_vehicles_user_id"), table_name="vehicles")
     op.drop_table("vehicles")
     op.drop_index(op.f("ix_users_phone"), table_name="users")

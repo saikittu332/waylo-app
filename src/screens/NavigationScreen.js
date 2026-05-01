@@ -12,6 +12,7 @@ export default function NavigationScreen({ navigation, route }) {
   const tripPlan = route.params?.tripPlan;
   const routeSummary = tripPlan?.route;
   const firstFuelStop = tripPlan?.fullStops?.find((stop) => stop.type === "fuel");
+  const destinationLabel = routeSummary?.to?.split(",")[0] || "Your destination";
 
   return (
     <View style={styles.screen}>
@@ -34,13 +35,13 @@ export default function NavigationScreen({ navigation, route }) {
           ]}
         >
           <View style={styles.turnCard}>
-            <Text style={styles.turnArrow}>{">"}</Text>
+            <Ionicons color={colors.surface} name="navigate" size={30} />
             <View>
-              <Text style={styles.turnText}>Turn right in</Text>
-              <Text style={styles.turnDistance}>500 ft</Text>
+              <Text style={styles.turnText}>Drive Preview</Text>
+              <Text numberOfLines={1} style={styles.turnDistance}>{destinationLabel}</Text>
             </View>
             <View style={styles.voiceButton}>
-              <Text style={styles.voiceText}>Mic</Text>
+              <Ionicons color={colors.surface} name="volume-medium-outline" size={18} />
             </View>
           </View>
 
@@ -50,11 +51,11 @@ export default function NavigationScreen({ navigation, route }) {
           </View>
 
           <PremiumCard style={styles.bottomCard}>
-            <SmartRow color={colors.blue} icon="pricetag-outline" title="Next Fuel Stop" value={firstFuelStop?.name || "Chevron"} meta="120 mi | 1h 45m" />
+            <SmartRow color={colors.blue} icon="pricetag-outline" title="Next Fuel Stop" value={firstFuelStop?.name || "Best fuel stop"} meta="Planned from your saved route" />
             <View style={styles.dividerLine} />
             <SmartRow color={colors.skyBlue} icon="bed-outline" title="Take a break" value="Recommended in 1h 45m" meta="" />
             <View style={styles.dividerLine} />
-            <SmartRow color={colors.green} icon="trending-down-outline" title="Cheaper fuel ahead" value="Save $6 in 30 miles" meta="" />
+            <SmartRow color={colors.green} icon="trending-down-outline" title="Fuel savings cue" value="Use the recommended stops to keep cost down" meta="" />
 
             <View style={styles.tripStats}>
               <StatItem compact label="arrival" value="6:45" />
@@ -144,7 +145,7 @@ const styles = StyleSheet.create({
   carText: {
     color: "#287BFF",
     fontSize: 22,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   overlay: {
     ...StyleSheet.absoluteFillObject
@@ -169,17 +170,19 @@ const styles = StyleSheet.create({
   turnArrow: {
     color: colors.surface,
     fontSize: 42,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   turnText: {
     color: colors.surface,
     fontSize: 18,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   turnDistance: {
     color: colors.surface,
-    fontSize: 23,
-    fontWeight: "800"
+    flexShrink: 1,
+    fontSize: 21,
+    fontWeight: "700",
+    maxWidth: 250
   },
   voiceButton: {
     alignItems: "center",
@@ -193,7 +196,7 @@ const styles = StyleSheet.create({
   voiceText: {
     color: colors.surface,
     fontSize: 11,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   controls: {
     gap: spacing.sm,
@@ -210,12 +213,12 @@ const styles = StyleSheet.create({
   floatLabel: {
     color: colors.navy,
     fontSize: 18,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   floatSub: {
     color: colors.muted,
     fontSize: 9,
-    fontWeight: "800",
+    fontWeight: "700",
     textTransform: "uppercase"
   },
   bottomCard: {
@@ -243,7 +246,7 @@ const styles = StyleSheet.create({
   smartTitle: {
     color: colors.text,
     fontSize: 13,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   smartValue: {
     color: colors.muted,
@@ -280,6 +283,6 @@ const styles = StyleSheet.create({
   },
   endButtonText: {
     color: colors.surface,
-    fontWeight: "800"
+    fontWeight: "700"
   }
 });

@@ -1,15 +1,15 @@
 export const colors = {
-  navy: "#102A43",
-  navyDeep: "#071A2F",
-  navySoft: "#315B7D",
+  navy: "#163B5C",
+  navyDeep: "#0D2438",
+  navySoft: "#3E6E91",
   headerBlue: "#EEF6FF",
-  blue: "#2F80ED",
+  blue: "#3478F6",
   skyBlue: "#56CCF2",
   orange: "#F97316",
   orangeDark: "#EA580C",
   green: "#12B886",
-  background: "#F7F8FA",
-  appBackground: "#F8FAFC",
+  background: "#F8FAFC",
+  appBackground: "#F7F9FC",
   surface: "#FFFFFF",
   border: "#E2E8F0",
   text: "#101828",
@@ -42,12 +42,12 @@ export const radii = {
 export const typography = {
   title: {
     fontSize: 34,
-    fontWeight: "800",
+    fontWeight: "700",
     color: colors.navy
   },
   heading: {
     fontSize: 24,
-    fontWeight: "800",
+    fontWeight: "700",
     color: colors.text
   },
   body: {

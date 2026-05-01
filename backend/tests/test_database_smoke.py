@@ -53,7 +53,7 @@ def client() -> TestClient:
 
 
 def test_create_user_vehicle_trip_and_get_trips_by_user(client: TestClient) -> None:
-    unique_phone = f"+1555{uuid.uuid4().hex[:10]}"
+    unique_phone = f"+1555{str(uuid.uuid4().int)[:10]}"
 
     user_response = client.post(
         "/users",
@@ -61,6 +61,9 @@ def test_create_user_vehicle_trip_and_get_trips_by_user(client: TestClient) -> N
             "phone": unique_phone,
             "name": "Sai",
             "assistant_name": "Waylo",
+            "fuel_savings_alerts": True,
+            "rest_reminders_enabled": True,
+            "rest_reminder_hours": 2.5,
         },
     )
     assert user_response.status_code == 201
@@ -83,6 +86,15 @@ def test_create_user_vehicle_trip_and_get_trips_by_user(client: TestClient) -> N
     vehicle = vehicle_response.json()
     assert vehicle["user_id"] == user["id"]
     assert vehicle["vehicle_name"] == "Toyota Camry 2021"
+
+    active_vehicle_response = client.patch(
+        f"/users/{user['id']}",
+        json={"active_vehicle_id": vehicle["id"], "rest_reminder_hours": 3, "fuel_savings_alerts": False},
+    )
+    assert active_vehicle_response.status_code == 200
+    assert active_vehicle_response.json()["active_vehicle_id"] == vehicle["id"]
+    assert active_vehicle_response.json()["rest_reminder_hours"] == 3
+    assert active_vehicle_response.json()["fuel_savings_alerts"] is False
 
     vehicles_response = client.get("/vehicles", params={"user_id": user["id"]})
     assert vehicles_response.status_code == 200
@@ -149,6 +161,37 @@ def test_create_user_vehicle_trip_and_get_trips_by_user(client: TestClient) -> N
     assert complete_trip_response.status_code == 200
     assert complete_trip_response.json()["status"] == "completed"
 
+    trip_stop_response = client.post(
+        "/trip-stops",
+        json={
+            "trip_id": trip["id"],
+            "stop_type": "fuel",
+            "name": "Best Fuel Stop",
+            "address": "1200 W Tehachapi Blvd",
+            "distance_from_start_miles": 120,
+            "distance_from_current_miles": 42,
+            "rating": 4.3,
+            "fuel_price": 3.49,
+            "decision": "recommended",
+            "recommendation": "Planned before the safe range limit.",
+            "stop_payload": {"id": "fuel-1"},
+        },
+    )
+    assert trip_stop_response.status_code == 201
+    trip_stop = trip_stop_response.json()
+    assert trip_stop["trip_id"] == trip["id"]
+
+    trip_stops_response = client.get("/trip-stops", params={"trip_id": trip["id"]})
+    assert trip_stops_response.status_code == 200
+    assert trip_stops_response.json()[0]["id"] == trip_stop["id"]
+
+    trip_stop_update_response = client.patch(
+        f"/trip-stops/{trip_stop['id']}",
+        json={"decision": "added"},
+    )
+    assert trip_stop_update_response.status_code == 200
+    assert trip_stop_update_response.json()["decision"] == "added"
+
     saved_plan_response = client.post(
         "/saved-plans",
         json={
@@ -163,7 +206,18 @@ def test_create_user_vehicle_trip_and_get_trips_by_user(client: TestClient) -> N
         },
     )
     assert saved_plan_response.status_code == 201
+    saved_plan = saved_plan_response.json()
+
+    update_saved_plan_response = client.patch(
+        f"/saved-plans/{saved_plan['id']}",
+        json={"title": "SF to LA ready route"},
+    )
+    assert update_saved_plan_response.status_code == 200
+    assert update_saved_plan_response.json()["title"] == "SF to LA ready route"
 
     saved_plans_response = client.get("/saved-plans", params={"user_id": user["id"]})
     assert saved_plans_response.status_code == 200
     assert saved_plans_response.json()[0]["trip_id"] == trip["id"]
+
+    delete_saved_plan_response = client.delete(f"/saved-plans/{saved_plan['id']}")
+    assert delete_saved_plan_response.status_code == 204

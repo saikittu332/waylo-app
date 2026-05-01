@@ -9,9 +9,9 @@ import TripModeChip from "../components/TripModeChip";
 import { colors, radii, screen, spacing } from "../constants/theme";
 import { mockTripRequest } from "../data/mockTrip";
 import { defaultVehicle } from "../data/mockVehicleSpecs";
-import { apiTripToCompletedTrip, deleteVehicle, getSavedPlans, getSubscription, getTrips, getVehicles, updateUser } from "../services/api";
+import { apiTripToCompletedTrip, deleteVehicle, getSavedPlans, getTrips, getVehicles, updateUser } from "../services/api";
+import { getCurrentLocationPlace } from "../services/locationService";
 import { CURRENT_LOCATION_PLACE, geocodeAddress, hasMapboxToken } from "../services/mapService";
-import { getSubscriptionState } from "../services/subscriptionService";
 import { routeMetaLabel, routeTitle } from "../utils/placeLabels";
 
 const modes = ["Fastest", "Cheapest", "Scenic", "Comfort"];
@@ -26,7 +26,7 @@ const locationSuggestions = [
 const tabs = [
   { label: "Home", icon: "home" },
   { label: "Trips", icon: "map" },
-  { label: "Navigate", icon: "navigate" },
+  { label: "Drive", icon: "navigate" },
   { label: "Vehicle", icon: "car-sport" },
   { label: "Profile", icon: "person" }
 ];
@@ -45,7 +45,6 @@ export default function HomeScreen({ navigation, route }) {
   const [vehicles, setVehicles] = useState(initialVehicles);
   const [selectedVehicle, setSelectedVehicle] = useState(vehicle);
   const [showVehiclePicker, setShowVehiclePicker] = useState(false);
-  const [subscription, setSubscription] = useState(getSubscriptionState());
   const [plannedTrips, setPlannedTrips] = useState([]);
   const [completedTrips, setCompletedTrips] = useState([]);
 
@@ -54,7 +53,6 @@ export default function HomeScreen({ navigation, route }) {
       if (route.params?.user) {
         setUser(route.params.user);
       }
-      setSubscription(getSubscriptionState());
       if (route.params?.assistantName) {
         setAssistantName(route.params.assistantName);
       }
@@ -80,7 +78,11 @@ export default function HomeScreen({ navigation, route }) {
         setPlannedTrips((current) => current.filter((item) => item.id !== route.params.completedTrip.savedPlanId));
         navigation.setParams({ completedTrip: undefined });
       }
-    }, [navigation, route.params?.assistantName, route.params?.completedTrip, route.params?.savedPlan, route.params?.user, route.params?.vehicle])
+      if (route.params?.deletedPlanId) {
+        setPlannedTrips((current) => current.filter((item) => item.id !== route.params.deletedPlanId));
+        navigation.setParams({ deletedPlanId: undefined });
+      }
+    }, [navigation, route.params?.assistantName, route.params?.completedTrip, route.params?.deletedPlanId, route.params?.savedPlan, route.params?.user, route.params?.vehicle])
   );
 
   useFocusEffect(
@@ -89,16 +91,15 @@ export default function HomeScreen({ navigation, route }) {
       async function loadPersistedData() {
         if (!user?.id) return;
         try {
-          const [apiVehicles, apiPlans, apiTrips, apiSubscription] = await Promise.all([
+          const [apiVehicles, apiPlans, apiTrips] = await Promise.all([
             getVehicles(user.id),
             getSavedPlans(user.id),
-            getTrips(user.id),
-            getSubscription(user.id)
+            getTrips(user.id)
           ]);
           if (!active) return;
           if (apiVehicles.length > 0) {
             setVehicles(apiVehicles);
-            setSelectedVehicle((current) => apiVehicles.find((item) => item.id === current?.id) || apiVehicles[0]);
+            setSelectedVehicle((current) => apiVehicles.find((item) => item.id === user?.active_vehicle_id) || apiVehicles.find((item) => item.id === current?.id) || apiVehicles[0]);
           }
           setPlannedTrips(apiPlans);
           setCompletedTrips(
@@ -106,7 +107,6 @@ export default function HomeScreen({ navigation, route }) {
               .filter((trip) => trip.status === "completed")
               .map((trip) => apiTripToCompletedTrip(trip, apiVehicles.find((item) => item.id === trip.vehicle_id)?.vehicleName || selectedVehicle?.vehicleName))
           );
-          if (apiSubscription) setSubscription(apiSubscription);
         } catch (error) {
           console.warn("Waylo API home refresh unavailable:", error.message);
         }
@@ -158,7 +158,7 @@ export default function HomeScreen({ navigation, route }) {
             completedTrips={completedTrips}
           />
         )}
-        {activeTab === "Navigate" && (
+        {activeTab === "Drive" && (
           <NavigateContent
             assistantName={assistantName}
             user={user}
@@ -185,8 +185,6 @@ export default function HomeScreen({ navigation, route }) {
             user={user}
             setUser={setUser}
             navigation={navigation}
-            subscription={subscription}
-            setSubscription={setSubscription}
             tripCount={plannedTrips.length + completedTrips.length}
           />
         )}
@@ -215,6 +213,8 @@ export default function HomeScreen({ navigation, route }) {
 function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, from, setFrom, fromPlace, setFromPlace, to, setTo, toPlace, setToPlace, mode, setMode, showVehiclePicker, setShowVehiclePicker, setSelectedVehicle, plannedTrips, completedTrips }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [locationSearchState, setLocationSearchState] = useState({ from: false, to: false });
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState("");
   const popoverAnim = React.useRef(new Animated.Value(0)).current;
   const isSearchingLocations = locationSearchState.from || locationSearchState.to;
 
@@ -243,6 +243,33 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
         destinationPlace: toPlace
       }
     });
+  }
+
+  async function useCurrentLocation() {
+    setLocating(true);
+    try {
+      const place = await getCurrentLocationPlace();
+      setFrom("Current Location");
+      setFromPlace(place);
+      setLocationError("");
+    } catch (error) {
+      setLocationError(error.message || "Location unavailable. Choose an origin manually.");
+      setFromPlace(CURRENT_LOCATION_PLACE);
+    } finally {
+      setLocating(false);
+    }
+  }
+
+  async function selectVehicleForTrip(item) {
+    setSelectedVehicle(item);
+    setShowVehiclePicker(false);
+    if (user?.id && item.id) {
+      try {
+        await updateUser(user.id, { active_vehicle_id: item.id });
+      } catch (error) {
+        console.warn("Waylo API active vehicle update unavailable:", error.message);
+      }
+    }
   }
 
   return (
@@ -298,6 +325,9 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
           onChangeText={setFrom}
           onSearchStateChange={(loading) => setLocationSearchState((current) => ({ ...current, from: loading }))}
           onSelectPlace={setFromPlace}
+          onUseCurrentLocation={useCurrentLocation}
+          locating={locating}
+          helperText={locationError}
           pinColor="#367CFF"
           suggestions={locationSuggestions}
         />
@@ -338,8 +368,7 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
               <Pressable
                 key={item.vehicleName}
                 onPress={() => {
-                  setSelectedVehicle(item);
-                  setShowVehiclePicker(false);
+                  selectVehicleForTrip(item);
                 }}
                 style={styles.vehicleOption}
               >
@@ -412,7 +441,7 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
   return (
     <>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{compact ? "Saved Plans" : "Trips"}</Text>
+        <Text style={styles.sectionTitle}>{compact ? "Upcoming Drives" : "Trips"}</Text>
       </View>
       <PremiumCard style={styles.recentCard}>
         {!compact && (
@@ -424,16 +453,16 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
                 style={[styles.tripSectionTab, selectedSection === section && styles.tripSectionTabActive]}
               >
                 <Text style={[styles.tripSectionText, selectedSection === section && styles.tripSectionTextActive]}>
-                  {section === "Ready" ? "Ready to Drive" : "Completed"}
+                  {section === "Ready" ? "Upcoming" : "Completed"}
                 </Text>
               </Pressable>
             ))}
           </View>
         )}
-        {compact && <Text style={styles.groupLabel}>Ready to Drive</Text>}
+        {compact && <Text style={styles.groupLabel}>Upcoming</Text>}
         {(compact || showingReady) && (
           visiblePlans.length === 0 ? (
-            <Text style={styles.emptyText}>Saved trip plans will appear here.</Text>
+            <Text style={styles.emptyText}>Saved routes will appear here after you build a trip plan.</Text>
           ) : (
             visiblePlans.map((plan, index) => (
               <React.Fragment key={plan.id}>
@@ -441,7 +470,7 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
                   badge="Saved"
                   title={plan.title || routeTitle(plan.from, plan.to)}
                   date={routeMetaLabel(plan)}
-                  onPress={() => navigation.navigate("TripResults", { assistantName, user, vehicle, tripRequest: { from: plan.from, to: plan.to, mode: plan.mode } })}
+                  onPress={() => navigation.navigate("TripDetail", { plan, type: "ready" })}
                 />
                 {index < visiblePlans.length - 1 && <View style={styles.listDivider} />}
               </React.Fragment>
@@ -458,7 +487,7 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
                   badge="Done"
                   title={trip.title || routeTitle(trip.from, trip.to)}
                   date={routeMetaLabel(trip)}
-                  onPress={() => navigation.navigate("TripSummary", { tripPlan: trip.tripPlan, completedTrip: trip })}
+                  onPress={() => navigation.navigate("TripDetail", { completedTrip: trip, plan: trip, type: "completed" })}
                 />
                 {index < completedTrips.length - 1 && <View style={styles.listDivider} />}
               </React.Fragment>
@@ -499,7 +528,7 @@ function NavigateContent({ navigation, plannedTrips }) {
   return (
     <>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Navigate</Text>
+        <Text style={styles.sectionTitle}>Drive Preview</Text>
       </View>
       <View style={styles.liveMapCard}>
         <View style={styles.mapLandMass} />
@@ -511,10 +540,10 @@ function NavigateContent({ navigation, plannedTrips }) {
         </View>
         <View style={styles.mapCaption}>
           <Text style={styles.mapCaptionTitle}>Current location</Text>
-          <Text style={styles.mapCaptionText}>Live route view placeholder</Text>
+          <Text style={styles.mapCaptionText}>Choose an upcoming drive to preview the route.</Text>
         </View>
         <PremiumCard style={styles.routeSheet}>
-          <Text style={styles.groupLabel}>Ready Routes</Text>
+          <Text style={styles.groupLabel}>Upcoming routes</Text>
           {plannedTrips.length === 0 ? (
             <Text style={styles.emptyText}>No saved plans yet. Build a route and tap Save for Later.</Text>
           ) : (
@@ -635,16 +664,48 @@ function VehicleContent({ assistantName, user, vehicles, selectedVehicle, setVeh
   );
 }
 
-function ProfileContent({ assistantName, setAssistantName, user, setUser, navigation, subscription, setSubscription, tripCount }) {
+function ProfileContent({ assistantName, setAssistantName, user, setUser, navigation, tripCount }) {
   const [profileName, setProfileName] = useState(user?.name || "Sai");
   const [assistantDraft, setAssistantDraft] = useState(assistantName);
   const phone = user?.phone || "+1 (555) 123-4567";
   const [editing, setEditing] = useState(false);
   const [nameError, setNameError] = useState("");
   const [assistantNameError, setAssistantNameError] = useState("");
-  const [fuelAlerts, setFuelAlerts] = useState(true);
-  const [restReminders, setRestReminders] = useState(true);
-  const [restInterval, setRestInterval] = useState("2.5 hours");
+  const [fuelAlerts, setFuelAlerts] = useState(user?.fuelSavingsAlerts ?? user?.fuel_savings_alerts ?? true);
+  const [restReminders, setRestReminders] = useState(user?.restRemindersEnabled ?? user?.rest_reminders_enabled ?? true);
+  const [restInterval, setRestInterval] = useState(`${user?.restReminderHours ?? user?.rest_reminder_hours ?? 2.5} hours`);
+
+  async function persistPreferences(next) {
+    const nextUser = {
+      ...user,
+      fuel_savings_alerts: next.fuel_savings_alerts ?? fuelAlerts,
+      rest_reminders_enabled: next.rest_reminders_enabled ?? restReminders,
+      rest_reminder_hours: next.rest_reminder_hours ?? Number(restInterval.replace(" hours", ""))
+    };
+    setUser?.(nextUser);
+    if (!user?.id) return;
+    try {
+      const updated = await updateUser(user.id, next);
+      setUser?.(updated);
+    } catch (error) {
+      console.warn("Waylo API preference update unavailable:", error.message);
+    }
+  }
+
+  function updateFuelAlerts(value) {
+    setFuelAlerts(value);
+    persistPreferences({ fuel_savings_alerts: value });
+  }
+
+  function updateRestReminders(value) {
+    setRestReminders(value);
+    persistPreferences({ rest_reminders_enabled: value });
+  }
+
+  function updateRestInterval(value) {
+    setRestInterval(value);
+    persistPreferences({ rest_reminder_hours: Number(value.replace(" hours", "")) });
+  }
 
   function toggleEditing() {
     if (!editing) {
@@ -713,39 +774,20 @@ function ProfileContent({ assistantName, setAssistantName, user, setUser, naviga
         )}
         <Text style={styles.profileMeta}>Saved trips: {tripCount}</Text>
       </PremiumCard>
-      <PremiumCard style={styles.subscriptionCard}>
-        <View style={styles.planHeader}>
-          <View>
-            <Text style={styles.cardTitle}>Waylo {subscription.planName}</Text>
-            <Text style={styles.profileMeta}>Current plan</Text>
-          </View>
-          <View style={styles.planBadge}>
-            <Text style={styles.planBadgeText}>{subscription.planName}</Text>
-          </View>
-        </View>
-        <Text style={styles.profileMeta}>{subscription.isPremium ? "Full AI optimization, smart stops, and savings insights are enabled." : "Basic route planning and 1 fuel suggestion per trip."}</Text>
-        <View style={styles.planRows}>
-          <PlanLine label="Basic route" included />
-          <PlanLine label="1 fuel suggestion" included />
-          <PlanLine label="Full AI fuel optimization" included={subscription.isPremium} />
-          <PlanLine label="Multiple smart stops" included={subscription.isPremium} />
-        </View>
-        <PrimaryButton title={subscription.isPremium ? "Manage Premium" : "View Premium Plan"} variant="secondary" onPress={() => navigation.navigate("Paywall", { user })} />
-      </PremiumCard>
       <PremiumCard style={styles.profileCard}>
         <Text style={styles.cardTitle}>Preferences</Text>
-        <PreferenceRow label="Fuel savings alerts" value={fuelAlerts} onValueChange={setFuelAlerts} />
+        <PreferenceRow label="Fuel savings alerts" value={fuelAlerts} onValueChange={updateFuelAlerts} />
         <ReminderPreference
           enabled={restReminders}
           interval={restInterval}
-          onIntervalChange={setRestInterval}
-          onToggle={setRestReminders}
+          onIntervalChange={updateRestInterval}
+          onToggle={updateRestReminders}
         />
       </PremiumCard>
       <PremiumCard style={styles.accountCard}>
         <View>
           <Text style={styles.cardTitle}>Account</Text>
-          <Text style={styles.profileMeta}>Return to the welcome screen and clear this mock session.</Text>
+          <Text style={styles.profileMeta}>Return to the welcome screen and end this local session.</Text>
         </View>
         <PrimaryButton title="Sign Out" variant="secondary" onPress={signOut} />
       </PremiumCard>
@@ -816,20 +858,7 @@ function ReminderPreference({ enabled, interval, onIntervalChange, onToggle }) {
   );
 }
 
-function PlanLine({ label, included }) {
-  return (
-    <View style={styles.planLine}>
-      <Ionicons
-        color={included ? colors.green : colors.mutedLight}
-        name={included ? "checkmark-circle" : "lock-closed-outline"}
-        size={17}
-      />
-      <Text style={styles.planLineText}>{label}</Text>
-    </View>
-  );
-}
-
-function TripField({ label, value, onChangeText, onSelectPlace, onSearchStateChange, pinColor, suggestions = [] }) {
+function TripField({ label, value, onChangeText, onSelectPlace, onSearchStateChange, onUseCurrentLocation, locating, helperText, pinColor, suggestions = [] }) {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [remoteSuggestions, setRemoteSuggestions] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -899,6 +928,16 @@ function TripField({ label, value, onChangeText, onSelectPlace, onSearchStateCha
       </View>
       {showSuggestions && (
         <View style={styles.locationSuggestions}>
+          {onUseCurrentLocation && (
+            <Pressable onPress={onUseCurrentLocation} style={styles.locationSuggestion}>
+              <Ionicons color={colors.blue} name="locate-outline" size={16} />
+              <View style={styles.recentText}>
+                <Text style={styles.locationSuggestionText}>{locating ? "Finding your location..." : "Use my current location"}</Text>
+                <Text style={styles.locationSuggestionMeta}>Requires location permission in Expo Go</Text>
+              </View>
+            </Pressable>
+          )}
+          {onUseCurrentLocation && <View style={styles.listDivider} />}
           {isSearching && (
             <View style={styles.locationSuggestion}>
               <Ionicons color={colors.muted} name="sync-outline" size={16} />
@@ -930,6 +969,7 @@ function TripField({ label, value, onChangeText, onSelectPlace, onSearchStateCha
           )}
         </View>
       )}
+      {!!helperText && <Text style={styles.fieldHelper}>{helperText}</Text>}
     </View>
   );
 }
@@ -966,7 +1006,7 @@ const styles = StyleSheet.create({
   greeting: {
     color: colors.navy,
     fontSize: 19,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   assistant: {
     color: colors.muted,
@@ -1031,7 +1071,7 @@ const styles = StyleSheet.create({
   heroEyebrow: {
     color: "#8EE7C8",
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "700",
     letterSpacing: 0.5,
     textTransform: "uppercase"
   },
@@ -1048,7 +1088,7 @@ const styles = StyleSheet.create({
   heroTitle: {
     color: colors.surface,
     fontSize: 24,
-    fontWeight: "800",
+    fontWeight: "700",
     marginTop: 4
   },
   heroCopy: {
@@ -1084,7 +1124,7 @@ const styles = StyleSheet.create({
   miniMetricValue: {
     color: colors.surface,
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "700",
     marginTop: 1
   },
   notificationPanel: {
@@ -1127,7 +1167,7 @@ const styles = StyleSheet.create({
   notificationHeading: {
     color: colors.text,
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "700",
     textTransform: "uppercase"
   },
   notificationRow: {
@@ -1148,7 +1188,7 @@ const styles = StyleSheet.create({
   notificationTitle: {
     color: colors.text,
     fontSize: 14,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   notificationDetail: {
     color: colors.muted,
@@ -1163,7 +1203,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     color: colors.text,
     fontSize: 20,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   label: {
     color: colors.text,
@@ -1228,7 +1268,13 @@ const styles = StyleSheet.create({
   fieldAction: {
     color: colors.navy,
     fontSize: 18,
-    fontWeight: "800"
+    fontWeight: "700"
+  },
+  fieldHelper: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "600",
+    lineHeight: 17
   },
   modes: {
     flexDirection: "row",
@@ -1243,7 +1289,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: colors.text,
     fontSize: 16,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   viewAll: {
     color: colors.blue,
@@ -1260,7 +1306,7 @@ const styles = StyleSheet.create({
   groupLabel: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "700",
     paddingHorizontal: spacing.sm,
     paddingTop: spacing.xs,
     textTransform: "uppercase"
@@ -1291,7 +1337,7 @@ const styles = StyleSheet.create({
   tripSectionText: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   tripSectionTextActive: {
     color: colors.navy
@@ -1361,7 +1407,7 @@ const styles = StyleSheet.create({
   tabLabel: {
     color: colors.muted,
     fontSize: 10,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   activeTab: {
     color: colors.navy
@@ -1398,12 +1444,12 @@ const styles = StyleSheet.create({
   selectedVehicleLabel: {
     color: colors.muted,
     fontSize: 11,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   selectedVehicleName: {
     color: colors.text,
     fontSize: 14,
-    fontWeight: "800",
+    fontWeight: "700",
     marginTop: 2
   },
   vehiclePicker: {
@@ -1478,7 +1524,7 @@ const styles = StyleSheet.create({
   vehicleActionPrimaryText: {
     color: colors.surface,
     fontSize: 14,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   vehicleActionDanger: {
     alignItems: "center",
@@ -1496,7 +1542,7 @@ const styles = StyleSheet.create({
   vehicleActionDangerText: {
     color: colors.red,
     fontSize: 14,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   navigateHero: {
     alignItems: "center",
@@ -1585,7 +1631,7 @@ const styles = StyleSheet.create({
   mapCaptionTitle: {
     color: colors.text,
     fontSize: 15,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   mapCaptionText: {
     color: colors.muted,
@@ -1616,7 +1662,7 @@ const styles = StyleSheet.create({
   startMiniText: {
     color: colors.surface,
     fontSize: 12,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   vehiclePhoto: {
     alignItems: "center",
@@ -1676,7 +1722,7 @@ const styles = StyleSheet.create({
   confirmSecondaryText: {
     color: colors.navy,
     fontSize: 14,
-    fontWeight: "800"
+    fontWeight: "700"
   },
   confirmDanger: {
     alignItems: "center",
@@ -1689,38 +1735,6 @@ const styles = StyleSheet.create({
   confirmDangerText: {
     color: colors.surface,
     fontSize: 14,
-    fontWeight: "800"
-  },
-  subscriptionCard: {
-    gap: spacing.md
-  },
-  planHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between"
-  },
-  planBadge: {
-    backgroundColor: colors.paleBlue,
-    borderRadius: radii.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs
-  },
-  planBadgeText: {
-    color: colors.blue,
-    fontSize: 12,
-    fontWeight: "700"
-  },
-  planRows: {
-    gap: spacing.sm
-  },
-  planLine: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.sm
-  },
-  planLineText: {
-    color: colors.muted,
-    fontSize: 13,
     fontWeight: "700"
   },
   profileInputWrap: {

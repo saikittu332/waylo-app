@@ -1,7 +1,6 @@
 import { Platform } from "react-native";
 import { mockRoute, mockStops, mockTripRequest } from "../data/mockTrip";
 import { CURRENT_LOCATION_PLACE, geocodeAddress, getRoutePreview } from "./mapService";
-import { getVisibleStops } from "./subscriptionService";
 import {
   calculateRange,
   calculateSafeRange,
@@ -58,6 +57,16 @@ export function apiVehicleToApp(vehicle) {
   };
 }
 
+export function apiUserToApp(user) {
+  return {
+    ...user,
+    activeVehicleId: user.active_vehicle_id,
+    fuelSavingsAlerts: user.fuel_savings_alerts ?? true,
+    restRemindersEnabled: user.rest_reminders_enabled ?? true,
+    restReminderHours: user.rest_reminder_hours ?? 2.5
+  };
+}
+
 export function appVehicleToApi(vehicle, userId) {
   return {
     user_id: userId,
@@ -83,6 +92,8 @@ export function apiSavedPlanToApp(plan) {
     durationHours: payload.durationHours,
     estimatedFuelCost: payload.estimatedFuelCost,
     estimatedSavings: payload.estimatedSavings,
+    finalStops: payload.finalStops || [],
+    stopDecisions: payload.stopDecisions || {},
     routePayload: payload.route || null,
     savedAt: "Saved in Waylo"
   };
@@ -198,6 +209,60 @@ export async function updateTrip(tripId, payload) {
   });
 }
 
+export function appStopToApi(stop, tripId, decision = "recommended") {
+  return {
+    trip_id: tripId,
+    stop_type: stop.type,
+    name: stop.name,
+    address: stop.address || null,
+    distance_from_start_miles: Number(stop.distanceFromStart) || null,
+    distance_from_current_miles: Number(stop.distanceFromCurrent) || null,
+    rating: Number(stop.rating) || null,
+    fuel_price: Number(stop.fuelPrice) || null,
+    decision,
+    recommendation: stop.recommendation || null,
+    stop_payload: stop
+  };
+}
+
+export function apiTripStopToApp(stop) {
+  return {
+    ...(stop.stop_payload || {}),
+    id: stop.stop_payload?.id || stop.id,
+    persistedStopId: stop.id,
+    type: stop.stop_type,
+    name: stop.name,
+    address: stop.address,
+    distanceFromStart: stop.distance_from_start_miles,
+    distanceFromCurrent: stop.distance_from_current_miles,
+    rating: stop.rating ? String(stop.rating) : stop.stop_payload?.rating,
+    fuelPrice: stop.fuel_price ? String(stop.fuel_price) : stop.stop_payload?.fuelPrice,
+    recommendation: stop.recommendation,
+    decision: stop.decision
+  };
+}
+
+export async function createTripStop(tripId, stop, decision = "recommended") {
+  const saved = await request("/trip-stops", {
+    body: JSON.stringify(appStopToApi(stop, tripId, decision)),
+    method: "POST"
+  });
+  return apiTripStopToApp(saved);
+}
+
+export async function getTripStops(tripId) {
+  const stops = await request(`/trip-stops?trip_id=${encodeURIComponent(tripId)}`);
+  return stops.map(apiTripStopToApp);
+}
+
+export async function updateTripStop(stopId, payload) {
+  const saved = await request(`/trip-stops/${stopId}`, {
+    body: JSON.stringify(payload),
+    method: "PATCH"
+  });
+  return apiTripStopToApp(saved);
+}
+
 export async function completeTrip(tripId) {
   return updateTrip(tripId, { status: "completed" });
 }
@@ -206,7 +271,7 @@ export async function getTrips(userId) {
   return request(`/trips?user_id=${encodeURIComponent(userId)}`);
 }
 
-export async function savePlan({ userId, tripId, route, vehicle, insights }) {
+export async function savePlan({ userId, tripId, route, vehicle, insights, finalStops = [], stopDecisions = {} }) {
   return request("/saved-plans", {
     body: JSON.stringify({
       user_id: userId,
@@ -223,6 +288,8 @@ export async function savePlan({ userId, tripId, route, vehicle, insights }) {
         durationHours: route.durationHours,
         estimatedFuelCost: insights.estimatedFuelCost,
         estimatedSavings: insights.estimatedSavings,
+        finalStops,
+        stopDecisions,
         route: {
           from: route.from,
           to: route.to,
@@ -245,26 +312,18 @@ export async function getSavedPlans(userId) {
   return plans.map(apiSavedPlanToApp);
 }
 
-export async function createSubscription(userId, premium) {
-  return request("/subscriptions", {
-    body: JSON.stringify({
-      user_id: userId,
-      plan_name: premium ? "Premium" : "Free",
-      status: "active",
-      is_premium: Boolean(premium)
-    }),
-    method: "POST"
+export async function updateSavedPlan(planId, payload) {
+  const plan = await request(`/saved-plans/${planId}`, {
+    body: JSON.stringify(payload),
+    method: "PATCH"
   });
+  return apiSavedPlanToApp(plan);
 }
 
-export async function getSubscription(userId) {
-  const subscriptions = await request(`/subscriptions?user_id=${encodeURIComponent(userId)}`);
-  const latest = subscriptions[0];
-  if (!latest) return null;
-  return {
-    isPremium: latest.is_premium,
-    planName: latest.plan_name
-  };
+export async function deleteSavedPlan(planId) {
+  await request(`/saved-plans/${planId}`, {
+    method: "DELETE"
+  });
 }
 
 async function resolvePlace(label, selectedPlace) {
@@ -287,7 +346,7 @@ export async function planTrip({ from, to, mode, vehicle, user, originPlace, des
   const range = calculateRange(vehicle.highwayMpg, vehicle.tankCapacity);
   const safeRange = calculateSafeRange(range);
   const fuelStops = generateFuelStops(routeDistance, safeRange);
-  const restStops = generateRestStops(routeDuration);
+  const restStops = generateRestStops(routeDuration, user?.restReminderHours || user?.rest_reminder_hours || 2.5);
   const estimatedFuelCost = estimateFuelCost(routeDistance, vehicle.highwayMpg, mockRoute.mockFuelPrice);
   const estimatedSavings = estimateSavings(
     routeDistance,
@@ -316,9 +375,20 @@ export async function planTrip({ from, to, mode, vehicle, user, originPlace, des
     estimatedSavings
   };
 
+  const generatedStops = buildRouteStops({
+    fuelStops,
+    restStops,
+    routeDistance,
+    mode: mode || mockTripRequest.mode
+  });
+
   let persistedTrip = null;
+  let persistedStops = [];
   try {
     persistedTrip = await createTripRecord({ userId: user?.id, vehicle, route, insights });
+    if (persistedTrip?.id) {
+      persistedStops = await Promise.all(generatedStops.map((stop) => createTripStop(persistedTrip.id, stop)));
+    }
   } catch (error) {
     console.warn("Waylo API trip persistence unavailable:", error.message);
   }
@@ -326,12 +396,52 @@ export async function planTrip({ from, to, mode, vehicle, user, originPlace, des
   return {
     persistedTrip,
     route,
-    stops: getVisibleStops(mockStops),
-    fullStops: mockStops,
+    stops: persistedStops.length ? persistedStops : generatedStops,
+    fullStops: persistedStops.length ? persistedStops : generatedStops,
     ruleBasedPlan: {
       fuelStops,
       restStops
     },
     insights
   };
+}
+
+function buildRouteStops({ fuelStops, restStops, routeDistance, mode }) {
+  const fuelStopCards = fuelStops.map((stop) => {
+    const template = mockStops.find((item) => item.type === "fuel") || {};
+    return {
+      ...template,
+      id: stop.id,
+      name: stop.name,
+      type: "fuel",
+      distanceFromStart: stop.mile,
+      distanceFromCurrent: Math.max(stop.mile - 78, 12),
+      fuelPrice: String(stop.price),
+      recommendation: `Planned near mile ${stop.mile}, before your safe range limit.`
+    };
+  });
+
+  const lastRestStop = restStops[restStops.length - 1];
+  const restStopCards = restStops.map((stop, index) => ({
+    id: stop.id,
+    name: stop.name,
+    type: "rest",
+    distanceFromStart: Math.min(Math.round((stop.hour / Math.max(lastRestStop?.hour || stop.hour, 1)) * routeDistance), Math.round(routeDistance - 20)),
+    distanceFromCurrent: Math.max(Math.round(stop.hour * 62), 18),
+    rating: index === 0 ? "4.2" : "4.0",
+    recommendation: `Timed around ${stop.hour} hours to keep the drive comfortable.`
+  }));
+
+  const foodStop = {
+    ...mockStops.find((item) => item.type === "food"),
+    recommendation: "Useful meal stop near the middle of the route."
+  };
+  const scenicStop = {
+    ...mockStops.find((item) => item.type === "scenic"),
+    recommendation: mode === "Scenic" ? "Added because Scenic mode values a better route experience." : "Optional quick view stop with a low detour."
+  };
+
+  return [...fuelStopCards, ...restStopCards, foodStop, scenicStop]
+    .filter(Boolean)
+    .sort((a, b) => Number(a.distanceFromStart || 0) - Number(b.distanceFromStart || 0));
 }

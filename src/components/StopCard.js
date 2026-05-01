@@ -17,19 +17,19 @@ const typeIcons = {
   scenic: "camera-outline"
 };
 
-export default function StopCard({ stop, onPress, decision }) {
+export default function StopCard({ stop, onPress, decision, timeline = false }) {
   const isAdded = decision === "added";
   const isSkipped = decision === "skipped";
 
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, isAdded && styles.addedCard, isSkipped && styles.skippedCard, pressed && styles.pressed]}>
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, timeline && styles.timelineCard, isAdded && styles.addedCard, isSkipped && styles.skippedCard, pressed && styles.pressed]}>
       <View style={styles.header}>
-        <View style={styles.badge}>
+        <View style={[styles.badge, timeline && styles.timelineBadge]}>
           <Ionicons color={colors.blue} name={typeIcons[stop.type] || "location-outline"} size={19} />
         </View>
         <View style={styles.titleBlock}>
           <Text style={styles.name}>{stop.name}</Text>
-          <Text style={styles.meta}>{stop.distanceFromStart} mi into route | {stop.distanceFromCurrent} mi away</Text>
+          <Text style={styles.meta}>{stop.distanceFromStart} mi into route | {stop.recommendation || `${stop.distanceFromCurrent} mi away`}</Text>
         </View>
         {decision ? (
           <View style={[styles.decisionPill, isAdded ? styles.addedPill : styles.skippedPill]}>
@@ -56,6 +56,10 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     padding: spacing.md,
     ...shadows.soft
+  },
+  timelineCard: {
+    borderColor: colors.border,
+    shadowOpacity: 0.02
   },
   addedCard: {
     borderColor: "rgba(18,184,134,0.28)",
@@ -113,6 +117,9 @@ const styles = StyleSheet.create({
   rating: {
     color: colors.navy,
     fontWeight: "600"
+  },
+  timelineBadge: {
+    backgroundColor: colors.paleBlue
   },
   price: {
     color: colors.green,

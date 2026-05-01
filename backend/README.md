@@ -87,7 +87,10 @@ The smoke test runs Alembic migrations and verifies:
 - create user
 - create vehicle
 - create trip
+- create trip stop
+- update trip stop decision
 - get trips by user
+- update profile planning preferences
 
 ## Alembic Coverage
 
@@ -96,10 +99,10 @@ The initial Alembic migration creates all current persistence tables:
 - `users`
 - `vehicles`
 - `trips`
+- `trip_stops`
 - `saved_plans`
-- `subscriptions`
 
-`users` also stores a nullable `firebase_uid` so existing local users can be linked after Firebase login.
+`users` also stores a nullable `firebase_uid`, active vehicle selection, and planning preferences for fuel alerts and rest reminder timing.
 
 ## Current Scope
 
@@ -107,11 +110,12 @@ The initial Alembic migration creates all current persistence tables:
 - Vehicle model
 - Trip model
 - SavedPlan model
-- Subscription model
+- TripStop model
+- User planning preferences
 - Basic CRUD-style endpoints
 - Alembic migration support
 - Environment-based config
 - Local Docker PostgreSQL setup
 - API persistence smoke tests
 
-Stripe, Mapbox, Firebase, and AI planning are intentionally not integrated yet.
+Mapbox route preview, Firebase verification scaffolding, and rule-based planning are present. Turn-by-turn navigation, fuel price APIs, and AI planning are intentionally not integrated yet.
