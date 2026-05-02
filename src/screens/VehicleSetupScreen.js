@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   subheading: {
     color: colors.muted,
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "500",
     lineHeight: 18,
     marginTop: spacing.xs
   },
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
   label: {
     color: colors.text,
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "500",
     marginBottom: spacing.xs
   },
   searchBox: {
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   searchInput: {
     color: colors.text,
     flex: 1,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   vehicleCard: {
     gap: spacing.sm
@@ -290,12 +290,12 @@ const styles = StyleSheet.create({
   vehicleName: {
     color: colors.text,
     fontSize: 18,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   verified: {
     color: colors.green,
     fontSize: 13,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   statsRow: {
     alignItems: "center",
@@ -319,12 +319,12 @@ const styles = StyleSheet.create({
   rangeLabel: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   rangeValue: {
     color: colors.green,
     fontSize: 16,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   rangeTrack: {
     backgroundColor: colors.border,
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
   rangeMeta: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "500",
     lineHeight: 17
   },
   vehiclePreview: {
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
   },
   fuelText: {
     color: colors.text,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   activeFuelText: {
     color: colors.surface
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
   helper: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   fieldRow: {
     gap: spacing.xs
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   fieldInput: {
     backgroundColor: colors.surface,
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: colors.red,
     fontSize: 12,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   suggestions: {
     gap: spacing.sm
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
   suggestionsTitle: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "500",
     textTransform: "uppercase"
   },
   suggestion: {
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
   },
   suggestionName: {
     color: colors.text,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   suggestionMeta: {
     color: colors.muted,

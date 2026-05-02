@@ -1147,12 +1147,12 @@ const styles = StyleSheet.create({
   greeting: {
     color: colors.navy,
     fontSize: 19,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   assistant: {
     color: colors.muted,
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "500",
     marginTop: spacing.xs
   },
   bellButton: {
@@ -1188,8 +1188,8 @@ const styles = StyleSheet.create({
   },
   homeHero: {
     alignItems: "flex-start",
-    backgroundColor: colors.navyDeep,
-    borderColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "#EFF7FF",
+    borderColor: "rgba(47,128,237,0.12)",
     borderRadius: radii.xl,
     borderWidth: 1,
     flexDirection: "row",
@@ -1228,17 +1228,17 @@ const styles = StyleSheet.create({
   productMomentLabel: {
     color: colors.muted,
     fontSize: 11,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   productMomentValue: {
     color: colors.text,
     fontSize: 13,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   productMomentDetail: {
     color: colors.muted,
     fontSize: 11,
-    fontWeight: "600"
+    fontWeight: "500"
   },
   heroMain: {
     flex: 1
@@ -1250,32 +1250,32 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs
   },
   heroEyebrow: {
-    color: "#8EE7C8",
+    color: colors.green,
     fontSize: 12,
-    fontWeight: "700",
-    letterSpacing: 0.5,
+    fontWeight: "600",
+    letterSpacing: 0,
     textTransform: "uppercase"
   },
   heroStatus: {
-    backgroundColor: "rgba(255,255,255,0.13)",
+    backgroundColor: colors.surface,
     borderRadius: radii.pill,
-    color: colors.surface,
+    color: colors.navy,
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "500",
     overflow: "hidden",
     paddingHorizontal: spacing.sm,
     paddingVertical: 3
   },
   heroTitle: {
-    color: colors.surface,
-    fontSize: 22,
-    fontWeight: "700",
+    color: colors.navyDeep,
+    fontSize: 21,
+    fontWeight: "600",
     marginTop: 4
   },
   heroCopy: {
-    color: "rgba(255,255,255,0.76)",
+    color: colors.muted,
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "500",
     lineHeight: 18,
     marginTop: 4,
     maxWidth: 285
@@ -1288,8 +1288,8 @@ const styles = StyleSheet.create({
   },
   miniMetric: {
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderColor: "rgba(255,255,255,0.14)",
+    backgroundColor: "rgba(255,255,255,0.78)",
+    borderColor: "rgba(47,128,237,0.12)",
     borderRadius: radii.md,
     borderWidth: 1,
     flexDirection: "row",
@@ -1298,14 +1298,14 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs
   },
   miniMetricLabel: {
-    color: "rgba(255,255,255,0.62)",
+    color: colors.muted,
     fontSize: 10,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   miniMetricValue: {
-    color: colors.surface,
+    color: colors.navy,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "500",
     marginTop: 1
   },
   notificationPanel: {
@@ -1348,7 +1348,7 @@ const styles = StyleSheet.create({
   notificationHeading: {
     color: colors.text,
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "500",
     textTransform: "uppercase"
   },
   notificationRow: {
@@ -1369,7 +1369,7 @@ const styles = StyleSheet.create({
   notificationTitle: {
     color: colors.text,
     fontSize: 14,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   notificationDetail: {
     color: colors.muted,
@@ -1383,13 +1383,13 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     color: colors.text,
-    fontSize: 20,
-    fontWeight: "700"
+    fontSize: 19,
+    fontWeight: "600"
   },
   label: {
     color: colors.text,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "500",
     marginBottom: spacing.xs
   },
   tripFieldWrap: {
@@ -1426,12 +1426,12 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
     fontSize: 13,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   locationSuggestionMeta: {
     color: colors.muted,
     fontSize: 11,
-    fontWeight: "600",
+    fontWeight: "500",
     marginTop: 2
   },
   pin: {
@@ -1444,17 +1444,17 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
     fontSize: 14,
-    fontWeight: "600"
+    fontWeight: "500"
   },
   fieldAction: {
     color: colors.navy,
     fontSize: 18,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   fieldHelper: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "500",
     lineHeight: 17
   },
   modes: {
@@ -1470,12 +1470,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: colors.text,
     fontSize: 16,
-    fontWeight: "700"
+    fontWeight: "600"
   },
   viewAll: {
     color: colors.blue,
     fontSize: 13,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   textAction: {
     outlineStyle: "none"
@@ -1487,7 +1487,7 @@ const styles = StyleSheet.create({
   groupLabel: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "500",
     paddingHorizontal: spacing.sm,
     paddingTop: spacing.xs,
     textTransform: "uppercase"
@@ -1518,7 +1518,7 @@ const styles = StyleSheet.create({
   tripSectionText: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   tripSectionTextActive: {
     color: colors.navy
@@ -1542,7 +1542,7 @@ const styles = StyleSheet.create({
   recentTitle: {
     color: colors.text,
     fontSize: 14,
-    fontWeight: "700"
+    fontWeight: "600"
   },
   recentDate: {
     color: colors.muted,
@@ -1552,7 +1552,7 @@ const styles = StyleSheet.create({
   chevron: {
     color: colors.navy,
     fontSize: 24,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   listDivider: {
     backgroundColor: colors.border,
@@ -1563,7 +1563,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     color: colors.green,
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "500",
     overflow: "hidden",
     paddingHorizontal: spacing.sm,
     paddingVertical: 4
@@ -1574,13 +1574,13 @@ const styles = StyleSheet.create({
   },
   tripPlanCard: {
     backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
+    borderColor: "rgba(47,128,237,0.11)",
+    borderRadius: radii.md,
     borderWidth: 1,
     gap: spacing.sm,
     marginVertical: spacing.xs,
     outlineStyle: "none",
-    padding: spacing.md
+    padding: spacing.sm
   },
   tripPlanTop: {
     alignItems: "center",
@@ -1608,12 +1608,12 @@ const styles = StyleSheet.create({
   miniTripStatLabel: {
     color: colors.muted,
     fontSize: 10,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   miniTripStatValue: {
     color: colors.text,
     fontSize: 12,
-    fontWeight: "700"
+    fontWeight: "600"
   },
   savingsText: {
     color: colors.green
@@ -1627,7 +1627,7 @@ const styles = StyleSheet.create({
   tripPlanActionText: {
     color: colors.blue,
     fontSize: 13,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   tabBar: {
     alignSelf: "center",
@@ -1649,7 +1649,7 @@ const styles = StyleSheet.create({
   tabLabel: {
     color: colors.muted,
     fontSize: 10,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   activeTab: {
     color: colors.navy
@@ -1686,12 +1686,12 @@ const styles = StyleSheet.create({
   selectedVehicleLabel: {
     color: colors.muted,
     fontSize: 11,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   selectedVehicleName: {
     color: colors.text,
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "500",
     marginTop: 2
   },
   vehiclePicker: {
@@ -1710,7 +1710,7 @@ const styles = StyleSheet.create({
   doneText: {
     color: colors.blue,
     fontSize: 13,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   vehicleOption: {
     alignItems: "center",
@@ -1723,7 +1723,7 @@ const styles = StyleSheet.create({
   vehicleOptionName: {
     color: colors.text,
     fontSize: 13,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   vehicleOptionMeta: {
     color: colors.muted,
@@ -1743,7 +1743,7 @@ const styles = StyleSheet.create({
   addVehicleText: {
     color: colors.blue,
     fontSize: 13,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   vehicleListCard: {
     gap: spacing.md
@@ -1766,7 +1766,7 @@ const styles = StyleSheet.create({
   vehicleActionPrimaryText: {
     color: colors.surface,
     fontSize: 14,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   vehicleActionDanger: {
     alignItems: "center",
@@ -1784,7 +1784,7 @@ const styles = StyleSheet.create({
   vehicleActionDangerText: {
     color: colors.red,
     fontSize: 14,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   navigateHero: {
     alignItems: "center",
@@ -1896,7 +1896,7 @@ const styles = StyleSheet.create({
   mapCaptionTitle: {
     color: colors.text,
     fontSize: 15,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   mapCaptionText: {
     color: colors.muted,
@@ -1927,7 +1927,7 @@ const styles = StyleSheet.create({
   startMiniText: {
     color: colors.surface,
     fontSize: 12,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   vehiclePhoto: {
     alignItems: "center",
@@ -1957,12 +1957,12 @@ const styles = StyleSheet.create({
   rangeLabel: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   rangeValue: {
     color: colors.green,
     fontSize: 14,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   rangeTrack: {
     backgroundColor: colors.border,
@@ -2037,12 +2037,12 @@ const styles = StyleSheet.create({
   sessionText: {
     color: colors.green,
     fontSize: 12,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   currentVehicle: {
     color: colors.green,
     fontSize: 13,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   modalBackdrop: {
     alignItems: "center",
@@ -2081,7 +2081,7 @@ const styles = StyleSheet.create({
   confirmSecondaryText: {
     color: colors.navy,
     fontSize: 14,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   confirmDanger: {
     alignItems: "center",
@@ -2094,7 +2094,7 @@ const styles = StyleSheet.create({
   confirmDangerText: {
     color: colors.surface,
     fontSize: 14,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   profileInputWrap: {
     gap: spacing.xs
@@ -2114,7 +2114,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: colors.red,
     fontSize: 12,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   verifiedPhoneRow: {
     alignItems: "flex-start",
@@ -2138,7 +2138,7 @@ const styles = StyleSheet.create({
   preferenceSub: {
     color: colors.mutedLight,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "500",
     marginTop: 2
   },
   reminderBlock: {
@@ -2168,7 +2168,7 @@ const styles = StyleSheet.create({
   intervalChipText: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   intervalChipTextActive: {
     color: colors.surface
@@ -2176,7 +2176,7 @@ const styles = StyleSheet.create({
   profileMeta: {
     color: colors.muted,
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "500",
     lineHeight: 20
   }
 });

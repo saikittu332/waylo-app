@@ -130,12 +130,12 @@ const styles = StyleSheet.create({
   completed: {
     color: colors.surface,
     fontSize: 21,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   message: {
     color: "#DDE7F5",
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "500",
     lineHeight: 20,
     marginTop: spacing.xs,
     maxWidth: 260
@@ -153,12 +153,12 @@ const styles = StyleSheet.create({
   },
   routeTitle: {
     ...typography.body,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   date: {
     color: colors.muted,
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "500",
     marginTop: -8
   },
   summaryRow: {
@@ -169,12 +169,12 @@ const styles = StyleSheet.create({
   summaryLabel: {
     color: colors.muted,
     fontSize: 14,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   summaryValue: {
     color: colors.navy,
     fontSize: 16,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   savingsCard: {
     alignItems: "center",
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   savingsLabel: {
     color: "#087A3A",
     fontSize: 16,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   savingsSub: {
     color: "#087A3A",
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
   savingsValue: {
     color: "#087A3A",
     fontSize: 24,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   stopsMade: {
     gap: 3
@@ -207,11 +207,11 @@ const styles = StyleSheet.create({
   stopsTitle: {
     color: colors.text,
     fontSize: 14,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   stopsText: {
     color: colors.muted,
     fontSize: 13,
-    fontWeight: "700"
+    fontWeight: "500"
   }
 });

@@ -20,7 +20,7 @@ const styles = StyleSheet.create({
     minWidth: 78,
     outlineStyle: "none",
     paddingHorizontal: spacing.md,
-    paddingVertical: 10
+    paddingVertical: 9
   },
   selected: {
     backgroundColor: colors.navy,
@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
   text: {
     color: colors.text,
     fontSize: 12,
-    fontWeight: "700"
+    fontWeight: "600"
   },
   selectedText: {
     color: colors.surface

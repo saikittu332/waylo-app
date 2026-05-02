@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   loading: {
     color: colors.navy,
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "500",
     margin: spacing.lg
   },
   errorWrap: {
@@ -263,12 +263,12 @@ const styles = StyleSheet.create({
   errorTitle: {
     color: colors.text,
     fontSize: 20,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   errorCopy: {
     color: colors.muted,
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "500",
     lineHeight: 20
   },
   heroCard: {
@@ -287,18 +287,18 @@ const styles = StyleSheet.create({
   eyebrow: {
     color: colors.green,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "500",
     textTransform: "uppercase"
   },
   routeTitle: {
     color: colors.text,
     fontSize: 20,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   routeMeta: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "500",
     marginTop: 4
   },
   savingsBadge: {
@@ -312,12 +312,12 @@ const styles = StyleSheet.create({
   savingsBadgeLabel: {
     color: "#0E7A4A",
     fontSize: 10,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   savingsBadgeValue: {
     color: "#0E7A4A",
     fontSize: 22,
-    fontWeight: "700",
+    fontWeight: "500",
     marginTop: 2
   },
   proofCard: {
@@ -326,12 +326,12 @@ const styles = StyleSheet.create({
   planTitle: {
     color: colors.text,
     fontSize: 16,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   planSubtitle: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "500",
     lineHeight: 17
   },
   proofGrid: {
@@ -349,12 +349,12 @@ const styles = StyleSheet.create({
   proofLabel: {
     color: colors.muted,
     fontSize: 11,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   proofValue: {
     color: colors.navy,
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "500",
     marginTop: 5
   },
   proofDetail: {
@@ -389,12 +389,12 @@ const styles = StyleSheet.create({
   stopsTitle: {
     color: colors.text,
     fontSize: 16,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   stopsMeta: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   divider: {
     backgroundColor: colors.border,
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
   timelineTitle: {
     color: colors.text,
     fontSize: 14,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   timelineMeta: {
     color: colors.muted,

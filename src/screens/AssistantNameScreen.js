@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: colors.text,
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "500",
     minHeight: 56,
     paddingHorizontal: spacing.md
   },
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   },
   chipText: {
     color: colors.text,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   activeChipText: {
     color: colors.surface

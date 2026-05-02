@@ -1,9 +1,9 @@
 export const colors = {
-  navy: "#173A5E",
-  navyDeep: "#102B46",
-  navySoft: "#466F91",
+  navy: "#234765",
+  navyDeep: "#17324D",
+  navySoft: "#5D7E9B",
   headerBlue: "#EEF6FF",
-  blue: "#3478F6",
+  blue: "#2F80ED",
   skyBlue: "#56CCF2",
   orange: "#F97316",
   orangeDark: "#EA580C",
@@ -12,8 +12,8 @@ export const colors = {
   appBackground: "#F7F9FC",
   surface: "#FFFFFF",
   border: "#E2E8F0",
-  text: "#101828",
-  muted: "#667085",
+  text: "#1D2939",
+  muted: "#6B778C",
   mutedLight: "#98A2B3",
   paleBlue: "#EDF6FF",
   paleOrange: "#FFF4E8",
@@ -49,32 +49,32 @@ export const radii = {
 
 export const typography = {
   hero: {
-    fontFamily: fonts.bold,
-    fontSize: 30,
-    fontWeight: "700",
+    fontFamily: fonts.semibold,
+    fontSize: 28,
+    fontWeight: "600",
     letterSpacing: 0,
     lineHeight: 36,
     color: colors.navy
   },
   title: {
-    fontFamily: fonts.bold,
-    fontSize: 34,
-    fontWeight: "700",
+    fontFamily: fonts.semibold,
+    fontSize: 30,
+    fontWeight: "600",
     letterSpacing: 0,
     color: colors.navy
   },
   heading: {
-    fontFamily: fonts.bold,
-    fontSize: 24,
-    fontWeight: "700",
+    fontFamily: fonts.semibold,
+    fontSize: 22,
+    fontWeight: "600",
     letterSpacing: 0,
     lineHeight: 30,
     color: colors.text
   },
   section: {
-    fontFamily: fonts.semibold,
+    fontFamily: fonts.medium,
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: "500",
     letterSpacing: 0,
     color: colors.text
   },
@@ -95,17 +95,17 @@ export const typography = {
 export const shadows = {
   card: {
     shadowColor: "#102A43",
-    shadowOpacity: 0.07,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 4
+    shadowOpacity: 0.045,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 2
   },
   soft: {
     shadowColor: "#102A43",
-    shadowOpacity: 0.05,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 2
+    shadowOpacity: 0.035,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 1
   }
 };
 

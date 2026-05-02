@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   copy: {
     color: colors.muted,
     fontSize: 14,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   formCard: {
     gap: spacing.md
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   label: {
     color: colors.text,
     fontSize: 13,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   phoneRow: {
     alignItems: "center",
@@ -130,14 +130,14 @@ const styles = StyleSheet.create({
   },
   flag: {
     color: colors.navy,
-    fontWeight: "700",
+    fontWeight: "500",
     marginRight: spacing.md
   },
   phoneInput: {
     color: colors.text,
     flex: 1,
     fontSize: 16,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   otpRow: {
     flexDirection: "row",
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: colors.navy,
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "500",
     height: 46,
     textAlign: "center",
     width: 46
@@ -159,13 +159,13 @@ const styles = StyleSheet.create({
   resend: {
     color: colors.mutedLight,
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "500",
     textAlign: "center"
   },
   errorText: {
     color: colors.red,
     fontSize: 12,
-    fontWeight: "600"
+    fontWeight: "500"
   },
   terms: {
     color: colors.mutedLight,

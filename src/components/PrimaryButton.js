@@ -33,13 +33,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.blue,
     borderRadius: radii.pill,
     justifyContent: "center",
-    minHeight: 54,
+    minHeight: 50,
     paddingHorizontal: spacing.lg,
     shadowColor: colors.blue,
-    shadowOpacity: 0.24,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 7 },
-    elevation: 3,
+    shadowOpacity: 0.16,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 2,
     outlineStyle: "none"
   },
   secondary: {
@@ -58,8 +58,8 @@ const styles = StyleSheet.create({
   },
   text: {
     color: colors.surface,
-    fontSize: 16,
-    fontWeight: "700"
+    fontSize: 15,
+    fontWeight: "600"
   },
   secondaryText: {
     color: colors.navy

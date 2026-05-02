@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   carText: {
     color: "#287BFF",
     fontSize: 22,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   overlay: {
     ...StyleSheet.absoluteFillObject
@@ -186,18 +186,18 @@ const styles = StyleSheet.create({
   turnArrow: {
     color: colors.surface,
     fontSize: 42,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   turnText: {
     color: colors.surface,
     fontSize: 18,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   turnDistance: {
     color: colors.surface,
     flexShrink: 1,
     fontSize: 21,
-    fontWeight: "700",
+    fontWeight: "500",
     maxWidth: 250
   },
   voiceButton: {
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
   voiceText: {
     color: colors.surface,
     fontSize: 11,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   controls: {
     gap: spacing.sm,
@@ -229,12 +229,12 @@ const styles = StyleSheet.create({
   floatLabel: {
     color: colors.navy,
     fontSize: 18,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   floatSub: {
     color: colors.muted,
     fontSize: 9,
-    fontWeight: "700",
+    fontWeight: "500",
     textTransform: "uppercase"
   },
   bottomCard: {
@@ -252,12 +252,12 @@ const styles = StyleSheet.create({
   sheetTitle: {
     color: colors.text,
     fontSize: 17,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   sheetMeta: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "500",
     marginTop: 2
   },
   stopCountPill: {
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     color: colors.blue,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "500",
     overflow: "hidden",
     paddingHorizontal: spacing.sm,
     paddingVertical: 5
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     flexShrink: 1,
     fontSize: 11,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   smartRow: {
     alignItems: "center",
@@ -311,12 +311,12 @@ const styles = StyleSheet.create({
   smartTitle: {
     color: colors.text,
     fontSize: 13,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   smartValue: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "500",
     marginTop: 2
   },
   smartMeta: {
@@ -348,6 +348,6 @@ const styles = StyleSheet.create({
   },
   endButtonText: {
     color: colors.surface,
-    fontWeight: "700"
+    fontWeight: "500"
   }
 });

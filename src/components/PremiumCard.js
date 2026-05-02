@@ -9,8 +9,8 @@ export default function PremiumCard({ children, style }) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderColor: "rgba(7, 30, 61, 0.06)",
-    borderRadius: radii.lg,
+    borderColor: "rgba(35, 71, 101, 0.07)",
+    borderRadius: radii.md,
     borderWidth: 1,
     padding: spacing.md,
     ...shadows.card

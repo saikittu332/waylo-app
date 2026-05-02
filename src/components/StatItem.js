@@ -23,8 +23,8 @@ const styles = StyleSheet.create({
   },
   value: {
     color: colors.navy,
-    fontSize: 18,
-    fontWeight: "700"
+    fontSize: 17,
+    fontWeight: "600"
   },
   compactValue: {
     fontSize: 16
@@ -32,6 +32,6 @@ const styles = StyleSheet.create({
   label: {
     color: colors.muted,
     fontSize: 11,
-    fontWeight: "700"
+    fontWeight: "500"
   }
 });

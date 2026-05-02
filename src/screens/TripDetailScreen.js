@@ -124,18 +124,18 @@ const styles = StyleSheet.create({
   eyebrow: {
     color: colors.green,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "500",
     textTransform: "uppercase"
   },
   title: {
     color: colors.text,
     fontSize: 22,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   meta: {
     color: colors.muted,
     fontSize: 13,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   mapPreview: {
     backgroundColor: colors.mapBlue,
@@ -209,12 +209,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: colors.text,
     fontSize: 16,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   body: {
     color: colors.muted,
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "500",
     lineHeight: 21
   }
   ,
@@ -230,6 +230,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
     fontSize: 13,
-    fontWeight: "700"
+    fontWeight: "500"
   }
 });

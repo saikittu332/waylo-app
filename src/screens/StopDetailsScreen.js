@@ -170,12 +170,12 @@ const styles = StyleSheet.create({
   address: {
     color: colors.muted,
     fontSize: 13,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   rating: {
     color: colors.orange,
     fontSize: 13,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   features: {
     borderTopColor: colors.border,
@@ -200,19 +200,19 @@ const styles = StyleSheet.create({
   featureLabel: {
     color: colors.muted,
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "500",
     textAlign: "center"
   },
   featureValue: {
     color: colors.text,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "500",
     textAlign: "center"
   },
   sectionTitle: {
     color: colors.text,
     fontSize: 15,
-    fontWeight: "700",
+    fontWeight: "500",
     marginTop: spacing.md
   },
   impactGrid: {
@@ -233,12 +233,12 @@ const styles = StyleSheet.create({
   impactLabel: {
     color: colors.muted,
     fontSize: 10,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   impactValue: {
     color: colors.text,
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "500",
     lineHeight: 15
   },
   checkRow: {
@@ -257,6 +257,6 @@ const styles = StyleSheet.create({
   checkLabel: {
     color: colors.text,
     fontSize: 13,
-    fontWeight: "700"
+    fontWeight: "500"
   }
 });

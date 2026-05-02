@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
   tagline: {
     color: colors.navy,
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "500",
     marginTop: spacing.sm
   },
   glassCard: {
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   featureTitle: {
     color: colors.navy,
     fontSize: 14,
-    fontWeight: "700"
+    fontWeight: "500"
   },
   featureDetail: {
     color: colors.muted,
