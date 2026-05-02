@@ -20,6 +20,7 @@ const typeIcons = {
 export default function StopCard({ stop, onPress, decision, timeline = false }) {
   const isAdded = decision === "added";
   const isSkipped = decision === "skipped";
+  const sourceLabel = stop.placeSource ? "Real place" : "Route logic";
 
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.card, timeline && styles.timelineCard, isAdded && styles.addedCard, isSkipped && styles.skippedCard, pressed && styles.pressed]}>
@@ -41,8 +42,8 @@ export default function StopCard({ stop, onPress, decision, timeline = false }) 
         )}
       </View>
       <View style={styles.footer}>
-        <Text style={styles.rating}>Rating {stop.rating}</Text>
-        {stop.fuelPrice ? <Text style={styles.price}>${stop.fuelPrice}/gal</Text> : <Text style={styles.price}>Good stop</Text>}
+        <Text style={styles.rating}>{stop.rating ? `Rating ${stop.rating}` : sourceLabel}</Text>
+        {stop.fuelPrice ? <Text style={styles.price}>${stop.fuelPrice}/gal</Text> : <Text style={styles.price}>Good fit</Text>}
       </View>
     </Pressable>
   );

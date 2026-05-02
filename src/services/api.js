@@ -1,6 +1,6 @@
 import { Platform } from "react-native";
 import { mockRoute, mockStops, mockTripRequest } from "../data/mockTrip";
-import { CURRENT_LOCATION_PLACE, geocodeAddress, getRoutePreview } from "./mapService";
+import { CURRENT_LOCATION_PLACE, geocodeAddress, getRoutePreview, searchNearbyPlaces } from "./mapService";
 import {
   calculateRange,
   calculateSafeRange,
@@ -375,11 +375,14 @@ export async function planTrip({ from, to, mode, vehicle, user, originPlace, des
     estimatedSavings
   };
 
-  const generatedStops = buildRouteStops({
+  const generatedStops = await buildRouteStops({
     fuelStops,
     restStops,
     routeDistance,
-    mode: mode || mockTripRequest.mode
+    mode: mode || mockTripRequest.mode,
+    routePreview,
+    origin,
+    destination
   });
 
   let persistedTrip = null;
@@ -406,42 +409,109 @@ export async function planTrip({ from, to, mode, vehicle, user, originPlace, des
   };
 }
 
-function buildRouteStops({ fuelStops, restStops, routeDistance, mode }) {
-  const fuelStopCards = fuelStops.map((stop) => {
+async function buildRouteStops({ fuelStops, restStops, routeDistance, mode, routePreview, origin, destination }) {
+  const fuelPlanStops = fuelStops.length > 0
+    ? fuelStops
+    : [{ id: "fuel-price-check", mile: Math.round(routeDistance * 0.58), name: "Best fuel price check", price: mockRoute.mockFuelPrice, optional: true }];
+  const fuelStopCards = await Promise.all(fuelPlanStops.map(async (stop) => {
     const template = mockStops.find((item) => item.type === "fuel") || {};
+    const coordinates = coordinatesAtMile(routePreview, stop.mile, routeDistance, origin.coordinates, destination.coordinates);
+    const place = await findBestRoutePlace("gas station", coordinates);
     return {
       ...template,
+      ...placeToStop(place, "fuel"),
       id: stop.id,
-      name: stop.name,
+      name: place?.name || stop.name,
       type: "fuel",
+      coordinates,
       distanceFromStart: stop.mile,
       distanceFromCurrent: Math.max(stop.mile - 78, 12),
       fuelPrice: String(stop.price),
-      recommendation: `Planned near mile ${stop.mile}, before your safe range limit.`
+      recommendation: stop.optional
+        ? `Optional price check near mile ${stop.mile}. Your vehicle can finish the route, but this helps compare fuel cost.`
+        : `Planned near mile ${stop.mile}, before your safe range limit.`,
+      source: place ? "Mapbox place search" : "Waylo fallback"
     };
-  });
-
-  const lastRestStop = restStops[restStops.length - 1];
-  const restStopCards = restStops.map((stop, index) => ({
-    id: stop.id,
-    name: stop.name,
-    type: "rest",
-    distanceFromStart: Math.min(Math.round((stop.hour / Math.max(lastRestStop?.hour || stop.hour, 1)) * routeDistance), Math.round(routeDistance - 20)),
-    distanceFromCurrent: Math.max(Math.round(stop.hour * 62), 18),
-    rating: index === 0 ? "4.2" : "4.0",
-    recommendation: `Timed around ${stop.hour} hours to keep the drive comfortable.`
   }));
 
+  const lastRestStop = restStops[restStops.length - 1];
+  const restStopCards = await Promise.all(restStops.map(async (stop, index) => {
+    const distanceFromStart = Math.min(Math.round((stop.hour / Math.max(lastRestStop?.hour || stop.hour, 1)) * routeDistance), Math.round(routeDistance - 20));
+    const coordinates = coordinatesAtMile(routePreview, distanceFromStart, routeDistance, origin.coordinates, destination.coordinates);
+    const place = await findBestRoutePlace("rest area", coordinates);
+    return {
+      ...placeToStop(place, "rest"),
+      id: stop.id,
+      name: place?.name || stop.name,
+      type: "rest",
+      coordinates,
+      distanceFromStart,
+      distanceFromCurrent: Math.max(Math.round(stop.hour * 62), 18),
+      rating: place ? null : index === 0 ? "4.2" : "4.0",
+      recommendation: `Timed around ${stop.hour} hours to keep the drive comfortable.`,
+      source: place ? "Mapbox place search" : "Waylo fallback"
+    };
+  }));
+
+  const foodTemplate = mockStops.find((item) => item.type === "food");
+  const foodCoordinates = coordinatesAtMile(routePreview, Math.round(routeDistance * 0.55), routeDistance, origin.coordinates, destination.coordinates);
+  const foodPlace = await findBestRoutePlace("restaurant", foodCoordinates);
   const foodStop = {
-    ...mockStops.find((item) => item.type === "food"),
+    ...foodTemplate,
+    ...placeToStop(foodPlace, "food"),
+    name: foodPlace?.name || foodTemplate?.name,
+    coordinates: foodCoordinates,
+    source: foodPlace ? "Mapbox place search" : "Waylo fallback",
     recommendation: "Useful meal stop near the middle of the route."
   };
+  const scenicTemplate = mockStops.find((item) => item.type === "scenic");
+  const scenicCoordinates = coordinatesAtMile(routePreview, Math.round(routeDistance * 0.8), routeDistance, origin.coordinates, destination.coordinates);
+  const scenicPlace = await findBestRoutePlace("scenic viewpoint", scenicCoordinates);
   const scenicStop = {
-    ...mockStops.find((item) => item.type === "scenic"),
+    ...scenicTemplate,
+    ...placeToStop(scenicPlace, "scenic"),
+    name: scenicPlace?.name || scenicTemplate?.name,
+    coordinates: scenicCoordinates,
+    source: scenicPlace ? "Mapbox place search" : "Waylo fallback",
     recommendation: mode === "Scenic" ? "Added because Scenic mode values a better route experience." : "Optional quick view stop with a low detour."
   };
 
   return [...fuelStopCards, ...restStopCards, foodStop, scenicStop]
     .filter(Boolean)
     .sort((a, b) => Number(a.distanceFromStart || 0) - Number(b.distanceFromStart || 0));
+}
+
+async function findBestRoutePlace(query, coordinates) {
+  try {
+    const places = await searchNearbyPlaces(query, coordinates, { limit: 3 });
+    return places[0] || null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function placeToStop(place, type) {
+  if (!place) return {};
+  return {
+    address: place.address,
+    category: place.category,
+    mapboxPlaceId: place.id,
+    placeProvider: place.provider,
+    placeSource: "Mapbox",
+    rating: null
+  };
+}
+
+function coordinatesAtMile(routePreview, mile, routeDistance, originCoordinates, destinationCoordinates) {
+  const coordinates = routePreview?.geometry?.coordinates;
+  if (Array.isArray(coordinates) && coordinates.length > 0) {
+    const ratio = Math.max(0, Math.min(1, Number(mile) / Math.max(Number(routeDistance), 1)));
+    const index = Math.min(coordinates.length - 1, Math.max(0, Math.round(ratio * (coordinates.length - 1))));
+    return coordinates[index];
+  }
+  const ratio = Math.max(0, Math.min(1, Number(mile) / Math.max(Number(routeDistance), 1)));
+  return [
+    originCoordinates[0] + (destinationCoordinates[0] - originCoordinates[0]) * ratio,
+    originCoordinates[1] + (destinationCoordinates[1] - originCoordinates[1]) * ratio
+  ];
 }

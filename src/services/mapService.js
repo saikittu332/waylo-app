@@ -44,6 +44,8 @@ function normalizeFeature(feature) {
     name: feature.text || label,
     address: label,
     coordinates: feature.center,
+    category: feature.properties?.category,
+    maki: feature.properties?.maki,
     provider: activeProvider
   };
 }
@@ -83,6 +85,22 @@ export async function reverseGeocode(latitude, longitude) {
     types: "address,place,locality,neighborhood,poi"
   });
   return data.features?.[0] ? normalizeFeature(data.features[0]) : null;
+}
+
+export async function searchNearbyPlaces(query, coordinates, options = {}) {
+  const trimmed = query.trim();
+  if (!trimmed || !coordinates?.length) return [];
+
+  const data = await mapboxRequest(`/geocoding/v5/mapbox.places/${encodeURIComponent(trimmed)}.json`, {
+    autocomplete: "false",
+    country: "us",
+    language: "en",
+    limit: String(options.limit || 4),
+    proximity: coordinates.join(","),
+    types: "poi"
+  });
+
+  return (data.features || []).map(normalizeFeature);
 }
 
 function normalizeDirectionsProfile(profile) {

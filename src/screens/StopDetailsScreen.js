@@ -14,6 +14,10 @@ export default function StopDetailsScreen({ navigation, route }) {
     fuelPrice: "3.49"
   };
   const decision = route.params?.decision;
+  const isFuel = stop.type === "fuel";
+  const sourceLabel = stop.placeSource || stop.source || "Waylo route logic";
+  const fuelPriceLabel = stop.fuelPrice ? `$${stop.fuelPrice}/gal` : "TBD";
+  const trustLine = stop.rating ? `${stop.rating} rating | ${sourceLabel}` : sourceLabel;
 
   function chooseStop(status) {
     navigation.navigate({
@@ -36,13 +40,13 @@ export default function StopDetailsScreen({ navigation, route }) {
         <PremiumCard style={styles.detailsCard}>
           <Text style={styles.heading}>{stop.name}</Text>
           <Text style={styles.address}>{stop.address || "1200 W Tehachapi Blvd, Tehachapi, CA"}</Text>
-          <Text style={styles.rating}>{stop.rating || "4.3"} rating (266 reviews)</Text>
+          <Text style={styles.rating}>{trustLine}</Text>
 
           <View style={styles.features}>
-            <Feature icon="pricetag-outline" label="Fuel Price" value={`$${stop.fuelPrice || "3.49"}/gal`} />
-            <Feature icon="water-outline" label="Restrooms" value="Clean" />
-            <Feature icon="restaurant-outline" label="Food" value="Yes" />
-            <Feature icon="storefront-outline" label="Store" value="Yes" />
+            <Feature icon={isFuel ? "pricetag-outline" : "navigate-outline"} label={isFuel ? "Fuel Price" : "Detour"} value={isFuel ? fuelPriceLabel : "Low"} />
+            <Feature icon="map-outline" label="Route Mile" value={`${Math.round(stop.distanceFromStart || 0)} mi`} />
+            <Feature icon="information-circle-outline" label="Type" value={String(stop.type || "stop")} />
+            <Feature icon="business-outline" label="Source" value={stop.placeSource ? "Mapbox" : "Waylo"} />
           </View>
 
           <Text style={styles.sectionTitle}>Why we recommend this stop?</Text>
