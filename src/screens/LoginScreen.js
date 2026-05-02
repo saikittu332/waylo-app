@@ -58,24 +58,33 @@ export default function LoginScreen({ navigation }) {
           <PrimaryButton title={otpSent ? "Verify OTP" : "Send OTP"} loading={loading} onPress={handleContinue} />
           {!!error && <Text style={styles.errorText}>{error}</Text>}
 
-          <Text style={styles.label}>Enter OTP</Text>
-          <View style={styles.otpRow}>
-            {code.map((digit, index) => (
-              <TextInput
-                key={String(index)}
-                keyboardType="number-pad"
-                maxLength={1}
-                onChangeText={(value) => {
-                  const next = [...code];
-                  next[index] = value;
-                  setCode(next);
-                }}
-                style={styles.otpBox}
-                value={digit}
-              />
-            ))}
-          </View>
-          <Text style={styles.resend}>Resend OTP in 00:30</Text>
+          {otpSent ? (
+            <>
+              <Text style={styles.label}>Enter OTP</Text>
+              <View style={styles.otpRow}>
+                {code.map((digit, index) => (
+                  <TextInput
+                    key={String(index)}
+                    keyboardType="number-pad"
+                    maxLength={1}
+                    onChangeText={(value) => {
+                      const next = [...code];
+                      next[index] = value.replace(/\D/g, "");
+                      setCode(next);
+                    }}
+                    style={styles.otpBox}
+                    value={digit}
+                  />
+                ))}
+              </View>
+              <Text style={styles.resend}>Resend OTP in 00:30</Text>
+            </>
+          ) : (
+            <View style={styles.otpPreview}>
+              <Text style={styles.otpPreviewTitle}>Secure phone verification</Text>
+              <Text style={styles.otpPreviewText}>Code entry appears after you send a verification code.</Text>
+            </View>
+          )}
         </PremiumCard>
 
         <Text style={styles.terms}>
@@ -161,6 +170,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "500",
     textAlign: "center"
+  },
+  otpPreview: {
+    backgroundColor: colors.paleBlue,
+    borderColor: "rgba(47,128,237,0.14)",
+    borderRadius: radii.md,
+    borderWidth: 1,
+    gap: 3,
+    padding: spacing.md
+  },
+  otpPreviewTitle: {
+    color: colors.navy,
+    fontSize: 13,
+    fontWeight: "600"
+  },
+  otpPreviewText: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "500",
+    lineHeight: 17
   },
   errorText: {
     color: colors.red,

@@ -5,6 +5,9 @@ import { hasMapboxToken } from "../services/mapService";
 
 export default function RoutePreviewFallback({ route, originLabel, destinationLabel }) {
   const distance = route?.distanceMiles ? `${Math.round(route.distanceMiles)} mi` : "Route preview";
+  const badgeText = route?.map?.isDemoRoute
+    ? "Demo route preview"
+    : hasMapboxToken() ? "Route data from Mapbox" : "Add Mapbox token for live route data";
   return (
     <View style={styles.mapCard}>
       <View style={styles.water} />
@@ -18,9 +21,7 @@ export default function RoutePreviewFallback({ route, originLabel, destinationLa
       </View>
       <MapPin label={destinationLabel || "Destination"} style={styles.pinEnd} color={colors.red} />
       <View style={styles.fallbackBadge}>
-        <Text style={styles.fallbackBadgeText}>
-          {hasMapboxToken() ? "Route data from Mapbox" : "Add Mapbox token for live route data"}
-        </Text>
+        <Text style={styles.fallbackBadgeText}>{badgeText}</Text>
       </View>
     </View>
   );
@@ -107,7 +108,7 @@ const styles = StyleSheet.create({
   routeBadgeText: {
     color: colors.navy,
     fontSize: 11,
-    fontWeight: "700"
+    fontWeight: "600"
   },
   fallbackBadge: {
     backgroundColor: "rgba(255,255,255,0.92)",
@@ -121,7 +122,7 @@ const styles = StyleSheet.create({
   fallbackBadgeText: {
     color: colors.navy,
     fontSize: 12,
-    fontWeight: "700"
+    fontWeight: "600"
   },
   mapPinWrap: {
     position: "absolute"
@@ -136,7 +137,7 @@ const styles = StyleSheet.create({
   mapPinText: {
     color: colors.navy,
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "600",
     marginTop: 2
   },
   pinStart: {

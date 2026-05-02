@@ -20,7 +20,7 @@ export default function VehicleSetupScreen({ navigation, route }) {
   const isEditingExisting = Boolean(route.params?.vehicle) && !isNewVehicle;
   const emptyVehicle = { vehicleName: "", fuelType: "gas", cityMpg: "", highwayMpg: "", tankCapacity: "" };
   const initialVehicle = isNewVehicle ? emptyVehicle : route.params?.vehicle || defaultVehicle;
-  const existingVehicles = route.params?.vehicles || [route.params?.vehicle || defaultVehicle];
+  const existingVehicles = route.params?.vehicles || (route.params?.vehicle ? [route.params.vehicle] : []);
   const [vehicle, setVehicle] = useState(initialVehicle);
   const [search, setSearch] = useState(initialVehicle.vehicleName || "");
   const [errors, setErrors] = useState({});
@@ -89,7 +89,7 @@ export default function VehicleSetupScreen({ navigation, route }) {
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
-        routes: [{ name: "Home", params: { assistantName, user, vehicle: initialVehicle.vehicleName ? initialVehicle : existingVehicles[0], vehicles: existingVehicles } }]
+        routes: [{ name: "Home", params: { assistantName, user, vehicle: initialVehicle.vehicleName ? initialVehicle : existingVehicles[0] || defaultVehicle, vehicles: existingVehicles.length ? existingVehicles : [defaultVehicle] } }]
       })
     );
   }

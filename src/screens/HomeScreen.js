@@ -56,7 +56,26 @@ function planSavings(plan) {
 
 function planStops(plan) {
   const decisions = plan?.stopDecisions ? Object.values(plan.stopDecisions).filter((value) => value === "added").length : 0;
-  return plan?.finalStops?.length || plan?.selectedStopCount || plan?.stopCount || decisions || plan?.allStops?.length || plan?.routePayload?.stops?.length || 0;
+  return plan?.finalStops?.length
+    || plan?.tripPlan?.finalStops?.length
+    || plan?.tripPlan?.fullStops?.length
+    || plan?.selectedStopCount
+    || plan?.stopCount
+    || decisions
+    || plan?.allStops?.length
+    || plan?.routePayload?.stops?.length
+    || 0;
+}
+
+function formatPhoneForDisplay(phone) {
+  const digits = String(phone || "").replace(/\D/g, "");
+  if (digits.length === 10) {
+    return `+1 (${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+  }
+  return phone || "+1 (555) 123-4567";
 }
 
 export default function HomeScreen({ navigation, route }) {
@@ -397,6 +416,11 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
             <RouteModeCard key={item} label={item} selected={mode === item} onPress={() => setMode(item)} vehicle={vehicle} />
           ))}
         </View>
+        <PrimaryButton
+          disabled={isSearchingLocations}
+          title={isSearchingLocations ? "Searching locations..." : "Plan Smart Trip"}
+          onPress={continuePlan}
+        />
         <Pressable onPress={() => setShowVehiclePicker((value) => !value)} style={styles.selectedVehicleCard}>
           <View style={styles.vehicleIconMini}>
             <Ionicons color={colors.blue} name="car-sport-outline" size={20} />
@@ -436,11 +460,6 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
             </Pressable>
           </View>
         )}
-        <PrimaryButton
-          disabled={isSearchingLocations}
-          title={isSearchingLocations ? "Searching locations..." : "Plan Smart Trip"}
-          onPress={continuePlan}
-        />
       </View>
       <TripsContent
         assistantName={assistantName}
@@ -484,7 +503,6 @@ function RouteModeCard({ label, selected, onPress, vehicle }) {
         <Ionicons color={selected ? colors.surface : colors.blue} name={modeData.icon} size={16} />
       </View>
       <Text style={[styles.modeCardTitle, selected && styles.modeCardTitleActive]}>{label}</Text>
-      <Text style={[styles.modeCardDetail, selected && styles.modeCardDetailActive]}>{modeData.detail}</Text>
       <Text style={[styles.modeDelta, selected && styles.modeDeltaActive]}>{modeData.delta}</Text>
     </Pressable>
   );
@@ -507,12 +525,13 @@ function NotificationRow({ icon, title, detail }) {
 function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode, compact, plannedTrips = [], completedTrips = [] }) {
   const [selectedSection, setSelectedSection] = useState("Ready");
   const visiblePlans = compact ? plannedTrips.slice(0, 1) : plannedTrips;
+  const recentCompletedTrip = compact && plannedTrips.length === 0 ? completedTrips[0] : null;
   const showingReady = selectedSection === "Ready";
 
   return (
     <>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{compact ? "Upcoming Drives" : "Trips"}</Text>
+        <Text style={styles.sectionTitle}>{compact && recentCompletedTrip ? "Recent Drive" : compact ? "Upcoming Drives" : "Trips"}</Text>
       </View>
       <PremiumCard style={styles.recentCard}>
         {!compact && (
@@ -530,10 +549,19 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
             ))}
           </View>
         )}
-        {compact && <Text style={styles.groupLabel}>Upcoming</Text>}
+        {compact && <Text style={styles.groupLabel}>{recentCompletedTrip ? "Completed" : "Upcoming"}</Text>}
         {(compact || showingReady) && (
           visiblePlans.length === 0 ? (
-            <Text style={styles.emptyText}>Saved routes will appear here after you build a trip plan.</Text>
+            recentCompletedTrip ? (
+              <TripPlanCard
+                badge="Done"
+                plan={recentCompletedTrip}
+                actionLabel="View Summary"
+                onPress={() => navigation.navigate("TripDetail", { assistantName, user, vehicle, completedTrip: recentCompletedTrip, plan: recentCompletedTrip, type: "completed" })}
+              />
+            ) : (
+              <Text style={styles.emptyText}>Saved routes will appear here after you build a trip plan.</Text>
+            )
           ) : (
             visiblePlans.map((plan, index) => (
               <React.Fragment key={plan.id}>
@@ -638,6 +666,8 @@ function NavigateContent({ navigation, plannedTrips }) {
                     <Text style={styles.recentDate}>{routeMetaLabel(plan)}</Text>
                   </View>
                   <Pressable
+                    accessibilityLabel={`Start ${plan.title || routeTitle(plan.from, plan.to)}`}
+                    accessibilityRole="button"
                     onPress={() => startSavedPlan(plan)}
                     style={styles.startMiniButton}
                   >
@@ -769,7 +799,7 @@ function VehicleContent({ assistantName, user, vehicles, selectedVehicle, setVeh
 function ProfileContent({ assistantName, setAssistantName, user, setUser, navigation, tripCount }) {
   const [profileName, setProfileName] = useState(user?.name || "Sai");
   const [assistantDraft, setAssistantDraft] = useState(assistantName);
-  const phone = user?.phone || "+1 (555) 123-4567";
+  const phone = formatPhoneForDisplay(user?.phone);
   const [editing, setEditing] = useState(false);
   const [nameError, setNameError] = useState("");
   const [assistantNameError, setAssistantNameError] = useState("");
@@ -1230,40 +1260,40 @@ const styles = StyleSheet.create({
     borderColor: "rgba(47,128,237,0.12)",
     borderRadius: radii.xl,
     borderWidth: 1,
-    height: 300,
+    height: 210,
     overflow: "hidden",
     padding: 14,
     position: "relative",
-    zIndex: 4,
+    zIndex: 10,
     ...shadows.soft
   },
   canvasLand: {
     backgroundColor: colors.mapGreen,
     borderRadius: 220,
-    height: 330,
+    height: 250,
     left: -88,
     position: "absolute",
-    top: 82,
+    top: 62,
     transform: [{ rotate: "-18deg" }],
-    width: 300
+    width: 270
   },
   canvasRoad: {
     backgroundColor: "rgba(255,255,255,0.72)",
     borderRadius: 999,
-    height: 390,
+    height: 280,
     position: "absolute",
     right: 94,
-    top: -24,
+    top: -34,
     transform: [{ rotate: "24deg" }],
     width: 28
   },
   canvasRoute: {
     backgroundColor: colors.blue,
     borderRadius: 999,
-    height: 250,
+    height: 188,
     left: 192,
     position: "absolute",
-    top: 64,
+    top: 42,
     transform: [{ rotate: "-18deg" }],
     width: 8
   },
@@ -1275,7 +1305,7 @@ const styles = StyleSheet.create({
     height: 28,
     left: 86,
     position: "absolute",
-    top: 154,
+    top: 112,
     width: 28
   },
   canvasEndPin: {
@@ -1283,7 +1313,7 @@ const styles = StyleSheet.create({
     borderColor: colors.surface,
     borderRadius: radii.pill,
     borderWidth: 4,
-    bottom: 58,
+    bottom: 34,
     height: 28,
     position: "absolute",
     right: 76,
@@ -1298,7 +1328,7 @@ const styles = StyleSheet.create({
     padding: spacing.sm
   },
   canvasMetricShelf: {
-    bottom: spacing.md,
+    bottom: spacing.sm,
     flexDirection: "row",
     gap: spacing.sm,
     left: spacing.md,
@@ -1487,9 +1517,9 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     borderWidth: 1,
     gap: spacing.md,
-    marginTop: -44,
+    marginTop: -28,
     padding: spacing.md,
-    zIndex: 5,
+    zIndex: 2,
     ...shadows.card
   },
   sheetHandle: {
@@ -1627,9 +1657,9 @@ const styles = StyleSheet.create({
     flexBasis: "47%",
     flexGrow: 1,
     gap: 3,
-    minHeight: 90,
+    minHeight: 58,
     outlineStyle: "none",
-    padding: spacing.sm
+    padding: 8
   },
   modeCardActive: {
     backgroundColor: colors.navy,
@@ -1639,33 +1669,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.paleBlue,
     borderRadius: radii.pill,
-    height: 28,
+    height: 22,
     justifyContent: "center",
-    width: 28
+    width: 22
   },
   modeIconActive: {
     backgroundColor: "rgba(255,255,255,0.18)"
   },
   modeCardTitle: {
     color: colors.text,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
     marginTop: 2
   },
   modeCardTitleActive: {
     color: colors.surface
   },
-  modeCardDetail: {
-    color: colors.muted,
-    fontSize: 11,
-    fontWeight: "500"
-  },
-  modeCardDetailActive: {
-    color: "rgba(255,255,255,0.74)"
-  },
   modeDelta: {
     color: colors.green,
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "600",
     marginTop: 2
   },

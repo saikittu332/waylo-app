@@ -359,17 +359,47 @@ async function resolvePlace(label, selectedPlace) {
   if (selectedPlace?.coordinates) return selectedPlace;
   const text = label || "Current Location";
   if (text.toLowerCase() === "current location") return CURRENT_LOCATION_PLACE;
-  const matches = await geocodeAddress(text);
+  let matches = [];
+  try {
+    matches = await geocodeAddress(text);
+  } catch (error) {
+    if (error.code === "MAPBOX_TOKEN_MISSING") {
+      const fallbackPlace = demoPlaceFromText(text);
+      if (fallbackPlace) return fallbackPlace;
+    }
+    throw error;
+  }
   if (!matches.length) {
     throw new Error(`Waylo could not find "${text}". Try a city, address, or landmark.`);
   }
   return matches[0];
 }
 
+function demoPlaceFromText(text) {
+  const normalized = String(text || "").toLowerCase();
+  const demoPlaces = [
+    { key: "san francisco", label: "San Francisco, CA", coordinates: [-122.4194, 37.7749] },
+    { key: "los angeles", label: "Los Angeles, CA", coordinates: [-118.2437, 34.0522] },
+    { key: "yosemite", label: "Yosemite Valley, CA", coordinates: [-119.5383, 37.8651] },
+    { key: "las vegas", label: "Las Vegas, NV", coordinates: [-115.1398, 36.1699] },
+    { key: "grand canyon", label: "Grand Canyon Village, AZ", coordinates: [-112.1401, 36.0544] }
+  ];
+  const match = demoPlaces.find((place) => normalized.includes(place.key));
+  if (!match) return null;
+  return {
+    id: `demo-${match.key.replace(/\s+/g, "-")}`,
+    label: match.label,
+    name: match.label,
+    address: "Demo location until Mapbox search is configured",
+    coordinates: match.coordinates,
+    provider: "waylo-demo"
+  };
+}
+
 export async function planTrip({ from, to, mode, vehicle, user, originPlace, destinationPlace }) {
   const origin = await resolvePlace(from || mockTripRequest.from, originPlace);
   const destination = await resolvePlace(to || mockTripRequest.to, destinationPlace);
-  const routePreview = await getRoutePreview(origin.coordinates, destination.coordinates, mode || "driving");
+  const routePreview = await getRoutePreviewWithDemoFallback(origin, destination, mode || "driving");
   const routeDistance = routePreview.distanceMiles;
   const routeDuration = routePreview.durationHours;
   const range = calculateRange(vehicle.highwayMpg, vehicle.tankCapacity);
@@ -439,6 +469,38 @@ export async function planTrip({ from, to, mode, vehicle, user, originPlace, des
     },
     insights
   };
+}
+
+async function getRoutePreviewWithDemoFallback(origin, destination, mode) {
+  try {
+    return await getRoutePreview(origin.coordinates, destination.coordinates, mode);
+  } catch (error) {
+    if (error.code !== "MAPBOX_TOKEN_MISSING") {
+      throw error;
+    }
+
+    return {
+      provider: "waylo-demo",
+      isDemoRoute: true,
+      distanceMiles: mockRoute.distanceMiles,
+      durationHours: mockRoute.durationHours,
+      durationSeconds: mockRoute.durationHours * 3600,
+      distanceMeters: mockRoute.distanceMiles * 1609.344,
+      geometry: {
+        type: "LineString",
+        coordinates: [
+          origin.coordinates,
+          [-121.5, 36.4],
+          [-120.4, 35.5],
+          [-119.0, 35.1],
+          [-118.2437, 34.0522],
+          destination.coordinates
+        ]
+      },
+      summary: "Waylo demo route until Mapbox is configured",
+      legs: []
+    };
+  }
 }
 
 async function buildRouteStops({ fuelStops, restStops, routeDistance, mode, routePreview, origin, destination, safeRange, highwayMpg, restInterval }) {

@@ -77,7 +77,12 @@ export default function NavigationScreen({ navigation, route }) {
               <StatItem compact label="arrival" value="6:45" />
               <StatItem compact label="hrs" value={formatHours(routeSummary?.durationHours || 6.75)} />
               <StatItem compact label="mi" value={`${routeSummary?.distanceMiles || 383}`} />
-              <Pressable onPress={() => navigation.navigate("TripSummary", { tripPlan })} style={styles.endButton}>
+              <Pressable
+                accessibilityLabel="End drive preview"
+                accessibilityRole="button"
+                onPress={() => navigation.navigate("TripSummary", { tripPlan })}
+                style={styles.endButton}
+              >
                 <Text style={styles.endButtonText}>End</Text>
               </Pressable>
             </View>
