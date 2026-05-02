@@ -34,30 +34,41 @@ function addModularHeaders(podfile) {
   return cleanedPodfile;
 }
 
-function patchRNFBAppFirebaseImport(projectRoot) {
-  const modulePath = path.join(
-    projectRoot,
-    "node_modules",
-    "@react-native-firebase",
-    "app",
-    "ios",
-    "RNFBApp",
-    "RNFBAppModule.m"
-  );
-
-  if (!fs.existsSync(modulePath)) {
+function patchFile(filePath, replacements) {
+  if (!fs.existsSync(filePath)) {
     return;
   }
 
-  const source = fs.readFileSync(modulePath, "utf8");
+  const source = fs.readFileSync(filePath, "utf8");
+  const patchedSource = replacements.reduce(
+    (contents, [from, to]) => contents.split(from).join(to),
+    source
+  );
+
+  if (patchedSource !== source) {
+    fs.writeFileSync(filePath, patchedSource);
+  }
+}
+
+function patchReactNativeFirebaseImports(projectRoot) {
+  const rnfbRoot = path.join(projectRoot, "node_modules", "@react-native-firebase");
   const broadFirebaseImport = "#import <Firebase/Firebase.h>";
 
-  if (source.includes(broadFirebaseImport)) {
-    fs.writeFileSync(
-      modulePath,
-      source.replace(broadFirebaseImport, "#import <FirebaseCore/FirebaseCore.h>")
-    );
-  }
+  patchFile(path.join(rnfbRoot, "app", "ios", "RNFBApp", "RNFBAppModule.m"), [
+    [broadFirebaseImport, "#import <FirebaseCore/FirebaseCore.h>"],
+  ]);
+  patchFile(path.join(rnfbRoot, "auth", "ios", "RNFBAuth", "RNFBAuthModule.h"), [
+    [
+      broadFirebaseImport,
+      "#import <FirebaseCore/FirebaseCore.h>\n#import <FirebaseAuth/FirebaseAuth.h>",
+    ],
+  ]);
+  patchFile(path.join(rnfbRoot, "auth", "ios", "RNFBAuth", "RNFBAuthModule.m"), [
+    [
+      broadFirebaseImport,
+      "#import <FirebaseCore/FirebaseCore.h>\n#import <FirebaseAuth/FirebaseAuth.h>",
+    ],
+  ]);
 }
 
 module.exports = function withIosModularHeaders(config) {
@@ -71,7 +82,7 @@ module.exports = function withIosModularHeaders(config) {
         fs.writeFileSync(podfilePath, addModularHeaders(podfile));
       }
 
-      patchRNFBAppFirebaseImport(modConfig.modRequest.projectRoot);
+      patchReactNativeFirebaseImports(modConfig.modRequest.projectRoot);
 
       return modConfig;
     },

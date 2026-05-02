@@ -109,7 +109,7 @@ npx eas build:configure
 npx eas build --profile development --platform ios --clear-cache
 ```
 
-The iOS build uses `plugins/with-ios-modular-headers.js` to make Firebase Swift pods install cleanly in EAS. The plugin adds targeted `:modular_headers => true` pod declarations for Firebase support pods, which fixes the FirebaseAuth/GoogleUtilities CocoaPods module-map error without forcing React Native Firebase itself to build as a framework. It also narrows the React Native Firebase app import from the broad Firebase umbrella header to FirebaseCore during prebuild so the app pod does not request FirebaseAuth Swift headers before they are generated.
+The iOS build uses `plugins/with-ios-modular-headers.js` to make Firebase Swift pods install cleanly in EAS. The plugin adds targeted `:modular_headers => true` pod declarations for Firebase support pods, which fixes the FirebaseAuth/GoogleUtilities CocoaPods module-map error without forcing React Native Firebase itself to build as a framework. It also narrows React Native Firebase imports from the broad Firebase umbrella header to FirebaseCore/FirebaseAuth during prebuild so pods do not request FirebaseAuth Swift headers before they are generated.
 
 Firebase Android setup expects:
 
