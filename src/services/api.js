@@ -328,6 +328,9 @@ export async function savePlan({ userId, tripId, route, vehicle, insights, final
 export async function updateSavedPlanRoute(planId, { route, vehicle, insights, finalStops = [], stopDecisions = {}, allStops = [] }) {
   return updateSavedPlan(planId, {
     title: routeTitle(route.from, route.to),
+    origin: route.from,
+    destination: route.to,
+    trip_mode: route.mode,
     notes: "Updated from the Waylo mobile app",
     plan_payload: buildSavedPlanPayload({ route, vehicle, insights, finalStops, stopDecisions, allStops })
   });

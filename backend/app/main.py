@@ -99,7 +99,7 @@ def update_user(user_id: uuid.UUID, payload: UserUpdate, db: Session = Depends(g
     if user is None:
         raise HTTPException(status_code=404, detail="User not found.")
     if payload.active_vehicle_id:
-        ensure_vehicle_exists(db, payload.active_vehicle_id)
+        ensure_vehicle_belongs_to_user(db, payload.active_vehicle_id, user_id)
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(user, key, value)
     db.commit()
@@ -110,6 +110,7 @@ def update_user(user_id: uuid.UUID, payload: UserUpdate, db: Session = Depends(g
 @app.post("/vehicles", response_model=VehicleRead, status_code=status.HTTP_201_CREATED)
 def create_vehicle(payload: VehicleCreate, db: Session = Depends(get_db)) -> Vehicle:
     ensure_user_exists(db, payload.user_id)
+    ensure_unique_vehicle_name(db, payload.user_id, payload.vehicle_name)
     vehicle = Vehicle(**payload.model_dump())
     db.add(vehicle)
     db.commit()
@@ -129,6 +130,8 @@ def update_vehicle(vehicle_id: uuid.UUID, payload: VehicleUpdate, db: Session = 
     vehicle = db.get(Vehicle, vehicle_id)
     if vehicle is None:
         raise HTTPException(status_code=404, detail="Vehicle not found.")
+    if payload.vehicle_name:
+        ensure_unique_vehicle_name(db, vehicle.user_id, payload.vehicle_name, exclude_vehicle_id=vehicle_id)
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(vehicle, key, value)
     db.commit()
@@ -141,6 +144,9 @@ def delete_vehicle(vehicle_id: uuid.UUID, db: Session = Depends(get_db)) -> None
     vehicle = db.get(Vehicle, vehicle_id)
     if vehicle is None:
         raise HTTPException(status_code=404, detail="Vehicle not found.")
+    user = db.get(User, vehicle.user_id)
+    if user and user.active_vehicle_id == vehicle_id:
+        user.active_vehicle_id = None
     db.delete(vehicle)
     db.commit()
 
@@ -149,7 +155,7 @@ def delete_vehicle(vehicle_id: uuid.UUID, db: Session = Depends(get_db)) -> None
 def create_trip(payload: TripCreate, db: Session = Depends(get_db)) -> Trip:
     ensure_user_exists(db, payload.user_id)
     if payload.vehicle_id:
-        ensure_vehicle_exists(db, payload.vehicle_id)
+        ensure_vehicle_belongs_to_user(db, payload.vehicle_id, payload.user_id)
     trip = Trip(**payload.model_dump())
     db.add(trip)
     db.commit()
@@ -164,6 +170,7 @@ def list_trips(
 ) -> list[Trip]:
     query = select(Trip).order_by(Trip.created_at.desc())
     if user_id:
+        ensure_user_exists(db, user_id)
         query = query.where(Trip.user_id == user_id)
     return list(db.scalars(query).all())
 
@@ -213,7 +220,7 @@ def update_trip_stop(trip_stop_id: uuid.UUID, payload: TripStopUpdate, db: Sessi
 def create_saved_plan(payload: SavedPlanCreate, db: Session = Depends(get_db)) -> SavedPlan:
     ensure_user_exists(db, payload.user_id)
     if payload.trip_id:
-        ensure_trip_exists(db, payload.trip_id)
+        ensure_trip_belongs_to_user(db, payload.trip_id, payload.user_id)
     saved_plan = SavedPlan(**payload.model_dump())
     db.add(saved_plan)
     db.commit()
@@ -259,6 +266,37 @@ def ensure_vehicle_exists(db: Session, vehicle_id: uuid.UUID) -> None:
         raise HTTPException(status_code=404, detail="Vehicle not found.")
 
 
+def ensure_vehicle_belongs_to_user(db: Session, vehicle_id: uuid.UUID, user_id: uuid.UUID) -> None:
+    vehicle = db.get(Vehicle, vehicle_id)
+    if vehicle is None:
+        raise HTTPException(status_code=404, detail="Vehicle not found.")
+    if vehicle.user_id != user_id:
+        raise HTTPException(status_code=400, detail="Vehicle does not belong to this user.")
+
+
 def ensure_trip_exists(db: Session, trip_id: uuid.UUID) -> None:
     if db.get(Trip, trip_id) is None:
         raise HTTPException(status_code=404, detail="Trip not found.")
+
+
+def ensure_trip_belongs_to_user(db: Session, trip_id: uuid.UUID, user_id: uuid.UUID) -> None:
+    trip = db.get(Trip, trip_id)
+    if trip is None:
+        raise HTTPException(status_code=404, detail="Trip not found.")
+    if trip.user_id != user_id:
+        raise HTTPException(status_code=400, detail="Trip does not belong to this user.")
+
+
+def ensure_unique_vehicle_name(
+    db: Session,
+    user_id: uuid.UUID,
+    vehicle_name: str,
+    exclude_vehicle_id: Optional[uuid.UUID] = None,
+) -> None:
+    normalized_name = vehicle_name.strip().lower()
+    query = select(Vehicle).where(Vehicle.user_id == user_id)
+    for vehicle in db.scalars(query).all():
+        if exclude_vehicle_id and vehicle.id == exclude_vehicle_id:
+            continue
+        if vehicle.vehicle_name.strip().lower() == normalized_name:
+            raise HTTPException(status_code=409, detail="A vehicle with this name already exists.")

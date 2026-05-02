@@ -4,6 +4,17 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+FUEL_TYPES = {"gas", "diesel", "hybrid", "ev"}
+TRIP_MODES = {"Fastest", "Cheapest", "Scenic", "Comfort"}
+TRIP_STATUSES = {"planned", "active", "completed", "cancelled"}
+STOP_DECISIONS = {"recommended", "added", "skipped"}
+
+
+def clean_text(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    return " ".join(value.strip().split())
+
 
 class UserCreate(BaseModel):
     phone: str = Field(min_length=7, max_length=32)
@@ -23,6 +34,11 @@ class UserCreate(BaseModel):
             raise ValueError("Phone number must include at least 10 digits.")
         return value
 
+    @field_validator("name", "assistant_name")
+    @classmethod
+    def normalize_names(cls, value: Optional[str]) -> Optional[str]:
+        return clean_text(value)
+
 
 class UserUpdate(BaseModel):
     name: Optional[str] = None
@@ -31,6 +47,11 @@ class UserUpdate(BaseModel):
     fuel_savings_alerts: Optional[bool] = None
     rest_reminders_enabled: Optional[bool] = None
     rest_reminder_hours: Optional[float] = Field(default=None, ge=1.0, le=6.0)
+
+    @field_validator("name", "assistant_name")
+    @classmethod
+    def normalize_names(cls, value: Optional[str]) -> Optional[str]:
+        return clean_text(value)
 
 
 class UserRead(UserCreate):
@@ -71,6 +92,19 @@ class VehicleCreate(BaseModel):
     highway_mpg: Optional[float] = Field(default=None, ge=0, le=250)
     tank_capacity_gallons: Optional[float] = Field(default=None, ge=0, le=80)
 
+    @field_validator("vehicle_name")
+    @classmethod
+    def normalize_vehicle_name(cls, value: str) -> str:
+        return clean_text(value) or value
+
+    @field_validator("fuel_type")
+    @classmethod
+    def validate_fuel_type(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in FUEL_TYPES:
+            raise ValueError("Fuel type must be gas, diesel, hybrid, or EV.")
+        return "EV" if normalized == "ev" else normalized
+
 
 class VehicleUpdate(BaseModel):
     vehicle_name: Optional[str] = Field(default=None, min_length=2, max_length=160)
@@ -78,6 +112,21 @@ class VehicleUpdate(BaseModel):
     city_mpg: Optional[float] = Field(default=None, ge=0, le=250)
     highway_mpg: Optional[float] = Field(default=None, ge=0, le=250)
     tank_capacity_gallons: Optional[float] = Field(default=None, ge=0, le=80)
+
+    @field_validator("vehicle_name")
+    @classmethod
+    def normalize_vehicle_name(cls, value: Optional[str]) -> Optional[str]:
+        return clean_text(value)
+
+    @field_validator("fuel_type")
+    @classmethod
+    def validate_fuel_type(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        normalized = value.strip().lower()
+        if normalized not in FUEL_TYPES:
+            raise ValueError("Fuel type must be gas, diesel, hybrid, or EV.")
+        return "EV" if normalized == "ev" else normalized
 
 
 class VehicleRead(VehicleCreate):
@@ -99,6 +148,25 @@ class TripCreate(BaseModel):
     estimated_fuel_cost: Optional[float] = None
     estimated_savings: Optional[float] = None
 
+    @field_validator("origin", "destination")
+    @classmethod
+    def normalize_places(cls, value: str) -> str:
+        return clean_text(value) or value
+
+    @field_validator("trip_mode")
+    @classmethod
+    def validate_trip_mode(cls, value: str) -> str:
+        if value not in TRIP_MODES:
+            raise ValueError("Trip mode must be Fastest, Cheapest, Scenic, or Comfort.")
+        return value
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, value: str) -> str:
+        if value not in TRIP_STATUSES:
+            raise ValueError("Trip status must be planned, active, completed, or cancelled.")
+        return value
+
 
 class TripUpdate(BaseModel):
     status: Optional[str] = None
@@ -106,6 +174,13 @@ class TripUpdate(BaseModel):
     duration_hours: Optional[float] = None
     estimated_fuel_cost: Optional[float] = None
     estimated_savings: Optional[float] = None
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, value: Optional[str]) -> Optional[str]:
+        if value is not None and value not in TRIP_STATUSES:
+            raise ValueError("Trip status must be planned, active, completed, or cancelled.")
+        return value
 
 
 class TripRead(TripCreate):
@@ -128,11 +203,37 @@ class TripStopCreate(BaseModel):
     recommendation: Optional[str] = None
     stop_payload: dict[str, Any] = Field(default_factory=dict)
 
+    @field_validator("stop_type")
+    @classmethod
+    def validate_stop_type(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in {"fuel", "rest", "food", "scenic"}:
+            raise ValueError("Stop type must be fuel, rest, food, or scenic.")
+        return normalized
+
+    @field_validator("decision")
+    @classmethod
+    def validate_decision(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in STOP_DECISIONS:
+            raise ValueError("Stop decision must be recommended, added, or skipped.")
+        return normalized
+
 
 class TripStopUpdate(BaseModel):
     decision: Optional[str] = None
     recommendation: Optional[str] = None
     stop_payload: Optional[dict[str, Any]] = None
+
+    @field_validator("decision")
+    @classmethod
+    def validate_decision(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        normalized = value.strip().lower()
+        if normalized not in STOP_DECISIONS:
+            raise ValueError("Stop decision must be recommended, added, or skipped.")
+        return normalized
 
 
 class TripStopRead(TripStopCreate):
@@ -152,11 +253,38 @@ class SavedPlanCreate(BaseModel):
     notes: Optional[str] = None
     plan_payload: dict[str, Any] = Field(default_factory=dict)
 
+    @field_validator("title", "origin", "destination")
+    @classmethod
+    def normalize_saved_plan_text(cls, value: str) -> str:
+        return clean_text(value) or value
+
+    @field_validator("trip_mode")
+    @classmethod
+    def validate_trip_mode(cls, value: str) -> str:
+        if value not in TRIP_MODES:
+            raise ValueError("Trip mode must be Fastest, Cheapest, Scenic, or Comfort.")
+        return value
+
 
 class SavedPlanUpdate(BaseModel):
     title: Optional[str] = None
+    origin: Optional[str] = None
+    destination: Optional[str] = None
+    trip_mode: Optional[str] = None
     notes: Optional[str] = None
     plan_payload: Optional[dict[str, Any]] = None
+
+    @field_validator("title", "origin", "destination")
+    @classmethod
+    def normalize_saved_plan_text(cls, value: Optional[str]) -> Optional[str]:
+        return clean_text(value)
+
+    @field_validator("trip_mode")
+    @classmethod
+    def validate_trip_mode(cls, value: Optional[str]) -> Optional[str]:
+        if value is not None and value not in TRIP_MODES:
+            raise ValueError("Trip mode must be Fastest, Cheapest, Scenic, or Comfort.")
+        return value
 
 
 class SavedPlanRead(SavedPlanCreate):
