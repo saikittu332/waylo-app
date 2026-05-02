@@ -106,8 +106,19 @@ Create an iOS development build:
 ```powershell
 npx eas login
 npx eas build:configure
-npx eas build --profile development --platform ios
+npx eas build --profile development --platform ios --clear-cache
 ```
+
+The iOS build uses `expo-build-properties` plus `plugins/with-ios-modular-headers.js` to make Firebase Swift pods install cleanly in EAS. The plugin adds `use_modular_headers!` during native prebuild, which fixes the FirebaseAuth/GoogleUtilities CocoaPods module-map error.
+
+Firebase Android setup expects:
+
+```text
+Android package: com.saikittu332.waylo
+Config file: ./google-services.json
+```
+
+The generated `android/` and `ios/` folders are intentionally git-ignored while Waylo stays in Expo managed/EAS prebuild mode. Keep Firebase config in `app.json` and the root Google config files instead of editing native files directly.
 
 If your Apple Developer Program membership is active, EAS should show your Apple team during the iOS build. If it still says no team is associated, sign in at `https://developer.apple.com/account`, accept any pending agreements, and wait for Apple membership activation to finish before retrying.
 

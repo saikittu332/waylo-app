@@ -21,7 +21,8 @@
       }
     },
     "android": {
-      "package": "com.saikittu332.waylo"
+      "package": "com.saikittu332.waylo",
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       [
@@ -33,7 +34,16 @@
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
       "@rnmapbox/maps",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      "./plugins/with-ios-modular-headers"
     ],
     "web": {
       "bundler": "metro"

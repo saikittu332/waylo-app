@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "212023664061",
+    "project_id": "waylo-app-55e80",
+    "storage_bucket": "waylo-app-55e80.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:212023664061:android:d77a613a32a9486a4786d4",
+        "android_client_info": {
+          "package_name": "com.saikittu332.waylo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBNtzxV-w4dJJwlALopuKMvaSgaYUpfob4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
