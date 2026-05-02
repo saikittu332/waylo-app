@@ -1,13 +1,16 @@
 import React from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, radii, spacing } from "../constants/theme";
 
-export default function PrimaryButton({ title, onPress, variant = "primary", disabled, loading }) {
+export default function PrimaryButton({ title, onPress, variant = "primary", disabled, loading, icon, accessibilityLabel }) {
   const isSecondary = variant === "secondary";
   const isDanger = variant === "danger";
+  const iconColor = isSecondary ? colors.navy : colors.surface;
 
   return (
     <Pressable
+      accessibilityLabel={accessibilityLabel || title}
       accessibilityRole="button"
       disabled={disabled || loading}
       onPress={onPress}
@@ -21,7 +24,10 @@ export default function PrimaryButton({ title, onPress, variant = "primary", dis
       {loading ? (
         <ActivityIndicator color={isSecondary ? colors.navy : colors.surface} />
       ) : (
-        <Text style={[styles.text, isSecondary && styles.secondaryText]}>{title}</Text>
+        <View style={styles.content}>
+          {!!icon && <Ionicons color={iconColor} name={icon} size={18} />}
+          <Text style={[styles.text, isSecondary && styles.secondaryText]}>{title}</Text>
+        </View>
       )}
     </Pressable>
   );
@@ -30,16 +36,16 @@ export default function PrimaryButton({ title, onPress, variant = "primary", dis
 const styles = StyleSheet.create({
   button: {
     alignItems: "center",
-    backgroundColor: colors.blue,
+    backgroundColor: colors.blueDeep,
     borderRadius: radii.pill,
     justifyContent: "center",
-    minHeight: 50,
+    minHeight: 52,
     paddingHorizontal: spacing.lg,
     shadowColor: colors.blue,
-    shadowOpacity: 0.16,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 2,
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
     outlineStyle: "none"
   },
   secondary: {
@@ -55,6 +61,12 @@ const styles = StyleSheet.create({
   },
   dimmed: {
     opacity: 0.72
+  },
+  content: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.xs,
+    justifyContent: "center"
   },
   text: {
     color: colors.surface,

@@ -116,11 +116,13 @@ export default function TripDetailScreen({ navigation, route }) {
         {!isCompleted && (
           <>
             <PrimaryButton
+              icon="options-outline"
               title="Revise Stops"
               variant="secondary"
               onPress={reviseSavedPlan}
             />
             <PrimaryButton
+              icon="navigate-outline"
               title="Start Drive Preview"
               onPress={() => navigation.navigate("Navigation", {
                 tripPlan: {
@@ -142,7 +144,7 @@ export default function TripDetailScreen({ navigation, route }) {
                 }
               })}
             />
-            <PrimaryButton title={deleting ? "Removing..." : "Remove Saved Plan"} variant="secondary" onPress={removeSavedPlan} />
+            <PrimaryButton icon="trash-outline" title={deleting ? "Removing..." : "Remove Saved Plan"} variant="secondary" onPress={removeSavedPlan} />
           </>
         )}
       </ScrollView>

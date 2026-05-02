@@ -7,7 +7,7 @@ import PrimaryButton from "../components/PrimaryButton";
 import RoutePreviewMap from "../components/RoutePreviewMap";
 import StatItem from "../components/StatItem";
 import StopCard from "../components/StopCard";
-import { colors, radii, screen, spacing } from "../constants/theme";
+import { colors, radii, screen, shadows, spacing } from "../constants/theme";
 import { defaultVehicle } from "../data/mockVehicleSpecs";
 import { apiSavedPlanToApp, savePlan, planTrip, updateSavedPlanRoute, updateTripStop } from "../services/api";
 import { formatCurrency, formatHours } from "../utils/tripCalculator";
@@ -62,7 +62,22 @@ export default function TripResultsScreen({ navigation, route }) {
   if (loadingRoute) {
     return (
       <SafeAreaView style={styles.safe}>
-        <Text style={styles.loading}>Building your smart trip plan...</Text>
+        <View style={styles.loadingWrap}>
+          <View style={styles.loadingMap}>
+            <View style={styles.loadingRouteLine} />
+            <View style={styles.loadingPinStart} />
+            <View style={styles.loadingPinEnd} />
+          </View>
+          <PremiumCard style={styles.loadingCard}>
+            <Text style={styles.loadingTitle}>Building your smart trip</Text>
+            <Text style={styles.loadingCopy}>Checking route distance, safe range, rest timing, and fuel-cost tradeoffs.</Text>
+            <View style={styles.loadingSteps}>
+              <LoadingStep done text="Route preview" />
+              <LoadingStep done text="Vehicle range" />
+              <LoadingStep text="Stop ranking" />
+            </View>
+          </PremiumCard>
+        </View>
       </SafeAreaView>
     );
   }
@@ -179,6 +194,12 @@ export default function TripResultsScreen({ navigation, route }) {
           route={plannedRoute}
         />
 
+        <View style={styles.routeStrip}>
+          <RouteStripItem icon="shield-checkmark-outline" label="Reserve" value={`${Math.round(insights.safeRange)} mi`} />
+          <RouteStripItem icon="time-outline" label="Drive time" value={formatHours(plannedRoute.durationHours)} />
+          <RouteStripItem icon="sparkles-outline" label="Confidence" value={`${Math.max(82, Math.min(96, Math.round(100 - finalStops.length * 2)))}%`} />
+        </View>
+
         <PremiumCard style={styles.proofCard}>
           <Text style={styles.planTitle}>Why this plan works</Text>
           <View style={styles.proofGrid}>
@@ -195,8 +216,8 @@ export default function TripResultsScreen({ navigation, route }) {
         <PremiumCard style={styles.aiCoachCard}>
           <View style={styles.stopsHeader}>
             <View>
-              <Text style={styles.stopsTitle}>Waylo stop ranking</Text>
-              <Text style={styles.planSubtitle}>Stops are scored by route fit, timing, savings, and detour.</Text>
+              <Text style={styles.stopsTitle}>Assistant picks</Text>
+              <Text style={styles.planSubtitle}>Ranked by cost impact, detour, route fit, and comfort timing.</Text>
             </View>
             <Text style={styles.stopsMeta}>{plannedRoute.mode}</Text>
           </View>
@@ -268,6 +289,7 @@ export default function TripResultsScreen({ navigation, route }) {
         </PremiumCard>
 
         <PrimaryButton
+          icon="navigate-outline"
           title={finalStops.length ? "Start Drive Preview" : "Preview Without Added Stops"}
           onPress={() => navigation.navigate("Navigation", {
             tripPlan: {
@@ -280,12 +302,32 @@ export default function TripResultsScreen({ navigation, route }) {
           })}
         />
         <PrimaryButton
+          icon={existingPlan ? "checkmark-circle-outline" : "bookmark-outline"}
           title={existingPlan ? "Update Saved Plan" : "Save for Later"}
           variant="secondary"
           onPress={existingPlan ? handleUpdatePlan : handleSaveForLater}
         />
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function LoadingStep({ text, done }) {
+  return (
+    <View style={styles.loadingStep}>
+      <Ionicons color={done ? colors.green : colors.blue} name={done ? "checkmark-circle" : "radio-button-off-outline"} size={17} />
+      <Text style={styles.loadingStepText}>{text}</Text>
+    </View>
+  );
+}
+
+function RouteStripItem({ icon, label, value }) {
+  return (
+    <View style={styles.routeStripItem}>
+      <Ionicons color={colors.blue} name={icon} size={17} />
+      <Text style={styles.routeStripLabel}>{label}</Text>
+      <Text style={styles.routeStripValue}>{value}</Text>
+    </View>
   );
 }
 
@@ -324,11 +366,79 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl * 2,
     width: "100%"
   },
-  loading: {
-    color: colors.navy,
-    fontSize: 16,
+  loadingWrap: {
+    alignSelf: "center",
+    flex: 1,
+    justifyContent: "center",
+    maxWidth: screen.maxWidth,
+    padding: screen.padding,
+    width: "100%"
+  },
+  loadingMap: {
+    backgroundColor: colors.mapBlue,
+    borderRadius: radii.xl,
+    height: 260,
+    overflow: "hidden"
+  },
+  loadingRouteLine: {
+    backgroundColor: colors.blueDeep,
+    borderRadius: radii.pill,
+    height: 230,
+    left: "52%",
+    position: "absolute",
+    top: 18,
+    transform: [{ rotate: "24deg" }],
+    width: 8
+  },
+  loadingPinStart: {
+    backgroundColor: colors.green,
+    borderColor: colors.surface,
+    borderRadius: radii.pill,
+    borderWidth: 4,
+    height: 28,
+    left: 72,
+    position: "absolute",
+    top: 80,
+    width: 28
+  },
+  loadingPinEnd: {
+    backgroundColor: colors.red,
+    borderColor: colors.surface,
+    borderRadius: radii.pill,
+    borderWidth: 4,
+    bottom: 64,
+    height: 28,
+    position: "absolute",
+    right: 80,
+    width: 28
+  },
+  loadingCard: {
+    gap: spacing.md,
+    marginTop: -36
+  },
+  loadingTitle: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: "600"
+  },
+  loadingCopy: {
+    color: colors.muted,
+    fontSize: 13,
     fontWeight: "500",
-    margin: spacing.lg
+    lineHeight: 20
+  },
+  loadingSteps: {
+    gap: spacing.sm
+  },
+  loadingStep: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm
+  },
+  loadingStepText: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "500"
   },
   errorWrap: {
     alignSelf: "center",
@@ -351,7 +461,7 @@ const styles = StyleSheet.create({
     lineHeight: 20
   },
   heroCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.glass,
     borderColor: colors.border,
     borderRadius: radii.xl,
     borderWidth: 1,
@@ -393,6 +503,32 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     minWidth: 116,
     padding: spacing.sm
+  },
+  routeStrip: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginTop: -4
+  },
+  routeStripItem: {
+    alignItems: "flex-start",
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flex: 1,
+    gap: 3,
+    padding: spacing.sm,
+    ...shadows.soft
+  },
+  routeStripLabel: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: "500"
+  },
+  routeStripValue: {
+    color: colors.navy,
+    fontSize: 13,
+    fontWeight: "600"
   },
   savingsBadgeLabel: {
     color: "#0E7A4A",

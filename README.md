@@ -31,11 +31,29 @@ Waylo uses Mapbox for real address suggestions and route preview distance/durati
 EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN=pk.your_public_token_here
 ```
 
+Recommended local setup:
+
+1. Create a `.env` file in the repo root.
+2. Add your public token:
+
+```env
+EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN=pk.your_public_token_here
+EXPO_PUBLIC_WAYLO_API_URL=http://127.0.0.1:8000
+```
+
+3. Restart Expo with a clean cache:
+
+```powershell
+npx expo start --web --localhost --port 8083 --clear
+```
+
+Never commit `.env`. It is already ignored by git.
+
 Windows PowerShell example:
 
 ```powershell
 $env:EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN="pk.your_public_token_here"
-npx expo start
+npx expo start --clear
 ```
 
 If you are also testing against the local backend from a physical phone, set both environment variables:
@@ -90,6 +108,8 @@ npx eas login
 npx eas build:configure
 npx eas build --profile development --platform ios
 ```
+
+If your Apple Developer Program membership is active, EAS should show your Apple team during the iOS build. If it still says no team is associated, sign in at `https://developer.apple.com/account`, accept any pending agreements, and wait for Apple membership activation to finish before retrying.
 
 After installing that build on the iPhone, start Metro for the dev client:
 

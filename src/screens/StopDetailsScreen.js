@@ -23,6 +23,7 @@ export default function StopDetailsScreen({ navigation, route }) {
   const savingsImpact = Number.isFinite(parsedSavingsImpact) ? parsedSavingsImpact : isFuel ? 4 : 0;
   const score = stop.intelligenceScore || 72;
   const riskImpact = isFuel ? `Reserve ${Math.max(20, 100 - Number(stop.lowFuelRisk || 68))}%+` : "Low route friction";
+  const hero = getStopHero(stop.type);
 
   function chooseStop(status) {
     navigation.navigate({
@@ -35,11 +36,16 @@ export default function StopDetailsScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={styles.hero}>
-          <View style={styles.canopy} />
-          <View style={styles.stationBody} />
-          <View style={styles.pump} />
-          <View style={styles.pumpTwo} />
+        <View style={[styles.hero, { backgroundColor: hero.background }]}>
+          <View style={styles.heroMapLand} />
+          <View style={styles.heroRoad} />
+          <View style={[styles.heroStopMarker, { backgroundColor: hero.accent }]}>
+            <Ionicons color={colors.surface} name={hero.icon} size={24} />
+          </View>
+          <View style={styles.heroCopy}>
+            <Text style={styles.heroKicker}>{hero.kicker}</Text>
+            <Text style={styles.heroTitle}>{hero.title}</Text>
+          </View>
         </View>
 
         <PremiumCard style={styles.detailsCard}>
@@ -61,7 +67,7 @@ export default function StopDetailsScreen({ navigation, route }) {
             <Feature icon="business-outline" label="Source" value={stop.placeSource ? "Mapbox" : "Waylo"} />
           </View>
 
-          <Text style={styles.sectionTitle}>Why we recommend this stop?</Text>
+          <Text style={styles.sectionTitle}>Why Waylo recommends this stop</Text>
           <View style={styles.impactGrid}>
             <Impact icon="trending-down-outline" label="Impact" value={isFuel ? `Saves $${savingsImpact.toFixed(2)}` : `Adds ${detourMinutes} min`} />
             <Impact icon="time-outline" label="Detour" value={`${detourMinutes} min`} />
@@ -73,11 +79,21 @@ export default function StopDetailsScreen({ navigation, route }) {
           <Checklist text="Can be added or skipped before you save the route" />
         </PremiumCard>
 
-        <PrimaryButton title={decision === "added" ? "Added to Route" : "Add to Route"} onPress={() => chooseStop("added")} />
-        <PrimaryButton title={decision === "skipped" ? "Skipped" : "Skip Stop"} variant="secondary" onPress={() => chooseStop("skipped")} />
+        <PrimaryButton icon={decision === "added" ? "checkmark-circle-outline" : "add-circle-outline"} title={decision === "added" ? "Added to Route" : "Add to Route"} onPress={() => chooseStop("added")} />
+        <PrimaryButton icon={decision === "skipped" ? "remove-circle-outline" : "close-circle-outline"} title={decision === "skipped" ? "Skipped" : "Skip Stop"} variant="secondary" onPress={() => chooseStop("skipped")} />
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+function getStopHero(type) {
+  const options = {
+    fuel: { icon: "pricetag-outline", kicker: "Fuel strategy", title: "Lower-cost stop near your route", background: "#D8ECFF", accent: colors.orange },
+    food: { icon: "restaurant-outline", kicker: "Meal break", title: "A useful pause near midpoint", background: "#FFF4E8", accent: colors.orange },
+    rest: { icon: "bed-outline", kicker: "Comfort timing", title: "Rest break before fatigue builds", background: "#E8F8F1", accent: colors.green },
+    scenic: { icon: "camera-outline", kicker: "Scenic option", title: "A better stop without a big detour", background: "#EDF6FF", accent: colors.blue }
+  };
+  return options[type] || { icon: "location-outline", kicker: "Route stop", title: "Recommended stop for this drive", background: colors.mapBlue, accent: colors.blue };
 }
 
 function Feature({ icon, label, value }) {
@@ -126,48 +142,67 @@ const styles = StyleSheet.create({
     width: "100%"
   },
   hero: {
-    backgroundColor: "#62A2E8",
     borderBottomLeftRadius: radii.xl,
     borderBottomRightRadius: radii.xl,
     height: 230,
-    overflow: "hidden"
+    overflow: "hidden",
+    position: "relative"
   },
-  canopy: {
-    backgroundColor: colors.orange,
-    borderRadius: 5,
-    height: 28,
-    left: 70,
+  heroMapLand: {
+    backgroundColor: "rgba(255,255,255,0.54)",
+    borderRadius: 220,
+    height: 260,
+    left: -72,
     position: "absolute",
-    right: 28,
-    top: 92
+    top: 52,
+    transform: [{ rotate: "-18deg" }],
+    width: 300
   },
-  stationBody: {
-    backgroundColor: colors.surface,
-    borderRadius: 8,
-    bottom: 36,
-    height: 88,
-    left: 88,
+  heroRoad: {
+    backgroundColor: "rgba(255,255,255,0.82)",
+    borderRadius: radii.pill,
+    height: 270,
     position: "absolute",
-    right: 54,
-    ...shadows.soft
+    right: 72,
+    top: -12,
+    transform: [{ rotate: "26deg" }],
+    width: 32
   },
-  pump: {
-    backgroundColor: colors.navy,
-    borderRadius: 4,
-    bottom: 36,
-    height: 60,
-    left: 130,
+  heroStopMarker: {
+    alignItems: "center",
+    borderColor: colors.surface,
+    borderRadius: radii.pill,
+    borderWidth: 4,
+    height: 58,
+    justifyContent: "center",
     position: "absolute",
-    width: 26
+    right: 82,
+    top: 86,
+    width: 58,
+    ...shadows.card
   },
-  pumpTwo: {
-    backgroundColor: colors.navy,
-    borderRadius: 4,
-    bottom: 36,
-    height: 60,
+  heroCopy: {
+    backgroundColor: colors.glass,
+    borderColor: "rgba(35,71,101,0.08)",
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    bottom: spacing.md,
+    left: spacing.md,
+    padding: spacing.md,
     position: "absolute",
-    right: 110,
-    width: 26
+    right: spacing.md
+  },
+  heroKicker: {
+    color: colors.green,
+    fontSize: 11,
+    fontWeight: "600",
+    textTransform: "uppercase"
+  },
+  heroTitle: {
+    color: colors.navy,
+    fontSize: 18,
+    fontWeight: "600",
+    marginTop: 3
   },
   detailsCard: {
     borderTopLeftRadius: radii.xl,

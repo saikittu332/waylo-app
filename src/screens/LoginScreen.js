@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import Logo from "../components/Logo";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
@@ -60,6 +61,10 @@ export default function LoginScreen({ navigation }) {
 
           {otpSent ? (
             <>
+              <View style={styles.sentBanner}>
+                <Ionicons color={colors.green} name="shield-checkmark-outline" size={18} />
+                <Text style={styles.sentBannerText}>Code sent. Enter any 6 digits in Expo Go, or the real SMS code in the development build.</Text>
+              </View>
               <Text style={styles.label}>Enter OTP</Text>
               <View style={styles.otpRow}>
                 {code.map((digit, index) => (
@@ -170,6 +175,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "500",
     textAlign: "center"
+  },
+  sentBanner: {
+    alignItems: "flex-start",
+    backgroundColor: colors.paleGreen,
+    borderColor: "rgba(18,184,134,0.16)",
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    padding: spacing.sm
+  },
+  sentBannerText: {
+    color: colors.navy,
+    flex: 1,
+    fontSize: 12,
+    fontWeight: "500",
+    lineHeight: 17
   },
   otpPreview: {
     backgroundColor: colors.paleBlue,

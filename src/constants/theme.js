@@ -1,9 +1,10 @@
 export const colors = {
-  navy: "#234765",
-  navyDeep: "#17324D",
-  navySoft: "#5D7E9B",
-  headerBlue: "#EEF6FF",
+  navy: "#1F4E73",
+  navyDeep: "#122E46",
+  navySoft: "#6E8BA4",
+  headerBlue: "#F0F7FF",
   blue: "#2F80ED",
+  blueDeep: "#1F6FEB",
   skyBlue: "#56CCF2",
   orange: "#F97316",
   orangeDark: "#EA580C",
@@ -15,12 +16,16 @@ export const colors = {
   text: "#1D2939",
   muted: "#6B778C",
   mutedLight: "#98A2B3",
+  subtleText: "#7A879A",
   paleBlue: "#EDF6FF",
   paleOrange: "#FFF4E8",
   paleGreen: "#E8F8F1",
+  paleRed: "#FEECEF",
+  glass: "rgba(255,255,255,0.88)",
   red: "#EF233C",
   mapGreen: "#DDEDDC",
-  mapBlue: "#D8ECFF"
+  mapBlue: "#D8ECFF",
+  mapSand: "#F5EEDB"
 };
 
 export const fonts = {
@@ -36,7 +41,8 @@ export const spacing = {
   sm: 10,
   md: 16,
   lg: 24,
-  xl: 32
+  xl: 32,
+  xxl: 44
 };
 
 export const radii = {
@@ -95,9 +101,9 @@ export const typography = {
 export const shadows = {
   card: {
     shadowColor: "#102A43",
-    shadowOpacity: 0.045,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.055,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
     elevation: 2
   },
   soft: {
@@ -106,6 +112,13 @@ export const shadows = {
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 5 },
     elevation: 1
+  },
+  float: {
+    shadowColor: "#102A43",
+    shadowOpacity: 0.08,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 14 },
+    elevation: 4
   }
 };
 
