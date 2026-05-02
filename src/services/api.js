@@ -10,6 +10,7 @@ import {
   generateFuelStops,
   generateRestStops
 } from "../utils/tripCalculator";
+import { rankStops } from "../utils/stopIntelligence";
 import { routeTitle } from "../utils/placeLabels";
 
 const DEFAULT_API_URL = Platform.OS === "android" ? "http://10.0.2.2:8000" : "http://127.0.0.1:8000";
@@ -382,7 +383,10 @@ export async function planTrip({ from, to, mode, vehicle, user, originPlace, des
     mode: mode || mockTripRequest.mode,
     routePreview,
     origin,
-    destination
+    destination,
+    safeRange,
+    highwayMpg: vehicle.highwayMpg,
+    restInterval: user?.restReminderHours || user?.rest_reminder_hours || 2.5
   });
 
   let persistedTrip = null;
@@ -409,7 +413,7 @@ export async function planTrip({ from, to, mode, vehicle, user, originPlace, des
   };
 }
 
-async function buildRouteStops({ fuelStops, restStops, routeDistance, mode, routePreview, origin, destination }) {
+async function buildRouteStops({ fuelStops, restStops, routeDistance, mode, routePreview, origin, destination, safeRange, highwayMpg, restInterval }) {
   const fuelPlanStops = fuelStops.length > 0
     ? fuelStops
     : [{ id: "fuel-price-check", mile: Math.round(routeDistance * 0.58), name: "Best fuel price check", price: mockRoute.mockFuelPrice, optional: true }];
@@ -476,9 +480,17 @@ async function buildRouteStops({ fuelStops, restStops, routeDistance, mode, rout
     recommendation: mode === "Scenic" ? "Added because Scenic mode values a better route experience." : "Optional quick view stop with a low detour."
   };
 
-  return [...fuelStopCards, ...restStopCards, foodStop, scenicStop]
+  const stops = [...fuelStopCards, ...restStopCards, foodStop, scenicStop]
     .filter(Boolean)
     .sort((a, b) => Number(a.distanceFromStart || 0) - Number(b.distanceFromStart || 0));
+
+  return rankStops(stops, {
+    routeDistance,
+    mode,
+    safeRange,
+    highwayMpg,
+    restInterval
+  });
 }
 
 async function findBestRoutePlace(query, coordinates) {

@@ -80,6 +80,7 @@ export default function TripResultsScreen({ navigation, route }) {
   const standardFuelCost = insights.estimatedFuelCost + insights.estimatedSavings;
   const destination = plannedRoute.to || "Los Angeles, CA";
   const routeLabel = routeTitle(plannedRoute.from, destination);
+  const topStops = [...stops].sort((a, b) => Number(b.intelligenceScore || 0) - Number(a.intelligenceScore || 0)).slice(0, 3);
   const savedPlan = {
     id: `${plannedRoute.from}-${destination}-${plannedRoute.mode}`.replace(/\s+/g, "-").toLowerCase(),
     title: routeLabel,
@@ -155,6 +156,27 @@ export default function TripResultsScreen({ navigation, route }) {
             <View style={[styles.comparisonFill, { width: `${Math.max(20, 100 - (insights.estimatedSavings / Math.max(standardFuelCost, 1)) * 100)}%` }]} />
           </View>
           <Text style={styles.planSubtitle}>Savings are estimated from route distance, your vehicle MPG, and comparison fuel pricing.</Text>
+        </PremiumCard>
+
+        <PremiumCard style={styles.aiCoachCard}>
+          <View style={styles.stopsHeader}>
+            <View>
+              <Text style={styles.stopsTitle}>Waylo stop ranking</Text>
+              <Text style={styles.planSubtitle}>Stops are scored by route fit, timing, savings, and detour.</Text>
+            </View>
+            <Text style={styles.stopsMeta}>{plannedRoute.mode}</Text>
+          </View>
+          {topStops.map((stop) => (
+            <View key={`rank-${stop.id}`} style={styles.rankRow}>
+              <View style={styles.rankScore}>
+                <Text style={styles.rankScoreText}>{stop.intelligenceScore || "--"}</Text>
+              </View>
+              <View style={styles.rankCopy}>
+                <Text style={styles.rankTitle}>{stop.name}</Text>
+                <Text style={styles.rankMeta}>{stop.routeFitLabel || "Route fit"} | {stop.detourMinutes || 0} min detour | {stop.type}</Text>
+              </View>
+            </View>
+          ))}
         </PremiumCard>
 
         <PremiumCard style={styles.stopsCard}>
@@ -380,6 +402,46 @@ const styles = StyleSheet.create({
   },
   stopsCard: {
     gap: spacing.md
+  },
+  aiCoachCard: {
+    gap: spacing.md
+  },
+  rankRow: {
+    alignItems: "center",
+    backgroundColor: colors.appBackground,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    padding: spacing.sm
+  },
+  rankScore: {
+    alignItems: "center",
+    backgroundColor: colors.navy,
+    borderRadius: radii.pill,
+    height: 38,
+    justifyContent: "center",
+    width: 38
+  },
+  rankScoreText: {
+    color: colors.surface,
+    fontSize: 13,
+    fontWeight: "600"
+  },
+  rankCopy: {
+    flex: 1
+  },
+  rankTitle: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "600"
+  },
+  rankMeta: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "500",
+    marginTop: 2
   },
   stopsHeader: {
     alignItems: "center",

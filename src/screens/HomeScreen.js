@@ -5,7 +5,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { CommonActions, useFocusEffect } from "@react-navigation/native";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
-import TripModeChip from "../components/TripModeChip";
 import { colors, radii, screen, shadows, spacing } from "../constants/theme";
 import { mockTripRequest } from "../data/mockTrip";
 import { defaultVehicle } from "../data/mockVehicleSpecs";
@@ -246,7 +245,6 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
   const [locationError, setLocationError] = useState("");
   const popoverAnim = React.useRef(new Animated.Value(0)).current;
   const isSearchingLocations = locationSearchState.from || locationSearchState.to;
-  const range = vehicleRange(vehicle);
   const safeRange = safeVehicleRange(vehicle);
   const estimatedLaFuel = quickFuelCost(vehicle);
   const nextPlan = plannedTrips[0];
@@ -308,25 +306,27 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
 
   return (
     <>
-      <View style={styles.homeHero}>
-        <View style={styles.heroMain}>
-          <View style={styles.heroTopRow}>
-            <Text style={styles.heroEyebrow}>Waylo brief</Text>
-            <Text style={styles.heroStatus}>{nextPlan ? "Route ready" : "Ready now"}</Text>
-          </View>
-          <Text style={styles.heroTitle}>Plan LA, fuel about {formatCurrency(estimatedLaFuel)}</Text>
-          <Text style={styles.heroCopy}>
-            {nextPlan ? `${routeTitle(nextPlan.from, nextPlan.to)} is saved for preview.` : `${assistantName} can use your ${vehicle.vehicleName.replace("Toyota ", "")} range before you pick stops.`}
-          </Text>
-          <View style={styles.heroMetrics}>
-            <MiniMetric icon="speedometer-outline" label="Safe range" value={`${Math.round(safeRange)} mi`} />
-            <MiniMetric icon="leaf-outline" label="Recent saved" value={formatCurrency(recentSavings)} />
-          </View>
-        </View>
+      <View style={styles.mapPlanningCanvas}>
+        <View style={styles.canvasLand} />
+        <View style={styles.canvasRoad} />
+        <View style={styles.canvasRoute} />
+        <View style={styles.canvasStartPin} />
+        <View style={styles.canvasEndPin} />
         <Pressable onPress={() => setNotificationsOpen((value) => !value)} style={styles.bellButton} hitSlop={8}>
           <Ionicons color={colors.navy} name="notifications-outline" size={20} />
           <View style={styles.bellDot} />
         </Pressable>
+        <View style={styles.canvasTopCopy}>
+          <Text style={styles.heroEyebrow}>Waylo brief</Text>
+          <Text style={styles.heroTitle}>Plan LA, fuel about {formatCurrency(estimatedLaFuel)}</Text>
+          <Text style={styles.heroCopy}>
+            {nextPlan ? `${routeTitle(nextPlan.from, nextPlan.to)} is ready to preview.` : `${Math.round(safeRange)} mi safe range in your ${vehicle.vehicleName.replace("Toyota ", "")}.`}
+          </Text>
+        </View>
+        <View style={styles.canvasMetricShelf}>
+          <MiniMetric icon="speedometer-outline" label="Safe range" value={`${Math.round(safeRange)} mi`} />
+          <MiniMetric icon="leaf-outline" label="Recent saved" value={formatCurrency(recentSavings)} />
+        </View>
         {notificationsOpen && (
           <Animated.View
             style={[
@@ -353,12 +353,18 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
           </Animated.View>
         )}
       </View>
-      <View style={styles.productMomentRow}>
-        <ProductMoment icon="car-sport-outline" label="Selected vehicle" value={vehicle.vehicleName} detail={`${Math.round(range)} mi full range`} />
-        <ProductMoment icon="map-outline" label={nextPlan ? "Upcoming drive" : "Quick estimate"} value={nextPlan ? routeTitle(nextPlan.from, nextPlan.to) : "SF to LA"} detail={nextPlan ? routeMetaLabel(nextPlan) : `${laDistance} mi | ${formatCurrency(estimatedLaFuel)} fuel`} />
-      </View>
-      <PremiumCard style={styles.tripCard}>
-        <Text style={styles.cardTitle}>Plan Your Trip</Text>
+      <View style={styles.planningSheet}>
+        <View style={styles.sheetHandle} />
+        <View style={styles.sheetHeaderRow}>
+          <View>
+            <Text style={styles.cardTitle}>Where to?</Text>
+            <Text style={styles.sheetSubtitle}>Search, compare modes, then let Waylo tune the stops.</Text>
+          </View>
+          <View style={styles.sheetRangePill}>
+            <Ionicons color={colors.green} name="battery-charging-outline" size={15} />
+            <Text style={styles.sheetRangeText}>{Math.round(safeRange)} mi</Text>
+          </View>
+        </View>
         <TripField
           label="From"
           value={from}
@@ -380,10 +386,13 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
           pinColor={colors.red}
           suggestions={locationSuggestions.filter((item) => item.id !== CURRENT_LOCATION_PLACE.id)}
         />
-        <Text style={styles.label}>Trip Mode</Text>
-        <View style={styles.modes}>
+        <View style={styles.routeCompareHeader}>
+          <Text style={styles.label}>Compare route style</Text>
+          <Text style={styles.compareHint}>Selected: {mode}</Text>
+        </View>
+        <View style={styles.modeCards}>
           {modes.map((item) => (
-            <TripModeChip key={item} label={item} selected={mode === item} onPress={() => setMode(item)} />
+            <RouteModeCard key={item} label={item} selected={mode === item} onPress={() => setMode(item)} vehicle={vehicle} />
           ))}
         </View>
         <Pressable onPress={() => setShowVehiclePicker((value) => !value)} style={styles.selectedVehicleCard}>
@@ -430,7 +439,7 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
           title={isSearchingLocations ? "Searching locations..." : "Plan Smart Trip"}
           onPress={continuePlan}
         />
-      </PremiumCard>
+      </View>
       <TripsContent
         assistantName={assistantName}
         user={user}
@@ -459,16 +468,23 @@ function MiniMetric({ icon, label, value }) {
   );
 }
 
-function ProductMoment({ icon, label, value, detail }) {
+function RouteModeCard({ label, selected, onPress, vehicle }) {
+  const modeData = {
+    Fastest: { icon: "flash-outline", detail: "Shortest time", delta: "-12 min" },
+    Cheapest: { icon: "pricetag-outline", detail: "Fuel optimized", delta: formatCurrency(Math.max(3.8, quickFuelCost(vehicle) * 0.11)) },
+    Scenic: { icon: "camera-outline", detail: "Better stops", delta: "+18 min" },
+    Comfort: { icon: "cafe-outline", detail: "More breaks", delta: "2 rests" }
+  }[label];
+
   return (
-    <View style={styles.productMoment}>
-      <View style={styles.productMomentIcon}>
-        <Ionicons color={colors.blue} name={icon} size={18} />
+    <Pressable onPress={onPress} style={[styles.modeCard, selected && styles.modeCardActive]}>
+      <View style={[styles.modeIcon, selected && styles.modeIconActive]}>
+        <Ionicons color={selected ? colors.surface : colors.blue} name={modeData.icon} size={16} />
       </View>
-      <Text style={styles.productMomentLabel}>{label}</Text>
-      <Text numberOfLines={1} style={styles.productMomentValue}>{value}</Text>
-      <Text numberOfLines={1} style={styles.productMomentDetail}>{detail}</Text>
-    </View>
+      <Text style={[styles.modeCardTitle, selected && styles.modeCardTitleActive]}>{label}</Text>
+      <Text style={[styles.modeCardDetail, selected && styles.modeCardDetailActive]}>{modeData.detail}</Text>
+      <Text style={[styles.modeDelta, selected && styles.modeDeltaActive]}>{modeData.delta}</Text>
+    </Pressable>
   );
 }
 
@@ -1186,19 +1202,84 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     width: "100%"
   },
-  homeHero: {
-    alignItems: "flex-start",
-    backgroundColor: "#EFF7FF",
+  mapPlanningCanvas: {
+    backgroundColor: colors.mapBlue,
     borderColor: "rgba(47,128,237,0.12)",
     borderRadius: radii.xl,
     borderWidth: 1,
-    flexDirection: "row",
-    gap: spacing.md,
-    justifyContent: "space-between",
-    overflow: "visible",
+    height: 300,
+    overflow: "hidden",
     padding: 14,
     position: "relative",
-    zIndex: 4
+    zIndex: 4,
+    ...shadows.soft
+  },
+  canvasLand: {
+    backgroundColor: colors.mapGreen,
+    borderRadius: 220,
+    height: 330,
+    left: -88,
+    position: "absolute",
+    top: 82,
+    transform: [{ rotate: "-18deg" }],
+    width: 300
+  },
+  canvasRoad: {
+    backgroundColor: "rgba(255,255,255,0.72)",
+    borderRadius: 999,
+    height: 390,
+    position: "absolute",
+    right: 94,
+    top: -24,
+    transform: [{ rotate: "24deg" }],
+    width: 28
+  },
+  canvasRoute: {
+    backgroundColor: colors.blue,
+    borderRadius: 999,
+    height: 250,
+    left: 192,
+    position: "absolute",
+    top: 64,
+    transform: [{ rotate: "-18deg" }],
+    width: 8
+  },
+  canvasStartPin: {
+    backgroundColor: colors.green,
+    borderColor: colors.surface,
+    borderRadius: radii.pill,
+    borderWidth: 4,
+    height: 28,
+    left: 86,
+    position: "absolute",
+    top: 154,
+    width: 28
+  },
+  canvasEndPin: {
+    backgroundColor: colors.red,
+    borderColor: colors.surface,
+    borderRadius: radii.pill,
+    borderWidth: 4,
+    bottom: 58,
+    height: 28,
+    position: "absolute",
+    right: 76,
+    width: 28
+  },
+  canvasTopCopy: {
+    backgroundColor: "rgba(255,255,255,0.9)",
+    borderColor: "rgba(47,128,237,0.1)",
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    maxWidth: 280,
+    padding: spacing.sm
+  },
+  canvasMetricShelf: {
+    bottom: spacing.md,
+    flexDirection: "row",
+    gap: spacing.sm,
+    left: spacing.md,
+    position: "absolute"
   },
   productMomentRow: {
     flexDirection: "row",
@@ -1268,7 +1349,7 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     color: colors.navyDeep,
-    fontSize: 21,
+    fontSize: 20,
     fontWeight: "600",
     marginTop: 4
   },
@@ -1377,9 +1458,52 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     marginTop: 2
   },
-  tripCard: {
+  planningSheet: {
+    backgroundColor: colors.surface,
+    borderColor: "rgba(35, 71, 101, 0.07)",
+    borderRadius: radii.lg,
+    borderWidth: 1,
     gap: spacing.md,
-    zIndex: 1
+    marginTop: -44,
+    padding: spacing.md,
+    zIndex: 5,
+    ...shadows.card
+  },
+  sheetHandle: {
+    alignSelf: "center",
+    backgroundColor: colors.border,
+    borderRadius: radii.pill,
+    height: 4,
+    marginBottom: spacing.xs,
+    width: 44
+  },
+  sheetHeaderRow: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: spacing.md,
+    justifyContent: "space-between"
+  },
+  sheetSubtitle: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "500",
+    lineHeight: 17,
+    marginTop: 3,
+    maxWidth: 250
+  },
+  sheetRangePill: {
+    alignItems: "center",
+    backgroundColor: colors.paleGreen,
+    borderRadius: radii.pill,
+    flexDirection: "row",
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6
+  },
+  sheetRangeText: {
+    color: colors.green,
+    fontSize: 12,
+    fontWeight: "600"
   },
   cardTitle: {
     color: colors.text,
@@ -1457,10 +1581,73 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     lineHeight: 17
   },
-  modes: {
+  routeCompareHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+  compareHint: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "500"
+  },
+  modeCards: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.sm
+  },
+  modeCard: {
+    backgroundColor: colors.appBackground,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexBasis: "47%",
+    flexGrow: 1,
+    gap: 3,
+    minHeight: 90,
+    outlineStyle: "none",
+    padding: spacing.sm
+  },
+  modeCardActive: {
+    backgroundColor: colors.navy,
+    borderColor: colors.navy
+  },
+  modeIcon: {
+    alignItems: "center",
+    backgroundColor: colors.paleBlue,
+    borderRadius: radii.pill,
+    height: 28,
+    justifyContent: "center",
+    width: 28
+  },
+  modeIconActive: {
+    backgroundColor: "rgba(255,255,255,0.18)"
+  },
+  modeCardTitle: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "600",
+    marginTop: 2
+  },
+  modeCardTitleActive: {
+    color: colors.surface
+  },
+  modeCardDetail: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "500"
+  },
+  modeCardDetailActive: {
+    color: "rgba(255,255,255,0.74)"
+  },
+  modeDelta: {
+    color: colors.green,
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 2
+  },
+  modeDeltaActive: {
+    color: "#8EE7C8"
   },
   sectionHeader: {
     alignItems: "center",

@@ -42,9 +42,15 @@ export default function StopCard({ stop, onPress, decision, timeline = false }) 
         )}
       </View>
       <View style={styles.footer}>
-        <Text style={styles.rating}>{stop.rating ? `Rating ${stop.rating}` : sourceLabel}</Text>
+        <Text style={styles.rating}>{stop.intelligenceScore ? `Waylo score ${stop.intelligenceScore}` : stop.rating ? `Rating ${stop.rating}` : sourceLabel}</Text>
         {stop.fuelPrice ? <Text style={styles.price}>${stop.fuelPrice}/gal</Text> : <Text style={styles.price}>Good fit</Text>}
       </View>
+      {!!stop.impactSummary && (
+        <View style={styles.impactRow}>
+          <Ionicons color={colors.green} name="sparkles-outline" size={14} />
+          <Text style={styles.impactText}>{stop.impactSummary}</Text>
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -93,14 +99,14 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
     fontSize: 17,
-    fontWeight: "700"
+    fontWeight: "600"
   },
   type: {
     backgroundColor: colors.paleOrange,
     borderRadius: radii.pill,
     color: colors.orange,
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     overflow: "hidden",
     paddingHorizontal: spacing.sm,
     paddingVertical: 5
@@ -124,7 +130,23 @@ const styles = StyleSheet.create({
   },
   price: {
     color: colors.green,
-    fontWeight: "700"
+    fontWeight: "600"
+  },
+  impactRow: {
+    alignItems: "flex-start",
+    backgroundColor: colors.paleGreen,
+    borderRadius: radii.md,
+    flexDirection: "row",
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+    padding: spacing.sm
+  },
+  impactText: {
+    color: colors.navy,
+    flex: 1,
+    fontSize: 12,
+    fontWeight: "500",
+    lineHeight: 17
   },
   decisionPill: {
     alignItems: "center",
@@ -142,7 +164,7 @@ const styles = StyleSheet.create({
   },
   decisionText: {
     fontSize: 12,
-    fontWeight: "700"
+    fontWeight: "600"
   },
   addedText: {
     color: colors.green

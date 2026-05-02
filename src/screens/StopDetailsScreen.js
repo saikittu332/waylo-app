@@ -19,8 +19,10 @@ export default function StopDetailsScreen({ navigation, route }) {
   const fuelPriceLabel = stop.fuelPrice ? `$${stop.fuelPrice}/gal` : "TBD";
   const trustLine = stop.rating ? `${stop.rating} rating | ${sourceLabel}` : sourceLabel;
   const detourMinutes = stop.detourMinutes || (isFuel ? 4 : stop.type === "scenic" ? 12 : 7);
-  const savingsImpact = stop.savingsImpact || (isFuel ? "$4-8" : "$0");
-  const riskImpact = isFuel ? "Keeps reserve above 20%" : "Improves comfort without changing route";
+  const parsedSavingsImpact = Number(stop.savingsImpact);
+  const savingsImpact = Number.isFinite(parsedSavingsImpact) ? parsedSavingsImpact : isFuel ? 4 : 0;
+  const score = stop.intelligenceScore || 72;
+  const riskImpact = isFuel ? `Reserve ${Math.max(20, 100 - Number(stop.lowFuelRisk || 68))}%+` : "Low route friction";
 
   function chooseStop(status) {
     navigation.navigate({
@@ -44,6 +46,13 @@ export default function StopDetailsScreen({ navigation, route }) {
           <Text style={styles.heading}>{stop.name}</Text>
           <Text style={styles.address}>{stop.address || "1200 W Tehachapi Blvd, Tehachapi, CA"}</Text>
           <Text style={styles.rating}>{trustLine}</Text>
+          <View style={styles.scoreBand}>
+            <Text style={styles.scoreValue}>{score}</Text>
+            <View style={styles.scoreCopy}>
+              <Text style={styles.scoreLabel}>Waylo recommendation score</Text>
+              <Text style={styles.scoreText}>{stop.impactSummary || "Scored by timing, detour, route fit, and trip mode."}</Text>
+            </View>
+          </View>
 
           <View style={styles.features}>
             <Feature icon={isFuel ? "pricetag-outline" : "navigate-outline"} label={isFuel ? "Fuel Price" : "Detour"} value={isFuel ? fuelPriceLabel : "Low"} />
@@ -54,7 +63,7 @@ export default function StopDetailsScreen({ navigation, route }) {
 
           <Text style={styles.sectionTitle}>Why we recommend this stop?</Text>
           <View style={styles.impactGrid}>
-            <Impact icon="trending-down-outline" label="Impact" value={isFuel ? `Saves ${savingsImpact}` : `Adds ${detourMinutes} min`} />
+            <Impact icon="trending-down-outline" label="Impact" value={isFuel ? `Saves $${savingsImpact.toFixed(2)}` : `Adds ${detourMinutes} min`} />
             <Impact icon="time-outline" label="Detour" value={`${detourMinutes} min`} />
             <Impact icon="shield-checkmark-outline" label="Risk" value={riskImpact} />
           </View>
@@ -176,6 +185,37 @@ const styles = StyleSheet.create({
     color: colors.orange,
     fontSize: 13,
     fontWeight: "500"
+  },
+  scoreBand: {
+    alignItems: "center",
+    backgroundColor: colors.paleGreen,
+    borderColor: "rgba(18,184,134,0.18)",
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+    padding: spacing.md
+  },
+  scoreValue: {
+    color: colors.green,
+    fontSize: 28,
+    fontWeight: "600"
+  },
+  scoreCopy: {
+    flex: 1
+  },
+  scoreLabel: {
+    color: colors.navy,
+    fontSize: 13,
+    fontWeight: "600"
+  },
+  scoreText: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "500",
+    lineHeight: 17,
+    marginTop: 2
   },
   features: {
     borderTopColor: colors.border,
