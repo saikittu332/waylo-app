@@ -34,6 +34,32 @@ function addModularHeaders(podfile) {
   return cleanedPodfile;
 }
 
+function patchRNFBAppFirebaseImport(projectRoot) {
+  const modulePath = path.join(
+    projectRoot,
+    "node_modules",
+    "@react-native-firebase",
+    "app",
+    "ios",
+    "RNFBApp",
+    "RNFBAppModule.m"
+  );
+
+  if (!fs.existsSync(modulePath)) {
+    return;
+  }
+
+  const source = fs.readFileSync(modulePath, "utf8");
+  const broadFirebaseImport = "#import <Firebase/Firebase.h>";
+
+  if (source.includes(broadFirebaseImport)) {
+    fs.writeFileSync(
+      modulePath,
+      source.replace(broadFirebaseImport, "#import <FirebaseCore/FirebaseCore.h>")
+    );
+  }
+}
+
 module.exports = function withIosModularHeaders(config) {
   return withDangerousMod(config, [
     "ios",
@@ -44,6 +70,8 @@ module.exports = function withIosModularHeaders(config) {
         const podfile = fs.readFileSync(podfilePath, "utf8");
         fs.writeFileSync(podfilePath, addModularHeaders(podfile));
       }
+
+      patchRNFBAppFirebaseImport(modConfig.modRequest.projectRoot);
 
       return modConfig;
     },
