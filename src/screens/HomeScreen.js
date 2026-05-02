@@ -6,13 +6,14 @@ import { CommonActions, useFocusEffect } from "@react-navigation/native";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
 import TripModeChip from "../components/TripModeChip";
-import { colors, radii, screen, spacing } from "../constants/theme";
+import { colors, radii, screen, shadows, spacing } from "../constants/theme";
 import { mockTripRequest } from "../data/mockTrip";
 import { defaultVehicle } from "../data/mockVehicleSpecs";
 import { apiTripToCompletedTrip, deleteVehicle, getSavedPlans, getTrips, getVehicles, updateUser } from "../services/api";
 import { getCurrentLocationPlace } from "../services/locationService";
 import { CURRENT_LOCATION_PLACE, geocodeAddress, hasMapboxToken } from "../services/mapService";
 import { routeMetaLabel, routeTitle } from "../utils/placeLabels";
+import { calculateRange, calculateSafeRange, estimateFuelCost, formatCurrency, formatHours } from "../utils/tripCalculator";
 
 const modes = ["Fastest", "Cheapest", "Scenic", "Comfort"];
 const locationSuggestions = [
@@ -30,6 +31,34 @@ const tabs = [
   { label: "Vehicle", icon: "car-sport" },
   { label: "Profile", icon: "person" }
 ];
+
+const mockFuelPrice = 3.49;
+const laDistance = 382;
+
+function vehicleRange(vehicle) {
+  return calculateRange(vehicle?.highwayMpg, vehicle?.tankCapacity) || 0;
+}
+
+function safeVehicleRange(vehicle) {
+  return calculateSafeRange(vehicleRange(vehicle)) || 0;
+}
+
+function quickFuelCost(vehicle, distance = laDistance) {
+  return estimateFuelCost(distance, vehicle?.highwayMpg || 30, mockFuelPrice);
+}
+
+function planDistance(plan) {
+  return Math.round(Number(plan?.distanceMiles || plan?.routePayload?.distanceMiles || 0));
+}
+
+function planSavings(plan) {
+  return Number(plan?.estimatedSavings || plan?.insights?.estimatedSavings || 0);
+}
+
+function planStops(plan) {
+  const decisions = plan?.stopDecisions ? Object.values(plan.stopDecisions).filter((value) => value === "added").length : 0;
+  return plan?.finalStops?.length || plan?.stopCount || decisions || plan?.routePayload?.stops?.length || 0;
+}
 
 export default function HomeScreen({ navigation, route }) {
   const [user, setUser] = useState(route.params?.user || null);
@@ -217,6 +246,11 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
   const [locationError, setLocationError] = useState("");
   const popoverAnim = React.useRef(new Animated.Value(0)).current;
   const isSearchingLocations = locationSearchState.from || locationSearchState.to;
+  const range = vehicleRange(vehicle);
+  const safeRange = safeVehicleRange(vehicle);
+  const estimatedLaFuel = quickFuelCost(vehicle);
+  const nextPlan = plannedTrips[0];
+  const recentSavings = completedTrips.reduce((total, trip) => total + planSavings(trip), 0) || 14.28;
 
   React.useEffect(() => {
     if (notificationsOpen) {
@@ -277,14 +311,16 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
       <View style={styles.homeHero}>
         <View style={styles.heroMain}>
           <View style={styles.heroTopRow}>
-            <Text style={styles.heroEyebrow}>Waylo ready</Text>
-            <Text style={styles.heroStatus}>2 alerts</Text>
+            <Text style={styles.heroEyebrow}>Waylo brief</Text>
+            <Text style={styles.heroStatus}>{nextPlan ? "Route ready" : "Ready now"}</Text>
           </View>
-          <Text style={styles.heroTitle}>Where are we driving?</Text>
-          <Text style={styles.heroCopy}>{assistantName} will compare fuel, rest timing, and comfort before you go.</Text>
+          <Text style={styles.heroTitle}>Plan LA, fuel about {formatCurrency(estimatedLaFuel)}</Text>
+          <Text style={styles.heroCopy}>
+            {nextPlan ? `${routeTitle(nextPlan.from, nextPlan.to)} is saved for preview.` : `${assistantName} can use your ${vehicle.vehicleName.replace("Toyota ", "")} range before you pick stops.`}
+          </Text>
           <View style={styles.heroMetrics}>
-            <MiniMetric icon="cash-outline" label="Savings" value="$14 est." />
-            <MiniMetric icon="car-sport-outline" label="Vehicle" value={vehicle.vehicleName.replace("Toyota ", "")} />
+            <MiniMetric icon="speedometer-outline" label="Safe range" value={`${Math.round(safeRange)} mi`} />
+            <MiniMetric icon="leaf-outline" label="Recent saved" value={formatCurrency(recentSavings)} />
           </View>
         </View>
         <Pressable onPress={() => setNotificationsOpen((value) => !value)} style={styles.bellButton} hitSlop={8}>
@@ -316,6 +352,10 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
             <NotificationRow icon="time-outline" title="Rest reminder ready" detail="A break will be suggested around 2.5 hours." />
           </Animated.View>
         )}
+      </View>
+      <View style={styles.productMomentRow}>
+        <ProductMoment icon="car-sport-outline" label="Selected vehicle" value={vehicle.vehicleName} detail={`${Math.round(range)} mi full range`} />
+        <ProductMoment icon="map-outline" label={nextPlan ? "Upcoming drive" : "Quick estimate"} value={nextPlan ? routeTitle(nextPlan.from, nextPlan.to) : "SF to LA"} detail={nextPlan ? routeMetaLabel(nextPlan) : `${laDistance} mi | ${formatCurrency(estimatedLaFuel)} fuel`} />
       </View>
       <PremiumCard style={styles.tripCard}>
         <Text style={styles.cardTitle}>Plan Your Trip</Text>
@@ -419,6 +459,19 @@ function MiniMetric({ icon, label, value }) {
   );
 }
 
+function ProductMoment({ icon, label, value, detail }) {
+  return (
+    <View style={styles.productMoment}>
+      <View style={styles.productMomentIcon}>
+        <Ionicons color={colors.blue} name={icon} size={18} />
+      </View>
+      <Text style={styles.productMomentLabel}>{label}</Text>
+      <Text numberOfLines={1} style={styles.productMomentValue}>{value}</Text>
+      <Text numberOfLines={1} style={styles.productMomentDetail}>{detail}</Text>
+    </View>
+  );
+}
+
 function NotificationRow({ icon, title, detail }) {
   return (
     <View style={styles.notificationRow}>
@@ -466,10 +519,10 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
           ) : (
             visiblePlans.map((plan, index) => (
               <React.Fragment key={plan.id}>
-                <RecentTrip
+                <TripPlanCard
                   badge="Saved"
-                  title={plan.title || routeTitle(plan.from, plan.to)}
-                  date={routeMetaLabel(plan)}
+                  plan={plan}
+                  actionLabel="Preview"
                   onPress={() => navigation.navigate("TripDetail", { plan, type: "ready" })}
                 />
                 {index < visiblePlans.length - 1 && <View style={styles.listDivider} />}
@@ -483,10 +536,10 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
           ) : (
             completedTrips.map((trip, index) => (
               <React.Fragment key={trip.id}>
-                <RecentTrip
+                <TripPlanCard
                   badge="Done"
-                  title={trip.title || routeTitle(trip.from, trip.to)}
-                  date={routeMetaLabel(trip)}
+                  plan={trip}
+                  actionLabel="Summary"
                   onPress={() => navigation.navigate("TripDetail", { completedTrip: trip, plan: trip, type: "completed" })}
                 />
                 {index < completedTrips.length - 1 && <View style={styles.listDivider} />}
@@ -501,6 +554,7 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
 
 function NavigateContent({ navigation, plannedTrips }) {
   function startSavedPlan(plan) {
+    const stops = plan.finalStops?.length ? plan.finalStops : [{ id: "quick-fuel", type: "fuel", name: "Best Fuel Stop" }];
     const route = plan.routePayload || {
       from: plan.from,
       to: plan.to,
@@ -518,12 +572,12 @@ function NavigateContent({ navigation, plannedTrips }) {
           estimatedFuelCost: plan.estimatedFuelCost,
           estimatedSavings: plan.estimatedSavings
         },
-        fullStops: [
-          { id: "quick-fuel", type: "fuel", name: "Best Fuel Stop" }
-        ]
+        fullStops: stops
       }
     });
   }
+  const previewPlan = plannedTrips[0];
+  const previewStops = previewPlan?.finalStops?.length ? previewPlan.finalStops : [];
 
   return (
     <>
@@ -539,8 +593,19 @@ function NavigateContent({ navigation, plannedTrips }) {
           <Ionicons color={colors.surface} name="navigate" size={18} />
         </View>
         <View style={styles.mapCaption}>
-          <Text style={styles.mapCaptionTitle}>Current location</Text>
-          <Text style={styles.mapCaptionText}>Choose an upcoming drive to preview the route.</Text>
+          <Text style={styles.mapCaptionTitle}>{previewPlan ? routeTitle(previewPlan.from, previewPlan.to) : "Live route preview"}</Text>
+          <Text style={styles.mapCaptionText}>
+            {previewPlan ? `${planDistance(previewPlan)} mi | ${previewStops.length || "Smart"} stops ready` : "Save a trip plan to see its route sheet here."}
+          </Text>
+        </View>
+        {previewStops.slice(0, 3).map((stop, index) => (
+          <View key={stop.id || stop.name} style={[styles.previewStopPin, { top: 170 + index * 72, left: `${28 + index * 16}%` }]}>
+            <Ionicons color={colors.surface} name={stop.type === "fuel" ? "pricetag-outline" : stop.type === "food" ? "restaurant-outline" : "bed-outline"} size={13} />
+          </View>
+        ))}
+        <View style={styles.driveMapStats}>
+          <MiniTripStat label="Fuel" value={previewPlan?.estimatedFuelCost ? formatCurrency(previewPlan.estimatedFuelCost) : "--"} />
+          <MiniTripStat label="Savings" value={previewPlan?.estimatedSavings ? formatCurrency(previewPlan.estimatedSavings) : "--"} accent />
         </View>
         <PremiumCard style={styles.routeSheet}>
           <Text style={styles.groupLabel}>Upcoming routes</Text>
@@ -606,11 +671,12 @@ function VehicleContent({ assistantName, user, vehicles, selectedVehicle, setVeh
         <PremiumCard key={item.id || item.vehicleName} style={styles.vehicleListCard}>
           <View style={styles.vehiclePhoto}>
             <View style={styles.vehiclePhotoRoad} />
-            <Ionicons color={colors.blue} name="car-sport" size={56} />
+            <VehicleSilhouette small />
           </View>
           <Text style={styles.cardTitle}>{item.vehicleName}</Text>
           <Text style={styles.profileMeta}>{item.fuelType.toUpperCase()} | {item.cityMpg} city MPG | {item.highwayMpg} highway MPG</Text>
           <Text style={styles.profileMeta}>Tank capacity: {item.tankCapacity} gal</Text>
+          <RangeBar vehicle={item} />
           {selectedVehicle?.vehicleName === item.vehicleName && <Text style={styles.currentVehicle}>Selected for trips</Text>}
           <View style={styles.vehicleActions}>
             <Pressable onPress={() => navigation.navigate("VehicleSetup", { assistantName, user, vehicle: item, vehicles })} style={styles.vehicleActionPrimary}>
@@ -785,13 +851,46 @@ function ProfileContent({ assistantName, setAssistantName, user, setUser, naviga
         />
       </PremiumCard>
       <PremiumCard style={styles.accountCard}>
+        <View style={styles.sessionStatus}>
+          <View style={styles.sessionDot} />
+          <Text style={styles.sessionText}>{user?.id ? "Backend session active" : "Local demo session"}</Text>
+        </View>
         <View>
           <Text style={styles.cardTitle}>Account</Text>
-          <Text style={styles.profileMeta}>Return to the welcome screen and end this local session.</Text>
+          <Text style={styles.profileMeta}>Your trip setup stays on this device during the current development session.</Text>
         </View>
-        <PrimaryButton title="Sign Out" variant="secondary" onPress={signOut} />
+        <PrimaryButton title="Return to Welcome" variant="secondary" onPress={signOut} />
       </PremiumCard>
     </>
+  );
+}
+
+function RangeBar({ vehicle }) {
+  const fullRange = vehicleRange(vehicle);
+  const safeRange = safeVehicleRange(vehicle);
+  const fill = Math.max(8, Math.min(100, (safeRange / Math.max(fullRange, 1)) * 100));
+  return (
+    <View style={styles.rangeBlock}>
+      <View style={styles.rangeHeader}>
+        <Text style={styles.rangeLabel}>Estimated safe range</Text>
+        <Text style={styles.rangeValue}>{Math.round(safeRange)} mi</Text>
+      </View>
+      <View style={styles.rangeTrack}>
+        <View style={[styles.rangeFill, { width: `${fill}%` }]} />
+      </View>
+      <Text style={styles.preferenceSub}>{Math.round(fullRange)} mi full tank estimate</Text>
+    </View>
+  );
+}
+
+function VehicleSilhouette({ small }) {
+  return (
+    <View style={[styles.carSilhouette, small && styles.carSilhouetteSmall]}>
+      <View style={styles.carCabin} />
+      <View style={styles.carBody} />
+      <View style={[styles.carWheel, styles.carWheelLeft]} />
+      <View style={[styles.carWheel, styles.carWheelRight]} />
+    </View>
   );
 }
 
@@ -974,6 +1073,48 @@ function TripField({ label, value, onChangeText, onSelectPlace, onSearchStateCha
   );
 }
 
+function TripPlanCard({ plan, onPress, badge, actionLabel }) {
+  const distance = planDistance(plan);
+  const savings = planSavings(plan);
+  const stops = planStops(plan);
+  const duration = Number(plan?.durationHours || plan?.routePayload?.durationHours || 0);
+  const title = plan.title || routeTitle(plan.from, plan.to);
+
+  return (
+    <Pressable onPress={onPress} style={styles.tripPlanCard}>
+      <View style={styles.tripPlanTop}>
+        <View style={styles.tripPlanIcon}>
+          <Ionicons color={colors.blue} name={badge === "Done" ? "checkmark-done-outline" : "navigate-outline"} size={18} />
+        </View>
+        <View style={styles.recentText}>
+          <Text style={styles.recentTitle}>{title}</Text>
+          <Text style={styles.recentDate}>{routeMetaLabel(plan)}</Text>
+        </View>
+        <Text style={[styles.tripBadge, badge === "Done" && styles.doneBadge]}>{badge}</Text>
+      </View>
+      <View style={styles.tripPlanStats}>
+        <MiniTripStat label="Distance" value={distance ? `${distance} mi` : "--"} />
+        <MiniTripStat label="Time" value={duration ? formatHours(duration) : "--"} />
+        <MiniTripStat label="Stops" value={String(stops || "--")} />
+        <MiniTripStat label="Savings" value={savings ? formatCurrency(savings) : "--"} accent />
+      </View>
+      <View style={styles.tripPlanAction}>
+        <Text style={styles.tripPlanActionText}>{actionLabel}</Text>
+        <Ionicons color={colors.blue} name="arrow-forward" size={15} />
+      </View>
+    </Pressable>
+  );
+}
+
+function MiniTripStat({ label, value, accent }) {
+  return (
+    <View style={styles.miniTripStat}>
+      <Text style={styles.miniTripStatLabel}>{label}</Text>
+      <Text style={[styles.miniTripStatValue, accent && styles.savingsText]}>{value}</Text>
+    </View>
+  );
+}
+
 function RecentTrip({ title, date, onPress, badge }) {
   return (
     <Pressable onPress={onPress} style={styles.recentTrip}>
@@ -1047,7 +1188,7 @@ const styles = StyleSheet.create({
   },
   homeHero: {
     alignItems: "flex-start",
-    backgroundColor: colors.navy,
+    backgroundColor: colors.navyDeep,
     borderColor: "rgba(255,255,255,0.2)",
     borderRadius: radii.xl,
     borderWidth: 1,
@@ -1055,9 +1196,49 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     justifyContent: "space-between",
     overflow: "visible",
-    padding: spacing.md,
+    padding: 14,
     position: "relative",
     zIndex: 4
+  },
+  productMomentRow: {
+    flexDirection: "row",
+    gap: spacing.sm
+  },
+  productMoment: {
+    alignItems: "flex-start",
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    flex: 1,
+    gap: 3,
+    minHeight: 94,
+    padding: spacing.sm,
+    ...shadows.soft
+  },
+  productMomentIcon: {
+    alignItems: "center",
+    backgroundColor: colors.paleBlue,
+    borderRadius: radii.pill,
+    height: 30,
+    justifyContent: "center",
+    marginBottom: 1,
+    width: 30
+  },
+  productMomentLabel: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "700"
+  },
+  productMomentValue: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "700"
+  },
+  productMomentDetail: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "600"
   },
   heroMain: {
     flex: 1
@@ -1087,7 +1268,7 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     color: colors.surface,
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "700",
     marginTop: 4
   },
@@ -1095,7 +1276,7 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.76)",
     fontSize: 13,
     fontWeight: "600",
-    lineHeight: 19,
+    lineHeight: 18,
     marginTop: 4,
     maxWidth: 285
   },
@@ -1103,7 +1284,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.sm,
-    marginTop: spacing.md
+    marginTop: spacing.sm
   },
   miniMetric: {
     alignItems: "center",
@@ -1387,6 +1568,67 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 4
   },
+  doneBadge: {
+    backgroundColor: colors.paleBlue,
+    color: colors.blue
+  },
+  tripPlanCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    gap: spacing.sm,
+    marginVertical: spacing.xs,
+    outlineStyle: "none",
+    padding: spacing.md
+  },
+  tripPlanTop: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm
+  },
+  tripPlanIcon: {
+    alignItems: "center",
+    backgroundColor: colors.paleBlue,
+    borderRadius: radii.pill,
+    height: 36,
+    justifyContent: "center",
+    width: 36
+  },
+  tripPlanStats: {
+    backgroundColor: colors.appBackground,
+    borderRadius: radii.md,
+    flexDirection: "row",
+    padding: spacing.sm
+  },
+  miniTripStat: {
+    flex: 1,
+    gap: 2
+  },
+  miniTripStatLabel: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: "700"
+  },
+  miniTripStatValue: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: "700"
+  },
+  savingsText: {
+    color: colors.green
+  },
+  tripPlanAction: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    gap: 4
+  },
+  tripPlanActionText: {
+    color: colors.blue,
+    fontSize: 13,
+    fontWeight: "700"
+  },
   tabBar: {
     alignSelf: "center",
     backgroundColor: colors.surface,
@@ -1619,6 +1861,29 @@ const styles = StyleSheet.create({
     top: 200,
     width: 52
   },
+  previewStopPin: {
+    alignItems: "center",
+    backgroundColor: colors.orange,
+    borderColor: colors.surface,
+    borderRadius: radii.pill,
+    borderWidth: 3,
+    height: 32,
+    justifyContent: "center",
+    position: "absolute",
+    width: 32,
+    ...shadows.soft
+  },
+  driveMapStats: {
+    backgroundColor: "rgba(255,255,255,0.92)",
+    borderRadius: radii.lg,
+    flexDirection: "row",
+    gap: spacing.sm,
+    padding: spacing.sm,
+    position: "absolute",
+    right: spacing.md,
+    top: 100,
+    width: 180
+  },
   mapCaption: {
     backgroundColor: "rgba(255,255,255,0.9)",
     borderRadius: radii.md,
@@ -1679,6 +1944,100 @@ const styles = StyleSheet.create({
     height: 86,
     position: "absolute",
     width: 320
+  },
+  rangeBlock: {
+    gap: spacing.xs,
+    marginTop: spacing.xs
+  },
+  rangeHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+  rangeLabel: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "700"
+  },
+  rangeValue: {
+    color: colors.green,
+    fontSize: 14,
+    fontWeight: "700"
+  },
+  rangeTrack: {
+    backgroundColor: colors.border,
+    borderRadius: radii.pill,
+    height: 8,
+    overflow: "hidden"
+  },
+  rangeFill: {
+    backgroundColor: colors.green,
+    borderRadius: radii.pill,
+    height: "100%"
+  },
+  carSilhouette: {
+    height: 70,
+    position: "relative",
+    width: 150
+  },
+  carSilhouetteSmall: {
+    transform: [{ scale: 0.86 }]
+  },
+  carCabin: {
+    backgroundColor: colors.skyBlue,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 28,
+    height: 34,
+    left: 42,
+    position: "absolute",
+    top: 8,
+    width: 64
+  },
+  carBody: {
+    backgroundColor: colors.blue,
+    borderRadius: 28,
+    height: 34,
+    left: 14,
+    position: "absolute",
+    top: 28,
+    width: 122
+  },
+  carWheel: {
+    backgroundColor: colors.navyDeep,
+    borderColor: colors.surface,
+    borderRadius: radii.pill,
+    borderWidth: 4,
+    height: 28,
+    position: "absolute",
+    top: 48,
+    width: 28
+  },
+  carWheelLeft: {
+    left: 32
+  },
+  carWheelRight: {
+    right: 30
+  },
+  sessionStatus: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: colors.paleGreen,
+    borderRadius: radii.pill,
+    flexDirection: "row",
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6
+  },
+  sessionDot: {
+    backgroundColor: colors.green,
+    borderRadius: radii.pill,
+    height: 8,
+    width: 8
+  },
+  sessionText: {
+    color: colors.green,
+    fontSize: 12,
+    fontWeight: "700"
   },
   currentVehicle: {
     color: colors.green,

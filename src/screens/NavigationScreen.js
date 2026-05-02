@@ -12,6 +12,7 @@ export default function NavigationScreen({ navigation, route }) {
   const tripPlan = route.params?.tripPlan;
   const routeSummary = tripPlan?.route;
   const firstFuelStop = tripPlan?.fullStops?.find((stop) => stop.type === "fuel");
+  const selectedStops = tripPlan?.fullStops || [];
   const destinationLabel = routeSummary?.to?.split(",")[0] || "Your destination";
 
   return (
@@ -51,6 +52,21 @@ export default function NavigationScreen({ navigation, route }) {
           </View>
 
           <PremiumCard style={styles.bottomCard}>
+            <View style={styles.sheetHeader}>
+              <View>
+                <Text style={styles.sheetTitle}>Previewing route</Text>
+                <Text style={styles.sheetMeta}>{routeSummary?.from || "Current location"} to {destinationLabel}</Text>
+              </View>
+              <Text style={styles.stopCountPill}>{selectedStops.length || "Smart"} stops</Text>
+            </View>
+            <View style={styles.stopRail}>
+              {selectedStops.slice(0, 4).map((stop) => (
+                <View key={stop.id || stop.name} style={styles.stopChip}>
+                  <Ionicons color={colors.blue} name={stop.type === "fuel" ? "pricetag-outline" : stop.type === "food" ? "restaurant-outline" : "bed-outline"} size={14} />
+                  <Text numberOfLines={1} style={styles.stopChipText}>{stop.name}</Text>
+                </View>
+              ))}
+            </View>
             <SmartRow color={colors.blue} icon="pricetag-outline" title="Next Fuel Stop" value={firstFuelStop?.name || "Best fuel stop"} meta="Planned from your saved route" />
             <View style={styles.dividerLine} />
             <SmartRow color={colors.skyBlue} icon="bed-outline" title="Take a break" value="Recommended in 1h 45m" meta="" />
@@ -227,6 +243,55 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radii.xl,
     borderTopRightRadius: radii.xl,
     gap: spacing.sm
+  },
+  sheetHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+  sheetTitle: {
+    color: colors.text,
+    fontSize: 17,
+    fontWeight: "700"
+  },
+  sheetMeta: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 2
+  },
+  stopCountPill: {
+    backgroundColor: colors.paleBlue,
+    borderRadius: radii.pill,
+    color: colors.blue,
+    fontSize: 12,
+    fontWeight: "700",
+    overflow: "hidden",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5
+  },
+  stopRail: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.xs
+  },
+  stopChip: {
+    alignItems: "center",
+    backgroundColor: colors.appBackground,
+    borderColor: colors.border,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 4,
+    maxWidth: "48%",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6
+  },
+  stopChipText: {
+    color: colors.text,
+    flexShrink: 1,
+    fontSize: 11,
+    fontWeight: "700"
   },
   smartRow: {
     alignItems: "center",

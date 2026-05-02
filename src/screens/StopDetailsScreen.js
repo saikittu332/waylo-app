@@ -18,6 +18,9 @@ export default function StopDetailsScreen({ navigation, route }) {
   const sourceLabel = stop.placeSource || stop.source || "Waylo route logic";
   const fuelPriceLabel = stop.fuelPrice ? `$${stop.fuelPrice}/gal` : "TBD";
   const trustLine = stop.rating ? `${stop.rating} rating | ${sourceLabel}` : sourceLabel;
+  const detourMinutes = stop.detourMinutes || (isFuel ? 4 : stop.type === "scenic" ? 12 : 7);
+  const savingsImpact = stop.savingsImpact || (isFuel ? "$4-8" : "$0");
+  const riskImpact = isFuel ? "Keeps reserve above 20%" : "Improves comfort without changing route";
 
   function chooseStop(status) {
     navigation.navigate({
@@ -50,6 +53,11 @@ export default function StopDetailsScreen({ navigation, route }) {
           </View>
 
           <Text style={styles.sectionTitle}>Why we recommend this stop?</Text>
+          <View style={styles.impactGrid}>
+            <Impact icon="trending-down-outline" label="Impact" value={isFuel ? `Saves ${savingsImpact}` : `Adds ${detourMinutes} min`} />
+            <Impact icon="time-outline" label="Detour" value={`${detourMinutes} min`} />
+            <Impact icon="shield-checkmark-outline" label="Risk" value={riskImpact} />
+          </View>
           <Checklist text={stop.recommendation || "Good fit for this route plan"} />
           <Checklist text={stop.type === "fuel" ? "Fuel timing protects your safe range" : "Low-friction stop near your route"} />
           <Checklist text="Useful amenities for a longer drive" />
@@ -82,6 +90,16 @@ function Checklist({ text }) {
         <Ionicons color={colors.surface} name="checkmark" size={12} />
       </View>
       <Text style={styles.checkLabel}>{text}</Text>
+    </View>
+  );
+}
+
+function Impact({ icon, label, value }) {
+  return (
+    <View style={styles.impactItem}>
+      <Ionicons color={colors.blue} name={icon} size={17} />
+      <Text style={styles.impactLabel}>{label}</Text>
+      <Text style={styles.impactValue}>{value}</Text>
     </View>
   );
 }
@@ -196,6 +214,32 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     marginTop: spacing.md
+  },
+  impactGrid: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+    marginTop: spacing.xs
+  },
+  impactItem: {
+    backgroundColor: colors.appBackground,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flex: 1,
+    gap: 4,
+    padding: spacing.sm
+  },
+  impactLabel: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: "700"
+  },
+  impactValue: {
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: "700",
+    lineHeight: 15
   },
   checkRow: {
     alignItems: "center",

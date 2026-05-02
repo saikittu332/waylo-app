@@ -32,7 +32,8 @@
       ],
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
-      "@rnmapbox/maps"
+      "@rnmapbox/maps",
+      "expo-font"
     ],
     "web": {
       "bundler": "metro"

@@ -9,6 +9,7 @@ import StatItem from "../components/StatItem";
 import { colors, radii, screen, spacing, typography } from "../constants/theme";
 import { defaultVehicle, vehicleSuggestions } from "../data/mockVehicleSpecs";
 import { createVehicle, updateVehicle } from "../services/api";
+import { calculateRange, calculateSafeRange } from "../utils/tripCalculator";
 
 const fuelTypes = ["gas", "diesel", "hybrid", "EV"];
 
@@ -27,6 +28,8 @@ export default function VehicleSetupScreen({ navigation, route }) {
   const matchingVehicles = vehicleSuggestions
     .filter((item) => item.vehicleName.toLowerCase().includes(search.trim().toLowerCase()))
     .slice(0, 4);
+  const fullRange = calculateRange(vehicle.highwayMpg, vehicle.tankCapacity);
+  const safeRange = calculateSafeRange(fullRange);
 
   function updateField(key, value) {
     setVehicle((current) => ({ ...current, [key]: value }));
@@ -106,7 +109,7 @@ export default function VehicleSetupScreen({ navigation, route }) {
           <View style={styles.carImage}>
             <View style={styles.carRoad} />
             <View style={styles.carGlow} />
-            <Ionicons color={colors.blue} name="car-sport" size={76} />
+            <VehiclePreview />
           </View>
           <Text style={styles.vehicleName}>{vehicle.vehicleName || "Choose or add your vehicle"}</Text>
           <Text style={styles.verified}>Editable fuel economy specs</Text>
@@ -116,6 +119,16 @@ export default function VehicleSetupScreen({ navigation, route }) {
             <StatItem label="Highway MPG" value={String(vehicle.highwayMpg)} />
             <View style={styles.divider} />
             <StatItem label="Tank (gal)" value={String(vehicle.tankCapacity)} />
+          </View>
+          <View style={styles.rangePanel}>
+            <View style={styles.rangeHeader}>
+              <Text style={styles.rangeLabel}>Estimated safe range</Text>
+              <Text style={styles.rangeValue}>{safeRange ? `${Math.round(safeRange)} mi` : "--"}</Text>
+            </View>
+            <View style={styles.rangeTrack}>
+              <View style={[styles.rangeFill, { width: `${fullRange ? 80 : 8}%` }]} />
+            </View>
+            <Text style={styles.rangeMeta}>{fullRange ? `${Math.round(fullRange)} mi full range before reserve` : "Enter highway MPG and tank size to calculate range."}</Text>
           </View>
         </PremiumCard>
 
@@ -170,6 +183,18 @@ function EditableField({ label, value, onChangeText, error, keyboardType = "defa
       <Text style={styles.fieldLabel}>{label}</Text>
       <TextInput keyboardType={keyboardType} onChangeText={onChangeText} style={[styles.fieldInput, !!error && styles.invalidInput]} value={value} />
       {!!error && <Text style={styles.errorText}>{error}</Text>}
+    </View>
+  );
+}
+
+function VehiclePreview() {
+  return (
+    <View style={styles.vehiclePreview}>
+      <View style={styles.previewCabin} />
+      <View style={styles.previewBody} />
+      <View style={[styles.previewWheel, styles.previewWheelLeft]} />
+      <View style={[styles.previewWheel, styles.previewWheelRight]} />
+      <View style={styles.previewHighlight} />
     </View>
   );
 }
@@ -276,6 +301,96 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     marginTop: spacing.sm
+  },
+  rangePanel: {
+    backgroundColor: colors.appBackground,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+    padding: spacing.md
+  },
+  rangeHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+  rangeLabel: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "700"
+  },
+  rangeValue: {
+    color: colors.green,
+    fontSize: 16,
+    fontWeight: "700"
+  },
+  rangeTrack: {
+    backgroundColor: colors.border,
+    borderRadius: radii.pill,
+    height: 9,
+    overflow: "hidden"
+  },
+  rangeFill: {
+    backgroundColor: colors.green,
+    borderRadius: radii.pill,
+    height: "100%"
+  },
+  rangeMeta: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "600",
+    lineHeight: 17
+  },
+  vehiclePreview: {
+    height: 88,
+    position: "relative",
+    width: 190
+  },
+  previewCabin: {
+    backgroundColor: colors.skyBlue,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 36,
+    height: 42,
+    left: 58,
+    position: "absolute",
+    top: 10,
+    width: 78
+  },
+  previewBody: {
+    backgroundColor: colors.blue,
+    borderRadius: 34,
+    height: 42,
+    left: 22,
+    position: "absolute",
+    top: 38,
+    width: 150
+  },
+  previewWheel: {
+    backgroundColor: colors.navyDeep,
+    borderColor: colors.surface,
+    borderRadius: radii.pill,
+    borderWidth: 5,
+    height: 34,
+    position: "absolute",
+    top: 60,
+    width: 34
+  },
+  previewWheelLeft: {
+    left: 44
+  },
+  previewWheelRight: {
+    right: 42
+  },
+  previewHighlight: {
+    backgroundColor: "rgba(255,255,255,0.46)",
+    borderRadius: radii.pill,
+    height: 6,
+    left: 44,
+    position: "absolute",
+    top: 50,
+    width: 86
   },
   divider: {
     backgroundColor: colors.border,

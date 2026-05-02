@@ -1,7 +1,7 @@
 export const colors = {
-  navy: "#163B5C",
-  navyDeep: "#0D2438",
-  navySoft: "#3E6E91",
+  navy: "#173A5E",
+  navyDeep: "#102B46",
+  navySoft: "#466F91",
   headerBlue: "#EEF6FF",
   blue: "#3478F6",
   skyBlue: "#56CCF2",
@@ -23,6 +23,14 @@ export const colors = {
   mapBlue: "#D8ECFF"
 };
 
+export const fonts = {
+  regular: "Inter_400Regular",
+  medium: "Inter_500Medium",
+  semibold: "Inter_600SemiBold",
+  bold: "Inter_700Bold",
+  fallback: "System"
+};
+
 export const spacing = {
   xs: 6,
   sm: 10,
@@ -40,22 +48,46 @@ export const radii = {
 };
 
 export const typography = {
+  hero: {
+    fontFamily: fonts.bold,
+    fontSize: 30,
+    fontWeight: "700",
+    letterSpacing: 0,
+    lineHeight: 36,
+    color: colors.navy
+  },
   title: {
+    fontFamily: fonts.bold,
     fontSize: 34,
     fontWeight: "700",
+    letterSpacing: 0,
     color: colors.navy
   },
   heading: {
+    fontFamily: fonts.bold,
     fontSize: 24,
     fontWeight: "700",
+    letterSpacing: 0,
+    lineHeight: 30,
+    color: colors.text
+  },
+  section: {
+    fontFamily: fonts.semibold,
+    fontSize: 18,
+    fontWeight: "600",
+    letterSpacing: 0,
     color: colors.text
   },
   body: {
+    fontFamily: fonts.regular,
     fontSize: 16,
+    lineHeight: 23,
     color: colors.text
   },
   caption: {
+    fontFamily: fonts.medium,
     fontSize: 13,
+    lineHeight: 18,
     color: colors.muted
   }
 };

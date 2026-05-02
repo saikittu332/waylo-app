@@ -92,6 +92,9 @@ export default function TripResultsScreen({ navigation, route }) {
     estimatedFuelCost: insights.estimatedFuelCost,
     estimatedSavings: insights.estimatedSavings,
     routePayload: plannedRoute,
+    finalStops,
+    stopDecisions,
+    stopCount: finalStops.length,
     savedAt: "Saved just now"
   };
 
