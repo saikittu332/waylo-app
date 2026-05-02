@@ -2,18 +2,36 @@ const { withDangerousMod } = require("@expo/config-plugins");
 const fs = require("fs");
 const path = require("path");
 
+const TARGETED_MODULAR_PODS = [
+  "FirebaseAppCheckInterop",
+  "FirebaseAuthInterop",
+  "FirebaseCoreExtension",
+  "FirebaseCoreInternal",
+  "GoogleUtilities",
+  "RecaptchaInterop",
+];
+
 function addModularHeaders(podfile) {
-  if (podfile.includes("use_modular_headers!")) {
-    return podfile;
+  const cleanedPodfile = podfile.replace(/^\s*use_modular_headers!\s*\n/gm, "");
+  const alreadyConfigured = TARGETED_MODULAR_PODS.every((podName) =>
+    cleanedPodfile.includes(`pod '${podName}', :modular_headers => true`)
+  );
+
+  if (alreadyConfigured) {
+    return cleanedPodfile;
   }
 
-  const platformLine = /platform :ios, ['"][^'"]+['"]\n/;
+  const modularPodLines = TARGETED_MODULAR_PODS.map(
+    (podName) => `  pod '${podName}', :modular_headers => true`
+  ).join("\n");
+  const block = `\n  # Firebase Swift pods need modular headers for static library integration.\n${modularPodLines}\n`;
+  const targetLine = /target ['"][^'"]+['"] do\n/;
 
-  if (platformLine.test(podfile)) {
-    return podfile.replace(platformLine, (match) => `${match}use_modular_headers!\n`);
+  if (targetLine.test(cleanedPodfile)) {
+    return cleanedPodfile.replace(targetLine, (match) => `${match}${block}`);
   }
 
-  return `use_modular_headers!\n${podfile}`;
+  return cleanedPodfile;
 }
 
 module.exports = function withIosModularHeaders(config) {
