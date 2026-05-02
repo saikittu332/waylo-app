@@ -15,6 +15,7 @@ export default function TripDetailScreen({ navigation, route }) {
   const isCompleted = route.params?.type === "completed";
   const [deleting, setDeleting] = React.useState(false);
   const stops = plan?.finalStops || [];
+  const allStops = plan?.allStops || stops;
 
   async function removeSavedPlan() {
     if (!plan?.id) return;
@@ -26,6 +27,22 @@ export default function TripDetailScreen({ navigation, route }) {
     }
     setDeleting(false);
     navigation.navigate("Home", { deletedPlanId: plan.id });
+  }
+
+  function reviseSavedPlan() {
+    navigation.navigate("TripResults", {
+      assistantName: route.params?.assistantName || "Waylo",
+      user: route.params?.user,
+      vehicle: route.params?.vehicle || { vehicleName: plan?.vehicleName, highwayMpg: 30, tankCapacity: 14 },
+      existingPlan: plan,
+      tripRequest: {
+        from: plan?.from,
+        to: plan?.to,
+        mode: plan?.mode,
+        originPlace: plan?.routePayload?.origin,
+        destinationPlace: plan?.routePayload?.destination
+      }
+    });
   }
 
   return (
@@ -74,7 +91,35 @@ export default function TripDetailScreen({ navigation, route }) {
         </PremiumCard>
 
         {!isCompleted && (
+          <PremiumCard style={styles.card}>
+            <Text style={styles.sectionTitle}>Plan decisions</Text>
+            <View style={styles.decisionGrid}>
+              <DecisionStat label="Selected" value={String(stops.length)} color={colors.green} />
+              <DecisionStat label="Skipped" value={String(Object.values(plan?.stopDecisions || {}).filter((value) => value === "skipped").length)} color={colors.red} />
+              <DecisionStat label="Suggested" value={String(allStops.length || "--")} color={colors.blue} />
+            </View>
+            {allStops.slice(0, 4).map((stop) => (
+              <View key={`all-${stop.id || stop.name}`} style={styles.stopDecisionRow}>
+                <Text style={styles.stopDecisionName}>{stop.name}</Text>
+                <Text style={[
+                  styles.stopDecisionBadge,
+                  (plan?.stopDecisions || {})[stop.id] === "added" && styles.addedDecisionBadge,
+                  (plan?.stopDecisions || {})[stop.id] === "skipped" && styles.skippedDecisionBadge
+                ]}>
+                  {(plan?.stopDecisions || {})[stop.id] || stop.decision || "suggested"}
+                </Text>
+              </View>
+            ))}
+          </PremiumCard>
+        )}
+
+        {!isCompleted && (
           <>
+            <PrimaryButton
+              title="Revise Stops"
+              variant="secondary"
+              onPress={reviseSavedPlan}
+            />
             <PrimaryButton
               title="Start Drive Preview"
               onPress={() => navigation.navigate("Navigation", {
@@ -102,6 +147,15 @@ export default function TripDetailScreen({ navigation, route }) {
         )}
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function DecisionStat({ label, value, color }) {
+  return (
+    <View style={styles.decisionStat}>
+      <Text style={[styles.decisionValue, { color }]}>{value}</Text>
+      <Text style={styles.decisionLabel}>{label}</Text>
+    </View>
   );
 }
 
@@ -231,5 +285,61 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     fontWeight: "500"
+  },
+  decisionGrid: {
+    flexDirection: "row",
+    gap: spacing.sm
+  },
+  decisionStat: {
+    backgroundColor: colors.appBackground,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flex: 1,
+    padding: spacing.sm
+  },
+  decisionValue: {
+    fontSize: 20,
+    fontWeight: "600"
+  },
+  decisionLabel: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "500",
+    marginTop: 2
+  },
+  stopDecisionRow: {
+    alignItems: "center",
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    justifyContent: "space-between",
+    paddingTop: spacing.sm
+  },
+  stopDecisionName: {
+    color: colors.text,
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "500"
+  },
+  stopDecisionBadge: {
+    backgroundColor: colors.paleBlue,
+    borderRadius: radii.pill,
+    color: colors.blue,
+    fontSize: 11,
+    fontWeight: "600",
+    overflow: "hidden",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5,
+    textTransform: "capitalize"
+  },
+  addedDecisionBadge: {
+    backgroundColor: colors.paleGreen,
+    color: colors.green
+  },
+  skippedDecisionBadge: {
+    backgroundColor: "#FEECEF",
+    color: colors.red
   }
 });

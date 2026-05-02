@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
 import RoutePreviewMap from "../components/RoutePreviewMap";
@@ -8,7 +9,7 @@ import StatItem from "../components/StatItem";
 import StopCard from "../components/StopCard";
 import { colors, radii, screen, spacing } from "../constants/theme";
 import { defaultVehicle } from "../data/mockVehicleSpecs";
-import { apiSavedPlanToApp, savePlan, planTrip, updateTripStop } from "../services/api";
+import { apiSavedPlanToApp, savePlan, planTrip, updateSavedPlanRoute, updateTripStop } from "../services/api";
 import { formatCurrency, formatHours } from "../utils/tripCalculator";
 import { routeTitle, shortPlaceLabel } from "../utils/placeLabels";
 
@@ -17,14 +18,21 @@ export default function TripResultsScreen({ navigation, route }) {
   const user = route.params?.user;
   const vehicle = route.params?.vehicle || defaultVehicle;
   const tripRequest = route.params?.tripRequest;
+  const existingPlan = route.params?.existingPlan;
   const [tripPlan, setTripPlan] = useState(null);
   const [routeError, setRouteError] = useState("");
   const [loadingRoute, setLoadingRoute] = useState(true);
-  const [stopDecisions, setStopDecisions] = useState({});
+  const [stopDecisions, setStopDecisions] = useState(existingPlan?.stopDecisions || {});
 
   useEffect(() => {
     loadTripPlan();
   }, [tripRequest, user, vehicle]);
+
+  useEffect(() => {
+    if (existingPlan?.stopDecisions) {
+      setStopDecisions(existingPlan.stopDecisions);
+    }
+  }, [existingPlan?.id]);
 
   function loadTripPlan() {
     setLoadingRoute(true);
@@ -77,6 +85,7 @@ export default function TripResultsScreen({ navigation, route }) {
   const { route: plannedRoute, insights, stops } = tripPlan;
   const finalStops = stops.filter((stop) => stopDecisions[stop.id] === "added");
   const skippedStops = stops.filter((stop) => stopDecisions[stop.id] === "skipped");
+  const recommendedStops = stops.filter((stop) => !stopDecisions[stop.id] || stopDecisions[stop.id] === "recommended");
   const standardFuelCost = insights.estimatedFuelCost + insights.estimatedSavings;
   const destination = plannedRoute.to || "Los Angeles, CA";
   const routeLabel = routeTitle(plannedRoute.from, destination);
@@ -93,6 +102,7 @@ export default function TripResultsScreen({ navigation, route }) {
     estimatedFuelCost: insights.estimatedFuelCost,
     estimatedSavings: insights.estimatedSavings,
     routePayload: plannedRoute,
+    allStops: stops.map((stop) => ({ ...stop, decision: stopDecisions[stop.id] || stop.decision || "recommended" })),
     finalStops,
     stopDecisions,
     stopCount: finalStops.length,
@@ -110,12 +120,35 @@ export default function TripResultsScreen({ navigation, route }) {
           vehicle,
           insights,
           finalStops,
-          stopDecisions
+          stopDecisions,
+          allStops: stops
         });
         nextSavedPlan = apiSavedPlanToApp(persisted);
       } catch (error) {
         console.warn("Waylo API saved plan persistence unavailable:", error.message);
       }
+    }
+    navigation.navigate("Home", { assistantName, user, vehicle, savedPlan: nextSavedPlan });
+  }
+
+  async function handleUpdatePlan() {
+    if (!existingPlan?.id) {
+      handleSaveForLater();
+      return;
+    }
+    let nextSavedPlan = savedPlan;
+    try {
+      nextSavedPlan = await updateSavedPlanRoute(existingPlan.id, {
+        route: plannedRoute,
+        vehicle,
+        insights,
+        finalStops,
+        stopDecisions,
+        allStops: stops
+      });
+    } catch (error) {
+      console.warn("Waylo API saved plan update unavailable:", error.message);
+      nextSavedPlan = { ...savedPlan, id: existingPlan.id, tripId: existingPlan.tripId };
     }
     navigation.navigate("Home", { assistantName, user, vehicle, savedPlan: nextSavedPlan });
   }
@@ -132,6 +165,7 @@ export default function TripResultsScreen({ navigation, route }) {
             <Text style={styles.eyebrow}>Waylo route plan</Text>
             <Text style={styles.routeTitle}>{routeLabel}</Text>
             <Text style={styles.routeMeta}>{plannedRoute.mode} mode | {vehicle.vehicleName}</Text>
+            {!!existingPlan && <Text style={styles.editingMeta}>Editing saved plan</Text>}
           </View>
           <View style={styles.savingsBadge}>
             <Text style={styles.savingsBadgeLabel}>Estimated savings</Text>
@@ -183,7 +217,7 @@ export default function TripResultsScreen({ navigation, route }) {
           <View style={styles.stopsHeader}>
             <View>
               <Text style={styles.stopsTitle}>Route Timeline</Text>
-              <Text style={styles.planSubtitle}>{finalStops.length} selected | {skippedStops.length} skipped</Text>
+              <Text style={styles.planSubtitle}>{finalStops.length} selected | {skippedStops.length} skipped | {recommendedStops.length} undecided</Text>
             </View>
             <Text style={styles.stopsMeta}>{stops.length} suggestions</Text>
           </View>
@@ -202,6 +236,29 @@ export default function TripResultsScreen({ navigation, route }) {
           </View>
         </PremiumCard>
 
+        <PremiumCard style={styles.selectedStopsCard}>
+          <View style={styles.stopsHeader}>
+            <View>
+              <Text style={styles.stopsTitle}>Final stop list</Text>
+              <Text style={styles.planSubtitle}>These stops will be saved with your drive.</Text>
+            </View>
+            <Text style={styles.stopsMeta}>{finalStops.length} selected</Text>
+          </View>
+          {finalStops.length === 0 ? (
+            <Text style={styles.emptyStopsText}>Tap a stop in the timeline, then choose Add to Route to build your final route.</Text>
+          ) : (
+            finalStops.map((stop) => (
+              <View key={`selected-${stop.id}`} style={styles.selectedStopRow}>
+                <Ionicons color={colors.green} name={stop.type === "fuel" ? "pricetag-outline" : "checkmark-circle-outline"} size={17} />
+                <View style={styles.selectedStopCopy}>
+                  <Text style={styles.selectedStopTitle}>{stop.name}</Text>
+                  <Text style={styles.selectedStopMeta}>{stop.routeFitLabel || "Route fit"} | {stop.detourMinutes || 0} min detour</Text>
+                </View>
+              </View>
+            ))
+          )}
+        </PremiumCard>
+
         <PremiumCard style={styles.summaryBar}>
           <StatItem label="Distance" value={`${plannedRoute.distanceMiles} mi`} />
           <View style={styles.divider} />
@@ -211,7 +268,7 @@ export default function TripResultsScreen({ navigation, route }) {
         </PremiumCard>
 
         <PrimaryButton
-          title="Start Drive Preview"
+          title={finalStops.length ? "Start Drive Preview" : "Preview Without Added Stops"}
           onPress={() => navigation.navigate("Navigation", {
             tripPlan: {
               ...tripPlan,
@@ -223,9 +280,9 @@ export default function TripResultsScreen({ navigation, route }) {
           })}
         />
         <PrimaryButton
-          title="Save for Later"
+          title={existingPlan ? "Update Saved Plan" : "Save for Later"}
           variant="secondary"
-          onPress={handleSaveForLater}
+          onPress={existingPlan ? handleUpdatePlan : handleSaveForLater}
         />
       </ScrollView>
     </SafeAreaView>
@@ -323,6 +380,12 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     marginTop: 4
   },
+  editingMeta: {
+    color: colors.blue,
+    fontSize: 12,
+    fontWeight: "500",
+    marginTop: 5
+  },
   savingsBadge: {
     alignItems: "flex-end",
     backgroundColor: colors.paleGreen,
@@ -405,6 +468,39 @@ const styles = StyleSheet.create({
   },
   aiCoachCard: {
     gap: spacing.md
+  },
+  selectedStopsCard: {
+    gap: spacing.md
+  },
+  selectedStopRow: {
+    alignItems: "center",
+    backgroundColor: colors.appBackground,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    padding: spacing.sm
+  },
+  selectedStopCopy: {
+    flex: 1
+  },
+  selectedStopTitle: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "500"
+  },
+  selectedStopMeta: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "500",
+    marginTop: 2
+  },
+  emptyStopsText: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: "500",
+    lineHeight: 19
   },
   rankRow: {
     alignItems: "center",

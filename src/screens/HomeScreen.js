@@ -56,7 +56,7 @@ function planSavings(plan) {
 
 function planStops(plan) {
   const decisions = plan?.stopDecisions ? Object.values(plan.stopDecisions).filter((value) => value === "added").length : 0;
-  return plan?.finalStops?.length || plan?.stopCount || decisions || plan?.routePayload?.stops?.length || 0;
+  return plan?.finalStops?.length || plan?.selectedStopCount || plan?.stopCount || decisions || plan?.allStops?.length || plan?.routePayload?.stops?.length || 0;
 }
 
 export default function HomeScreen({ navigation, route }) {
@@ -127,7 +127,8 @@ export default function HomeScreen({ navigation, route }) {
           if (!active) return;
           if (apiVehicles.length > 0) {
             setVehicles(apiVehicles);
-            setSelectedVehicle((current) => apiVehicles.find((item) => item.id === user?.active_vehicle_id) || apiVehicles.find((item) => item.id === current?.id) || apiVehicles[0]);
+            const activeVehicleId = user?.activeVehicleId || user?.active_vehicle_id;
+            setSelectedVehicle((current) => apiVehicles.find((item) => item.id === activeVehicleId) || apiVehicles.find((item) => item.id === current?.id) || apiVehicles[0]);
           }
           setPlannedTrips(apiPlans);
           setCompletedTrips(
@@ -203,6 +204,7 @@ export default function HomeScreen({ navigation, route }) {
             selectedVehicle={selectedVehicle}
             setVehicles={setVehicles}
             setSelectedVehicle={setSelectedVehicle}
+            setUser={setUser}
             navigation={navigation}
           />
         )}
@@ -539,7 +541,7 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
                   badge="Saved"
                   plan={plan}
                   actionLabel="Preview"
-                  onPress={() => navigation.navigate("TripDetail", { plan, type: "ready" })}
+                  onPress={() => navigation.navigate("TripDetail", { assistantName, user, vehicle, plan, type: "ready" })}
                 />
                 {index < visiblePlans.length - 1 && <View style={styles.listDivider} />}
               </React.Fragment>
@@ -556,7 +558,7 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
                   badge="Done"
                   plan={trip}
                   actionLabel="Summary"
-                  onPress={() => navigation.navigate("TripDetail", { completedTrip: trip, plan: trip, type: "completed" })}
+                  onPress={() => navigation.navigate("TripDetail", { assistantName, user, vehicle, completedTrip: trip, plan: trip, type: "completed" })}
                 />
                 {index < completedTrips.length - 1 && <View style={styles.listDivider} />}
               </React.Fragment>
@@ -653,9 +655,21 @@ function NavigateContent({ navigation, plannedTrips }) {
   );
 }
 
-function VehicleContent({ assistantName, user, vehicles, selectedVehicle, setVehicles, setSelectedVehicle, navigation }) {
+function VehicleContent({ assistantName, user, vehicles, selectedVehicle, setVehicles, setSelectedVehicle, setUser, navigation }) {
   const [pendingDelete, setPendingDelete] = useState(null);
   const [deleteMessage, setDeleteMessage] = useState("");
+
+  async function selectVehicle(item) {
+    setSelectedVehicle(item);
+    if (user?.id && item.id) {
+      try {
+        const updated = await updateUser(user.id, { active_vehicle_id: item.id });
+        setUser?.(updated);
+      } catch (error) {
+        console.warn("Waylo API active vehicle update unavailable:", error.message);
+      }
+    }
+  }
 
   async function removeVehicle(item) {
     if (vehicles.length <= 1) {
@@ -695,6 +709,12 @@ function VehicleContent({ assistantName, user, vehicles, selectedVehicle, setVeh
           <RangeBar vehicle={item} />
           {selectedVehicle?.vehicleName === item.vehicleName && <Text style={styles.currentVehicle}>Selected for trips</Text>}
           <View style={styles.vehicleActions}>
+            {selectedVehicle?.vehicleName !== item.vehicleName && (
+              <Pressable onPress={() => selectVehicle(item)} style={styles.vehicleActionSecondary}>
+                <Ionicons color={colors.blue} name="checkmark-circle-outline" size={17} />
+                <Text style={styles.vehicleActionSecondaryText}>Use</Text>
+              </Pressable>
+            )}
             <Pressable onPress={() => navigation.navigate("VehicleSetup", { assistantName, user, vehicle: item, vehicles })} style={styles.vehicleActionPrimary}>
               <Ionicons color={colors.surface} name="create-outline" size={17} />
               <Text style={styles.vehicleActionPrimaryText}>Edit</Text>
@@ -760,6 +780,9 @@ function ProfileContent({ assistantName, setAssistantName, user, setUser, naviga
   async function persistPreferences(next) {
     const nextUser = {
       ...user,
+      fuelSavingsAlerts: next.fuel_savings_alerts ?? fuelAlerts,
+      restRemindersEnabled: next.rest_reminders_enabled ?? restReminders,
+      restReminderHours: next.rest_reminder_hours ?? Number(restInterval.replace(" hours", "")),
       fuel_savings_alerts: next.fuel_savings_alerts ?? fuelAlerts,
       rest_reminders_enabled: next.rest_reminders_enabled ?? restReminders,
       rest_reminder_hours: next.rest_reminder_hours ?? Number(restInterval.replace(" hours", ""))
@@ -1952,6 +1975,24 @@ const styles = StyleSheet.create({
   },
   vehicleActionPrimaryText: {
     color: colors.surface,
+    fontSize: 14,
+    fontWeight: "500"
+  },
+  vehicleActionSecondary: {
+    alignItems: "center",
+    backgroundColor: colors.paleBlue,
+    borderColor: "rgba(47,128,237,0.18)",
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    flex: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
+    justifyContent: "center",
+    minHeight: 46,
+    paddingHorizontal: spacing.md
+  },
+  vehicleActionSecondaryText: {
+    color: colors.blue,
     fontSize: 14,
     fontWeight: "500"
   },

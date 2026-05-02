@@ -41,10 +41,23 @@ export default function VehicleSetupScreen({ navigation, route }) {
 
   function validateVehicle() {
     const nextErrors = {};
-    if (vehicle.vehicleName.trim().length < 2) nextErrors.vehicleName = "Enter a vehicle name.";
-    if (!Number(vehicle.cityMpg) && vehicle.fuelType !== "EV") nextErrors.cityMpg = "Enter a city MPG number.";
-    if (!Number(vehicle.highwayMpg) && vehicle.fuelType !== "EV") nextErrors.highwayMpg = "Enter a highway MPG number.";
-    if (!Number(vehicle.tankCapacity) && vehicle.fuelType !== "EV") nextErrors.tankCapacity = "Enter tank capacity.";
+    const name = vehicle.vehicleName.trim();
+    const duplicate = existingVehicles.some((item) => {
+      const sameRecord = vehicle.id && item.id === vehicle.id;
+      return !sameRecord && item.vehicleName?.trim().toLowerCase() === name.toLowerCase();
+    });
+    const cityMpg = Number(vehicle.cityMpg);
+    const highwayMpg = Number(vehicle.highwayMpg);
+    const tankCapacity = Number(vehicle.tankCapacity);
+
+    if (name.length < 2) nextErrors.vehicleName = "Enter a vehicle name.";
+    if (duplicate) nextErrors.vehicleName = "This vehicle already exists.";
+    if (vehicle.fuelType !== "EV") {
+      if (!cityMpg || cityMpg < 5 || cityMpg > 120) nextErrors.cityMpg = "Enter city MPG between 5 and 120.";
+      if (!highwayMpg || highwayMpg < 5 || highwayMpg > 140) nextErrors.highwayMpg = "Enter highway MPG between 5 and 140.";
+      if (!tankCapacity || tankCapacity < 1 || tankCapacity > 60) nextErrors.tankCapacity = "Enter tank capacity between 1 and 60 gallons.";
+      if (cityMpg && highwayMpg && highwayMpg < cityMpg * 0.7) nextErrors.highwayMpg = "Highway MPG looks too low for this vehicle.";
+    }
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   }

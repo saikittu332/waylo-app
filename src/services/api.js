@@ -93,8 +93,11 @@ export function apiSavedPlanToApp(plan) {
     durationHours: payload.durationHours,
     estimatedFuelCost: payload.estimatedFuelCost,
     estimatedSavings: payload.estimatedSavings,
+    allStops: payload.allStops || [],
     finalStops: payload.finalStops || [],
     stopDecisions: payload.stopDecisions || {},
+    selectedStopCount: payload.selectedStopCount,
+    skippedStopCount: payload.skippedStopCount,
     routePayload: payload.route || null,
     savedAt: "Saved in Waylo"
   };
@@ -145,10 +148,11 @@ export async function loginWithFirebaseToken(idToken) {
 }
 
 export async function updateUser(userId, payload) {
-  return request(`/users/${userId}`, {
+  const user = await request(`/users/${userId}`, {
     body: JSON.stringify(payload),
     method: "PATCH"
   });
+  return apiUserToApp(user);
 }
 
 export async function createVehicle(vehicle, userId) {
@@ -272,7 +276,40 @@ export async function getTrips(userId) {
   return request(`/trips?user_id=${encodeURIComponent(userId)}`);
 }
 
-export async function savePlan({ userId, tripId, route, vehicle, insights, finalStops = [], stopDecisions = {} }) {
+export function buildSavedPlanPayload({ route, vehicle, insights, finalStops = [], stopDecisions = {}, allStops = [] }) {
+  const stopsWithDecision = allStops.map((stop) => ({
+    ...stop,
+    decision: stopDecisions[stop.id] || stop.decision || "recommended"
+  }));
+
+  return {
+    title: routeTitle(route.from, route.to),
+    vehicleName: vehicle.vehicleName,
+    distanceMiles: route.distanceMiles,
+    durationHours: route.durationHours,
+    estimatedFuelCost: insights.estimatedFuelCost,
+    estimatedSavings: insights.estimatedSavings,
+    finalStops,
+    allStops: stopsWithDecision,
+    stopDecisions,
+    selectedStopCount: finalStops.length,
+    skippedStopCount: Object.values(stopDecisions).filter((value) => value === "skipped").length,
+    route: {
+      from: route.from,
+      to: route.to,
+      mode: route.mode,
+      distanceMiles: route.distanceMiles,
+      durationHours: route.durationHours,
+      map: route.map || null
+    },
+    mapProvider: route.map?.provider,
+    routeSummary: route.map?.summary,
+    routeGeometry: route.map?.geometry || null
+  };
+}
+
+export async function savePlan({ userId, tripId, route, vehicle, insights, finalStops = [], stopDecisions = {}, allStops = [] }) {
+  const planPayload = buildSavedPlanPayload({ route, vehicle, insights, finalStops, stopDecisions, allStops });
   return request("/saved-plans", {
     body: JSON.stringify({
       user_id: userId,
@@ -282,29 +319,17 @@ export async function savePlan({ userId, tripId, route, vehicle, insights, final
       destination: route.to,
       trip_mode: route.mode,
       notes: "Saved from the Waylo mobile app",
-      plan_payload: {
-        title: routeTitle(route.from, route.to),
-        vehicleName: vehicle.vehicleName,
-        distanceMiles: route.distanceMiles,
-        durationHours: route.durationHours,
-        estimatedFuelCost: insights.estimatedFuelCost,
-        estimatedSavings: insights.estimatedSavings,
-        finalStops,
-        stopDecisions,
-        route: {
-          from: route.from,
-          to: route.to,
-          mode: route.mode,
-          distanceMiles: route.distanceMiles,
-          durationHours: route.durationHours,
-          map: route.map || null
-        },
-        mapProvider: route.map?.provider,
-        routeSummary: route.map?.summary,
-        routeGeometry: route.map?.geometry || null
-      }
+      plan_payload: planPayload
     }),
     method: "POST"
+  });
+}
+
+export async function updateSavedPlanRoute(planId, { route, vehicle, insights, finalStops = [], stopDecisions = {}, allStops = [] }) {
+  return updateSavedPlan(planId, {
+    title: routeTitle(route.from, route.to),
+    notes: "Updated from the Waylo mobile app",
+    plan_payload: buildSavedPlanPayload({ route, vehicle, insights, finalStops, stopDecisions, allStops })
   });
 }
 
