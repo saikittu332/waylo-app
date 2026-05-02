@@ -35,14 +35,6 @@
       "@react-native-firebase/auth",
       "@rnmapbox/maps",
       "expo-font",
-      [
-        "expo-build-properties",
-        {
-          "ios": {
-            "useFrameworks": "static"
-          }
-        }
-      ],
       "./plugins/with-ios-modular-headers"
     ],
     "web": {
