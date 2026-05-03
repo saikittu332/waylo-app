@@ -1,19 +1,71 @@
 import { loginWithFirebaseToken, loginWithPhone } from "./api";
 
-function getNativeFirebaseAuth() {
+const OTP_REQUEST_TIMEOUT_MS = 45000;
+
+function getNativeFirebaseAuthModule() {
   try {
-    const authModule = require("@react-native-firebase/auth");
-    return authModule.default();
+    return require("@react-native-firebase/auth");
   } catch (error) {
     console.warn("Native Firebase Auth is unavailable in this runtime:", error.message);
     return null;
   }
 }
 
+function withTimeout(promise, timeoutMessage) {
+  let timeoutId;
+
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(timeoutMessage)), OTP_REQUEST_TIMEOUT_MS);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+}
+
+export function getAuthErrorMessage(error) {
+  const message = error?.message || "";
+
+  if (message.includes("timed out")) {
+    return "SMS verification is taking too long. Check that Phone Authentication is enabled in Firebase, your iPhone has network access, and this dev build was made after adding Firebase.";
+  }
+
+  if (message.includes("auth/invalid-phone-number")) {
+    return "Enter the phone number in a valid US format.";
+  }
+
+  if (message.includes("auth/too-many-requests")) {
+    return "Firebase temporarily blocked requests from this device. Wait a bit, then try again.";
+  }
+
+  if (message.includes("auth/quota-exceeded")) {
+    return "Firebase SMS quota was exceeded for this project.";
+  }
+
+  if (message.includes("auth/app-not-authorized")) {
+    return "This app build is not authorized for Firebase. Check the iOS bundle ID and GoogleService-Info.plist.";
+  }
+
+  if (message.includes("auth/invalid-verification-code")) {
+    return "That verification code is not valid. Try the latest SMS code.";
+  }
+
+  return message || "Phone verification failed. Please try again.";
+}
+
 export async function sendPhoneOtp(phoneNumber) {
-  const auth = getNativeFirebaseAuth();
-  if (auth) {
-    return auth.signInWithPhoneNumber(phoneNumber);
+  const authModule = getNativeFirebaseAuthModule();
+
+  if (authModule?.getAuth && authModule?.signInWithPhoneNumber) {
+    return withTimeout(
+      authModule.signInWithPhoneNumber(authModule.getAuth(), phoneNumber),
+      "Firebase phone verification timed out."
+    );
+  }
+
+  if (authModule?.default) {
+    return withTimeout(
+      authModule.default().signInWithPhoneNumber(phoneNumber),
+      "Firebase phone verification timed out."
+    );
   }
 
   // Expo Go fallback only. Real SMS OTP requires the EAS development build.

@@ -6,7 +6,8 @@ import Logo from "../components/Logo";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
 import { colors, radii, screen, spacing, typography } from "../constants/theme";
-import { completePhoneLogin, sendPhoneOtp, verifyOtp } from "../services/authService";
+import { normalizePhone } from "../services/api";
+import { completePhoneLogin, getAuthErrorMessage, sendPhoneOtp, verifyOtp } from "../services/authService";
 
 export default function LoginScreen({ navigation }) {
   const [phone, setPhone] = useState("");
@@ -28,17 +29,26 @@ export default function LoginScreen({ navigation }) {
     }
     setError("");
     setLoading(true);
-    if (!otpSent) {
-      const nextConfirmation = await sendPhoneOtp(phone);
-      setConfirmation(nextConfirmation);
-      setOtpSent(true);
+    const normalizedPhone = normalizePhone(phone);
+
+    try {
+      if (!otpSent) {
+        const nextConfirmation = await sendPhoneOtp(normalizedPhone);
+        setPhone(normalizedPhone);
+        setConfirmation(nextConfirmation);
+        setOtpSent(true);
+        return;
+      }
+
+      const firebaseUser = await verifyOtp(confirmation, code.join(""));
+      const session = await completePhoneLogin(normalizedPhone, firebaseUser);
+      navigation.navigate("AssistantName", { user: session.user, accessToken: session.access_token });
+    } catch (authError) {
+      console.warn("Waylo phone auth failed:", authError);
+      setError(getAuthErrorMessage(authError));
+    } finally {
       setLoading(false);
-      return;
     }
-    const firebaseUser = await verifyOtp(confirmation, code.join(""));
-    const session = await completePhoneLogin(phone, firebaseUser);
-    setLoading(false);
-    navigation.navigate("AssistantName", { user: session.user, accessToken: session.access_token });
   }
 
   return (
