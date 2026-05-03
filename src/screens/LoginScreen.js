@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import Logo from "../components/Logo";
@@ -34,12 +34,50 @@ function formatUsPhone(value) {
 }
 
 export default function LoginScreen({ navigation }) {
+  const scrollRef = useRef(null);
+  const otpRefs = useRef([]);
   const [phone, setPhone] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [confirmation, setConfirmation] = useState(null);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (otpSent) {
+      requestAnimationFrame(() => {
+        otpRefs.current[0]?.focus();
+        scrollRef.current?.scrollToEnd({ animated: true });
+      });
+    }
+  }, [otpSent]);
+
+  function updateOtp(value, index) {
+    const digits = value.replace(/\D/g, "");
+    if (!digits) {
+      const next = [...code];
+      next[index] = "";
+      setCode(next);
+      return;
+    }
+
+    const next = [...code];
+    digits.slice(0, 6 - index).split("").forEach((digit, offset) => {
+      next[index + offset] = digit;
+    });
+    setCode(next);
+
+    const nextIndex = Math.min(index + digits.length, 5);
+    if (nextIndex > index) {
+      otpRefs.current[nextIndex]?.focus();
+    }
+  }
+
+  function handleOtpKeyPress(event, index) {
+    if (event.nativeEvent.key === "Backspace" && !code[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  }
 
   async function handleContinue() {
     const digits = getUsPhoneDigits(phone);
@@ -78,14 +116,15 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Logo size="md" />
-          <Text style={styles.heading}>Welcome back!</Text>
-          <Text style={styles.copy}>Login to continue your journey</Text>
-        </View>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={12} style={styles.keyboardView}>
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <View style={styles.header}>
+            <Logo size="md" />
+            <Text style={styles.heading}>Welcome back!</Text>
+            <Text style={styles.copy}>Login to continue your journey</Text>
+          </View>
 
-        <PremiumCard style={styles.formCard}>
+          <PremiumCard style={styles.formCard}>
           <Text style={styles.label}>Phone number</Text>
           <View style={styles.phoneRow}>
             <View style={styles.countryCode}>
@@ -119,13 +158,16 @@ export default function LoginScreen({ navigation }) {
                   <TextInput
                     key={String(index)}
                     keyboardType="number-pad"
-                    maxLength={1}
-                    onChangeText={(value) => {
-                      const next = [...code];
-                      next[index] = value.replace(/\D/g, "");
-                      setCode(next);
+                    maxLength={6}
+                    onChangeText={(value) => updateOtp(value, index)}
+                    onKeyPress={(event) => handleOtpKeyPress(event, index)}
+                    ref={(input) => {
+                      otpRefs.current[index] = input;
                     }}
+                    returnKeyType={index === 5 ? "done" : "next"}
+                    selectTextOnFocus
                     style={styles.otpBox}
+                    textContentType="oneTimeCode"
                     value={digit}
                   />
                 ))}
@@ -138,12 +180,13 @@ export default function LoginScreen({ navigation }) {
               <Text style={styles.otpPreviewText}>Code entry appears after you send a verification code.</Text>
             </View>
           )}
-        </PremiumCard>
+          </PremiumCard>
 
-        <Text style={styles.terms}>
-          By continuing, you agree to our Terms of Service and Privacy Policy
-        </Text>
-      </ScrollView>
+          <Text style={styles.terms}>
+            By continuing, you agree to our Terms of Service and Privacy Policy
+          </Text>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -153,12 +196,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.appBackground,
     flex: 1
   },
+  keyboardView: {
+    flex: 1
+  },
   container: {
     alignSelf: "center",
     gap: spacing.md,
     maxWidth: screen.maxWidth,
     minHeight: "100%",
     padding: screen.padding,
+    paddingBottom: spacing.xxl,
     width: "100%"
   },
   header: {

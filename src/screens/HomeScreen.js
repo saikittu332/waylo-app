@@ -302,7 +302,7 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
     setLocating(true);
     try {
       const place = await getCurrentLocationPlace();
-      setFrom("Current Location");
+      setFrom(place.label || "Current Location");
       setFromPlace(place);
       setLocationError("");
     } catch (error) {
@@ -1028,6 +1028,7 @@ function ReminderPreference({ enabled, interval, onIntervalChange, onToggle }) {
 
 function TripField({ label, value, onChangeText, onSelectPlace, onSearchStateChange, onUseCurrentLocation, locating, helperText, pinColor, suggestions = [] }) {
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const [remoteSuggestions, setRemoteSuggestions] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
@@ -1077,32 +1078,47 @@ function TripField({ label, value, onChangeText, onSelectPlace, onSearchStateCha
 
   return (
     <View style={styles.tripFieldWrap}>
-      <Text style={styles.label}>{label}</Text>
-      <View style={styles.tripField}>
-        <View style={[styles.pin, { backgroundColor: pinColor }]} />
-        <TextInput
-          onFocus={() => setShowSuggestions(true)}
-          value={value}
-          onChangeText={(text) => {
-            onChangeText(text);
-            onSelectPlace?.(null);
-            setShowSuggestions(true);
-          }}
-          style={styles.input}
-        />
-        <Pressable onPress={() => setShowSuggestions((open) => !open)} hitSlop={8}>
-          <Ionicons color={colors.navy} name={showSuggestions ? "chevron-up" : "add"} size={18} />
+      <View style={[styles.tripField, isFocused && styles.tripFieldActive]}>
+        <View style={styles.routeGlyphColumn}>
+          <View style={[styles.pin, { backgroundColor: pinColor }]} />
+          <View style={styles.routeGlyphLine} />
+        </View>
+        <View style={styles.tripFieldBody}>
+          <Text style={styles.tripFieldLabel}>{label}</Text>
+          <TextInput
+            onBlur={() => setIsFocused(false)}
+            onFocus={() => {
+              setIsFocused(true);
+              setShowSuggestions(true);
+            }}
+            placeholder={label === "From" ? "Start point" : "City, address, or landmark"}
+            placeholderTextColor={colors.mutedLight}
+            value={value}
+            onChangeText={(text) => {
+              onChangeText(text);
+              onSelectPlace?.(null);
+              setShowSuggestions(true);
+            }}
+            style={styles.input}
+          />
+          {!!helperText && <Text style={styles.fieldHelper}>{helperText}</Text>}
+        </View>
+        <Pressable onPress={() => setShowSuggestions((open) => !open)} hitSlop={10} style={styles.fieldIconButton}>
+          <Ionicons color={colors.navy} name={showSuggestions ? "chevron-up" : "search-outline"} size={18} />
         </Pressable>
       </View>
       {showSuggestions && (
         <View style={styles.locationSuggestions}>
           {onUseCurrentLocation && (
-            <Pressable onPress={onUseCurrentLocation} style={styles.locationSuggestion}>
-              <Ionicons color={colors.blue} name="locate-outline" size={16} />
+            <Pressable onPress={onUseCurrentLocation} disabled={locating} style={[styles.locationSuggestion, styles.currentLocationSuggestion]}>
+              <View style={styles.suggestionIconBubble}>
+                <Ionicons color={colors.blue} name={locating ? "sync-outline" : "locate-outline"} size={17} />
+              </View>
               <View style={styles.recentText}>
                 <Text style={styles.locationSuggestionText}>{locating ? "Finding your location..." : "Use my current location"}</Text>
-                <Text style={styles.locationSuggestionMeta}>Requires location permission in Expo Go</Text>
+                <Text style={styles.locationSuggestionMeta}>Uses your iPhone GPS for a real route start</Text>
               </View>
+              <Ionicons color={colors.blue} name="arrow-forward" size={15} />
             </Pressable>
           )}
           {onUseCurrentLocation && <View style={styles.listDivider} />}
@@ -1122,11 +1138,14 @@ function TripField({ label, value, onChangeText, onSelectPlace, onSearchStateCha
               }}
               style={styles.locationSuggestion}
             >
-              <Ionicons color={pinColor} name={item.id === "current-location" ? "navigate-outline" : "location-outline"} size={16} />
+              <View style={styles.suggestionIconBubble}>
+                <Ionicons color={pinColor} name={item.id === "current-location" ? "navigate-outline" : "location-outline"} size={16} />
+              </View>
               <View style={styles.recentText}>
                 <Text style={styles.locationSuggestionText}>{item.label}</Text>
                 {!!item.address && item.address !== item.label && <Text style={styles.locationSuggestionMeta}>{item.address}</Text>}
               </View>
+              <Ionicons color={colors.mutedLight} name="add" size={16} />
             </Pressable>
           ))}
           {!isSearching && visibleSuggestions.length === 0 && (
@@ -1137,7 +1156,6 @@ function TripField({ label, value, onChangeText, onSelectPlace, onSearchStateCha
           )}
         </View>
       )}
-      {!!helperText && <Text style={styles.fieldHelper}>{helperText}</Text>}
     </View>
   );
 }
@@ -1573,21 +1591,63 @@ const styles = StyleSheet.create({
     gap: spacing.xs
   },
   tripField: {
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radii.sm,
+    alignItems: "stretch",
+    backgroundColor: "#FBFDFF",
+    borderColor: "rgba(31,78,115,0.12)",
+    borderRadius: radii.lg,
     borderWidth: 1,
     flexDirection: "row",
-    minHeight: 48,
-    paddingHorizontal: spacing.md
+    gap: spacing.sm,
+    minHeight: 72,
+    padding: spacing.md
+  },
+  tripFieldActive: {
+    backgroundColor: colors.surface,
+    borderColor: "rgba(47,128,237,0.42)",
+    shadowColor: colors.blue,
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 }
+  },
+  routeGlyphColumn: {
+    alignItems: "center",
+    paddingTop: 5,
+    width: 18
+  },
+  routeGlyphLine: {
+    backgroundColor: colors.border,
+    borderRadius: radii.pill,
+    flex: 1,
+    marginTop: 4,
+    minHeight: 18,
+    width: 2
+  },
+  tripFieldBody: {
+    flex: 1,
+    gap: 3
+  },
+  tripFieldLabel: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "600",
+    textTransform: "uppercase"
+  },
+  fieldIconButton: {
+    alignItems: "center",
+    alignSelf: "center",
+    backgroundColor: colors.paleBlue,
+    borderRadius: radii.pill,
+    height: 34,
+    justifyContent: "center",
+    outlineStyle: "none",
+    width: 34
   },
   locationSuggestions: {
     backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radii.md,
+    borderColor: "rgba(31,78,115,0.1)",
+    borderRadius: radii.lg,
     borderWidth: 1,
-    gap: 2,
+    gap: 4,
     marginTop: spacing.xs,
     overflow: "hidden"
   },
@@ -1595,9 +1655,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.sm,
-    minHeight: 42,
+    minHeight: 54,
     outlineStyle: "none",
     paddingHorizontal: spacing.md
+  },
+  currentLocationSuggestion: {
+    backgroundColor: colors.paleBlue
+  },
+  suggestionIconBubble: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    height: 32,
+    justifyContent: "center",
+    width: 32
   },
   locationSuggestionText: {
     color: colors.text,
@@ -1614,13 +1687,11 @@ const styles = StyleSheet.create({
   pin: {
     borderRadius: radii.pill,
     height: 14,
-    marginRight: spacing.sm,
     width: 14
   },
   input: {
     color: colors.text,
-    flex: 1,
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "500"
   },
   fieldAction: {
