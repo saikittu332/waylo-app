@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Animated, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { Animated, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { CommonActions, useFocusEffect } from "@react-navigation/native";
@@ -618,7 +618,8 @@ function NavigateContent({ navigation, plannedTrips }) {
           estimatedFuelCost: plan.estimatedFuelCost,
           estimatedSavings: plan.estimatedSavings
         },
-        fullStops: stops
+        fullStops: stops,
+        finalStops: plan.finalStops || []
       }
     });
   }
@@ -666,13 +667,13 @@ function NavigateContent({ navigation, plannedTrips }) {
                     <Text style={styles.recentDate}>{routeMetaLabel(plan)}</Text>
                   </View>
                   <Pressable
-                    accessibilityLabel={`Start ${plan.title || routeTitle(plan.from, plan.to)}`}
+                    accessibilityLabel={`Preview ${plan.title || routeTitle(plan.from, plan.to)}`}
                     accessibilityRole="button"
                     onPress={() => startSavedPlan(plan)}
                     style={styles.startMiniButton}
                   >
-                    <Ionicons color={colors.surface} name="navigate" size={15} />
-                    <Text style={styles.startMiniText}>Start</Text>
+                    <Ionicons color={colors.surface} name="map-outline" size={15} />
+                    <Text style={styles.startMiniText}>Preview</Text>
                   </Pressable>
                 </View>
                 {index < plannedTrips.length - 1 && <View style={styles.listDivider} />}
@@ -1027,19 +1028,30 @@ function ReminderPreference({ enabled, interval, onIntervalChange, onToggle }) {
 }
 
 function TripField({ label, value, onChangeText, onSelectPlace, onSearchStateChange, onUseCurrentLocation, locating, helperText, pinColor, suggestions = [] }) {
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [searchText, setSearchText] = useState(value);
   const [remoteSuggestions, setRemoteSuggestions] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
-  const trimmedValue = value.trim();
+  const trimmedValue = searchText.trim();
   const fallbackSuggestions = suggestions
     .filter((item) => item.label.toLowerCase().includes(trimmedValue.toLowerCase()))
     .slice(0, 4);
   const visibleSuggestions = hasMapboxToken() && trimmedValue.length >= 2 ? remoteSuggestions : fallbackSuggestions;
 
+  function openSheet() {
+    setSearchText(value);
+    setSheetOpen(true);
+  }
+
+  function choosePlace(place) {
+    onChangeText(place.label);
+    onSelectPlace?.(place);
+    setSheetOpen(false);
+  }
+
   React.useEffect(() => {
-    if (!showSuggestions || trimmedValue.length < 2 || trimmedValue.toLowerCase() === "current location") {
+    if (!sheetOpen || trimmedValue.length < 2 || trimmedValue.toLowerCase() === "current location") {
       setRemoteSuggestions([]);
       setSearchError("");
       setIsSearching(false);
@@ -1074,88 +1086,116 @@ function TripField({ label, value, onChangeText, onSelectPlace, onSearchStateCha
       clearTimeout(timer);
       onSearchStateChange?.(false);
     };
-  }, [showSuggestions, trimmedValue]);
+  }, [sheetOpen, trimmedValue]);
 
   return (
     <View style={styles.tripFieldWrap}>
-      <View style={[styles.tripField, isFocused && styles.tripFieldActive]}>
+      <Pressable onPress={openSheet} style={styles.tripField}>
         <View style={styles.routeGlyphColumn}>
           <View style={[styles.pin, { backgroundColor: pinColor }]} />
           <View style={styles.routeGlyphLine} />
         </View>
         <View style={styles.tripFieldBody}>
           <Text style={styles.tripFieldLabel}>{label}</Text>
-          <TextInput
-            onBlur={() => setIsFocused(false)}
-            onFocus={() => {
-              setIsFocused(true);
-              setShowSuggestions(true);
-            }}
-            placeholder={label === "From" ? "Start point" : "City, address, or landmark"}
-            placeholderTextColor={colors.mutedLight}
-            value={value}
-            onChangeText={(text) => {
-              onChangeText(text);
-              onSelectPlace?.(null);
-              setShowSuggestions(true);
-            }}
-            style={styles.input}
-          />
+          <Text numberOfLines={1} style={styles.tripFieldValue}>{value || (label === "From" ? "Start point" : "City, address, or landmark")}</Text>
           {!!helperText && <Text style={styles.fieldHelper}>{helperText}</Text>}
         </View>
-        <Pressable onPress={() => setShowSuggestions((open) => !open)} hitSlop={10} style={styles.fieldIconButton}>
-          <Ionicons color={colors.navy} name={showSuggestions ? "chevron-up" : "search-outline"} size={18} />
-        </Pressable>
-      </View>
-      {showSuggestions && (
-        <View style={styles.locationSuggestions}>
-          {onUseCurrentLocation && (
-            <Pressable onPress={onUseCurrentLocation} disabled={locating} style={[styles.locationSuggestion, styles.currentLocationSuggestion]}>
-              <View style={styles.suggestionIconBubble}>
-                <Ionicons color={colors.blue} name={locating ? "sync-outline" : "locate-outline"} size={17} />
-              </View>
-              <View style={styles.recentText}>
-                <Text style={styles.locationSuggestionText}>{locating ? "Finding your location..." : "Use my current location"}</Text>
-                <Text style={styles.locationSuggestionMeta}>Uses your iPhone GPS for a real route start</Text>
-              </View>
-              <Ionicons color={colors.blue} name="arrow-forward" size={15} />
-            </Pressable>
-          )}
-          {onUseCurrentLocation && <View style={styles.listDivider} />}
-          {isSearching && (
-            <View style={styles.locationSuggestion}>
-              <Ionicons color={colors.muted} name="sync-outline" size={16} />
-              <Text style={styles.locationSuggestionText}>Searching Mapbox...</Text>
-            </View>
-          )}
-          {!isSearching && visibleSuggestions.map((item) => (
-            <Pressable
-              key={`${label}-${item.id || item.label}`}
-              onPress={() => {
-                onChangeText(item.label);
-                onSelectPlace?.(item);
-                setShowSuggestions(false);
-              }}
-              style={styles.locationSuggestion}
-            >
-              <View style={styles.suggestionIconBubble}>
-                <Ionicons color={pinColor} name={item.id === "current-location" ? "navigate-outline" : "location-outline"} size={16} />
-              </View>
-              <View style={styles.recentText}>
-                <Text style={styles.locationSuggestionText}>{item.label}</Text>
-                {!!item.address && item.address !== item.label && <Text style={styles.locationSuggestionMeta}>{item.address}</Text>}
-              </View>
-              <Ionicons color={colors.mutedLight} name="add" size={16} />
-            </Pressable>
-          ))}
-          {!isSearching && visibleSuggestions.length === 0 && (
-            <View style={styles.locationSuggestion}>
-              <Ionicons color={colors.muted} name="information-circle-outline" size={16} />
-              <Text style={styles.locationSuggestionText}>{searchError || "No matching places found."}</Text>
-            </View>
-          )}
+        <View style={styles.fieldIconButton}>
+          <Ionicons color={colors.navy} name="search-outline" size={18} />
         </View>
-      )}
+      </Pressable>
+      <Modal animationType="slide" transparent visible={sheetOpen} onRequestClose={() => setSheetOpen(false)}>
+        <View style={styles.placeModalBackdrop}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.placeSheetKeyboard}>
+            <View style={styles.placeSheet}>
+              <View style={styles.placeSheetHandle} />
+              <View style={styles.placeSheetHeader}>
+                <View>
+                  <Text style={styles.placeSheetEyebrow}>{label === "From" ? "Start from" : "Drive to"}</Text>
+                  <Text style={styles.placeSheetTitle}>{label === "From" ? "Choose your origin" : "Choose destination"}</Text>
+                </View>
+                <Pressable onPress={() => setSheetOpen(false)} hitSlop={10} style={styles.placeCloseButton}>
+                  <Ionicons color={colors.navy} name="close" size={20} />
+                </Pressable>
+              </View>
+              <View style={styles.placeSearchBox}>
+                <Ionicons color={colors.muted} name="search-outline" size={18} />
+                <TextInput
+                  autoFocus
+                  onChangeText={(text) => {
+                    setSearchText(text);
+                    onSearchStateChange?.(false);
+                  }}
+                  placeholder={label === "From" ? "Search an address or city" : "Where are you going?"}
+                  placeholderTextColor={colors.mutedLight}
+                  style={styles.placeSearchInput}
+                  value={searchText}
+                />
+                {!!searchText && (
+                  <Pressable onPress={() => setSearchText("")} hitSlop={8}>
+                    <Ionicons color={colors.muted} name="close-circle" size={18} />
+                  </Pressable>
+                )}
+              </View>
+              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                {onUseCurrentLocation && (
+                  <Pressable
+                    onPress={async () => {
+                      await onUseCurrentLocation();
+                      setSheetOpen(false);
+                    }}
+                    disabled={locating}
+                    style={[styles.locationSuggestion, styles.currentLocationSuggestion]}
+                  >
+                    <View style={styles.suggestionIconBubble}>
+                      <Ionicons color={colors.blue} name={locating ? "sync-outline" : "locate-outline"} size={17} />
+                    </View>
+                    <View style={styles.recentText}>
+                      <Text style={styles.locationSuggestionText}>{locating ? "Finding your location..." : "Use my current location"}</Text>
+                      <Text style={styles.locationSuggestionMeta}>Uses your iPhone GPS for a real route start</Text>
+                    </View>
+                    <Ionicons color={colors.blue} name="arrow-forward" size={15} />
+                  </Pressable>
+                )}
+                {onUseCurrentLocation && <View style={styles.listDivider} />}
+                <Text style={styles.placeGroupLabel}>{hasMapboxToken() && trimmedValue.length >= 2 ? "Best matches" : "Quick picks"}</Text>
+                {isSearching && (
+                  <View style={styles.locationSuggestion}>
+                    <View style={styles.suggestionIconBubble}>
+                      <Ionicons color={colors.muted} name="sync-outline" size={16} />
+                    </View>
+                    <Text style={styles.locationSuggestionText}>Searching Mapbox...</Text>
+                  </View>
+                )}
+                {!isSearching && visibleSuggestions.map((item) => (
+                  <Pressable
+                    key={`${label}-${item.id || item.label}`}
+                    onPress={() => choosePlace(item)}
+                    style={styles.locationSuggestion}
+                  >
+                    <View style={styles.suggestionIconBubble}>
+                      <Ionicons color={pinColor} name={item.id === "current-location" ? "navigate-outline" : "location-outline"} size={16} />
+                    </View>
+                    <View style={styles.recentText}>
+                      <Text style={styles.locationSuggestionText}>{item.label}</Text>
+                      {!!item.address && item.address !== item.label && <Text style={styles.locationSuggestionMeta}>{item.address}</Text>}
+                    </View>
+                    <Ionicons color={colors.mutedLight} name="add" size={16} />
+                  </Pressable>
+                ))}
+                {!isSearching && visibleSuggestions.length === 0 && (
+                  <View style={styles.locationSuggestion}>
+                    <View style={styles.suggestionIconBubble}>
+                      <Ionicons color={colors.muted} name="information-circle-outline" size={16} />
+                    </View>
+                    <Text style={styles.locationSuggestionText}>{searchError || "No matching places found."}</Text>
+                  </View>
+                )}
+              </ScrollView>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1641,6 +1681,89 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     outlineStyle: "none",
     width: 34
+  },
+  tripFieldValue: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: "500"
+  },
+  placeModalBackdrop: {
+    backgroundColor: "rgba(18,46,70,0.28)",
+    flex: 1,
+    justifyContent: "flex-end"
+  },
+  placeSheetKeyboard: {
+    justifyContent: "flex-end",
+    flex: 1
+  },
+  placeSheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
+    maxHeight: "88%",
+    padding: screen.padding,
+    paddingBottom: spacing.xl,
+    ...shadows.float
+  },
+  placeSheetHandle: {
+    alignSelf: "center",
+    backgroundColor: colors.border,
+    borderRadius: radii.pill,
+    height: 4,
+    marginBottom: spacing.md,
+    width: 46
+  },
+  placeSheetHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: spacing.md
+  },
+  placeSheetEyebrow: {
+    color: colors.green,
+    fontSize: 12,
+    fontWeight: "600",
+    textTransform: "uppercase"
+  },
+  placeSheetTitle: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: "600",
+    marginTop: 2
+  },
+  placeCloseButton: {
+    alignItems: "center",
+    backgroundColor: colors.appBackground,
+    borderRadius: radii.pill,
+    height: 38,
+    justifyContent: "center",
+    width: 38
+  },
+  placeSearchBox: {
+    alignItems: "center",
+    backgroundColor: colors.appBackground,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    minHeight: 54,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md
+  },
+  placeSearchInput: {
+    color: colors.text,
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "500"
+  },
+  placeGroupLabel: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "600",
+    marginBottom: spacing.xs,
+    marginTop: spacing.sm,
+    textTransform: "uppercase"
   },
   locationSuggestions: {
     backgroundColor: colors.surface,

@@ -7,8 +7,8 @@ export default function RoutePreviewFallback({ route, originLabel, destinationLa
   const distance = route?.distanceMiles ? `${Math.round(route.distanceMiles)} mi` : "Route preview";
   const duration = route?.durationHours ? `${Math.floor(route.durationHours)}h ${Math.round((route.durationHours % 1) * 60)}m` : "Preview";
   const badgeText = route?.map?.isDemoRoute
-    ? "Demo route preview"
-    : hasMapboxToken() ? "Route data from Mapbox" : "Add Mapbox token for live route data";
+    ? "Demo distance only"
+    : hasMapboxToken() ? "Map rendering fallback" : "Mapbox token needed";
   return (
     <View style={styles.mapCard}>
       <View style={styles.water} />
@@ -27,6 +27,9 @@ export default function RoutePreviewFallback({ route, originLabel, destinationLa
       <MapPin label={destinationLabel || "Destination"} style={styles.pinEnd} color={colors.red} />
       <View style={styles.fallbackBadge}>
         <Text style={styles.fallbackBadgeText}>{badgeText}</Text>
+        <Text style={styles.fallbackBadgeSub}>
+          {hasMapboxToken() && !route?.map?.isDemoRoute ? "Route data is real; native map rendering needs the dev build." : "This visual is not live navigation."}
+        </Text>
       </View>
     </View>
   );
@@ -152,17 +155,25 @@ const styles = StyleSheet.create({
   },
   fallbackBadge: {
     backgroundColor: "rgba(255,255,255,0.92)",
-    borderRadius: radii.pill,
+    borderRadius: radii.md,
     bottom: spacing.md,
     left: spacing.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
-    position: "absolute"
+    position: "absolute",
+    right: spacing.md
   },
   fallbackBadgeText: {
     color: colors.navy,
     fontSize: 12,
     fontWeight: "600"
+  },
+  fallbackBadgeSub: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "500",
+    lineHeight: 15,
+    marginTop: 2
   },
   mapPinWrap: {
     position: "absolute"

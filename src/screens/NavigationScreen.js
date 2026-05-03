@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import PremiumCard from "../components/PremiumCard";
@@ -9,10 +9,11 @@ import { formatHours } from "../utils/tripCalculator";
 
 export default function NavigationScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
+  const [finishOpen, setFinishOpen] = React.useState(false);
   const tripPlan = route.params?.tripPlan;
   const routeSummary = tripPlan?.route;
   const firstFuelStop = tripPlan?.fullStops?.find((stop) => stop.type === "fuel");
-  const selectedStops = tripPlan?.fullStops || [];
+  const selectedStops = tripPlan?.finalStops?.length ? tripPlan.finalStops : [];
   const destinationLabel = routeSummary?.to?.split(",")[0] || "Your destination";
 
   return (
@@ -36,9 +37,9 @@ export default function NavigationScreen({ navigation, route }) {
           ]}
         >
           <View style={styles.turnCard}>
-            <Ionicons color={colors.surface} name="navigate" size={30} />
+            <Ionicons color={colors.surface} name="map-outline" size={30} />
             <View>
-              <Text style={styles.turnText}>Drive Preview</Text>
+              <Text style={styles.turnText}>Route Preview</Text>
               <Text numberOfLines={1} style={styles.turnDistance}>{destinationLabel}</Text>
             </View>
             <View style={styles.voiceButton}>
@@ -54,7 +55,7 @@ export default function NavigationScreen({ navigation, route }) {
           <PremiumCard style={styles.bottomCard}>
             <View style={styles.sheetHeader}>
               <View>
-                <Text style={styles.sheetTitle}>Previewing route</Text>
+                <Text style={styles.sheetTitle}>Ready to drive later</Text>
                 <Text style={styles.sheetMeta}>{routeSummary?.from || "Current location"} to {destinationLabel}</Text>
               </View>
               <Text style={styles.stopCountPill}>{selectedStops.length || "Smart"} stops</Text>
@@ -78,17 +79,49 @@ export default function NavigationScreen({ navigation, route }) {
               <StatItem compact label="hrs" value={formatHours(routeSummary?.durationHours || 6.75)} />
               <StatItem compact label="mi" value={`${routeSummary?.distanceMiles || 383}`} />
               <Pressable
-                accessibilityLabel="End drive preview"
+                accessibilityLabel="Finish route preview"
                 accessibilityRole="button"
-                onPress={() => navigation.navigate("TripSummary", { tripPlan })}
+                onPress={() => setFinishOpen(true)}
                 style={styles.endButton}
               >
-                <Text style={styles.endButtonText}>End</Text>
+                <Text style={styles.endButtonText}>Finish</Text>
               </Pressable>
             </View>
           </PremiumCard>
         </View>
       </View>
+      <Modal animationType="fade" transparent visible={finishOpen} onRequestClose={() => setFinishOpen(false)}>
+        <View style={styles.confirmBackdrop}>
+          <PremiumCard style={styles.confirmCard}>
+            <View style={styles.confirmIcon}>
+              <Ionicons color={colors.blue} name="flag-outline" size={24} />
+            </View>
+            <Text style={styles.confirmTitle}>What happened with this drive?</Text>
+            <Text style={styles.confirmCopy}>This screen is a route preview. Only mark the trip complete if you actually finished the drive.</Text>
+            <Pressable
+              onPress={() => {
+                setFinishOpen(false);
+                navigation.navigate("TripSummary", { tripPlan, completionCandidate: true });
+              }}
+              style={styles.confirmPrimary}
+            >
+              <Text style={styles.confirmPrimaryText}>Mark Drive Complete</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setFinishOpen(false);
+                navigation.navigate("Home");
+              }}
+              style={styles.confirmSecondary}
+            >
+              <Text style={styles.confirmSecondaryText}>Exit Preview, Keep Planned</Text>
+            </Pressable>
+            <Pressable onPress={() => setFinishOpen(false)} style={styles.confirmGhost}>
+              <Text style={styles.confirmGhostText}>Continue Preview</Text>
+            </Pressable>
+          </PremiumCard>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -349,10 +382,76 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     height: 54,
     justifyContent: "center",
-    width: 64
+    width: 76
   },
   endButtonText: {
     color: colors.surface,
+    fontWeight: "500"
+  },
+  confirmBackdrop: {
+    alignItems: "center",
+    backgroundColor: "rgba(18,46,70,0.34)",
+    flex: 1,
+    justifyContent: "center",
+    padding: screen.padding
+  },
+  confirmCard: {
+    gap: spacing.md,
+    maxWidth: screen.maxWidth,
+    width: "100%"
+  },
+  confirmIcon: {
+    alignItems: "center",
+    backgroundColor: colors.paleBlue,
+    borderRadius: radii.pill,
+    height: 52,
+    justifyContent: "center",
+    width: 52
+  },
+  confirmTitle: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: "600"
+  },
+  confirmCopy: {
+    color: colors.muted,
+    fontSize: 14,
+    fontWeight: "500",
+    lineHeight: 20
+  },
+  confirmPrimary: {
+    alignItems: "center",
+    backgroundColor: colors.green,
+    borderRadius: radii.pill,
+    minHeight: 48,
+    justifyContent: "center"
+  },
+  confirmPrimaryText: {
+    color: colors.surface,
+    fontSize: 14,
+    fontWeight: "600"
+  },
+  confirmSecondary: {
+    alignItems: "center",
+    borderColor: colors.border,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    minHeight: 48,
+    justifyContent: "center"
+  },
+  confirmSecondaryText: {
+    color: colors.navy,
+    fontSize: 14,
+    fontWeight: "600"
+  },
+  confirmGhost: {
+    alignItems: "center",
+    minHeight: 36,
+    justifyContent: "center"
+  },
+  confirmGhostText: {
+    color: colors.muted,
+    fontSize: 13,
     fontWeight: "500"
   }
 });

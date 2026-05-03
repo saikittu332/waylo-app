@@ -122,8 +122,8 @@ export default function TripDetailScreen({ navigation, route }) {
               onPress={reviseSavedPlan}
             />
             <PrimaryButton
-              icon="navigate-outline"
-              title="Start Drive Preview"
+              icon="map-outline"
+              title="Open Drive Preview"
               onPress={() => navigation.navigate("Navigation", {
                 tripPlan: {
                   savedPlanId: plan?.id,
@@ -140,7 +140,8 @@ export default function TripDetailScreen({ navigation, route }) {
                     estimatedFuelCost: plan?.estimatedFuelCost,
                     estimatedSavings: plan?.estimatedSavings
                   },
-                  fullStops: plan?.finalStops?.length ? plan.finalStops : [{ id: "quick-fuel", type: "fuel", name: "Best Fuel Stop" }]
+                  fullStops: plan?.finalStops?.length ? plan.finalStops : [{ id: "quick-fuel", type: "fuel", name: "Best Fuel Stop" }],
+                  finalStops: plan?.finalStops || []
                 }
               })}
             />

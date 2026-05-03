@@ -11,6 +11,7 @@ import { routeTitle } from "../utils/placeLabels";
 
 export default function TripSummaryScreen({ navigation, route }) {
   const tripPlan = route.params?.tripPlan;
+  const completionCandidate = route.params?.completionCandidate;
   const routeSummary = tripPlan?.route;
   const fuelCost = tripPlan?.insights?.estimatedFuelCost || 52.36;
   const savings = tripPlan?.insights?.estimatedSavings || 14.28;
@@ -57,11 +58,13 @@ export default function TripSummaryScreen({ navigation, route }) {
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.completeIcon}>
-            <Ionicons color={colors.surface} name="checkmark" size={24} />
+            <Ionicons color={colors.surface} name={completionCandidate ? "flag-outline" : "checkmark"} size={24} />
           </View>
           <View style={styles.headerCopy}>
-            <Text style={styles.completed}>Trip Completed</Text>
-            <Text style={styles.message}>Great job. You've reached your destination.</Text>
+            <Text style={styles.completed}>{completionCandidate ? "Confirm completed drive" : "Trip Completed"}</Text>
+            <Text style={styles.message}>
+              {completionCandidate ? "Save this only if the drive actually finished. Otherwise keep it as a planned route." : "Great job. You've reached your destination."}
+            </Text>
           </View>
         </View>
         <PremiumCard style={styles.summaryCard}>
@@ -86,8 +89,8 @@ export default function TripSummaryScreen({ navigation, route }) {
           </View>
         </PremiumCard>
 
-        <PrimaryButton title="Save Trip" onPress={saveCompletedTrip} />
-        <PrimaryButton title="Share Summary" variant="secondary" onPress={() => navigation.navigate("Home")} />
+        <PrimaryButton title="Save as Completed Trip" onPress={saveCompletedTrip} />
+        <PrimaryButton title="Keep as Planned Route" variant="secondary" onPress={() => navigation.navigate("Home")} />
       </ScrollView>
     </SafeAreaView>
   );
