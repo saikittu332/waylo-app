@@ -11,64 +11,52 @@ const TARGETED_MODULAR_PODS = [
   "RecaptchaInterop",
 ];
 
-function addModularHeaders(podfile) {
-  const cleanedPodfile = podfile.replace(/^\s*use_modular_headers!\s*\n/gm, "");
-  const alreadyConfigured = TARGETED_MODULAR_PODS.every((podName) =>
-    cleanedPodfile.includes(`pod '${podName}', :modular_headers => true`)
-  );
-
-  if (alreadyConfigured) {
-    return cleanedPodfile;
-  }
-
-  const modularPodLines = TARGETED_MODULAR_PODS.map(
-    (podName) => `  pod '${podName}', :modular_headers => true`
-  ).join("\n");
-  const block = `\n  # Firebase Swift pods need modular headers for static library integration.\n${modularPodLines}\n`;
+function addFirebasePodConfig(podfile) {
+  let patchedPodfile = podfile.replace(/^\s*use_modular_headers!\s*\n/gm, "");
   const targetLine = /target ['"][^'"]+['"] do\n/;
 
-  if (targetLine.test(cleanedPodfile)) {
-    return cleanedPodfile.replace(targetLine, (match) => `${match}${block}`);
+  if (!patchedPodfile.includes("$RNFirebaseAsStaticFramework = true")) {
+    patchedPodfile = patchedPodfile.replace(
+      targetLine,
+      (match) => `${match}\n  $RNFirebaseAsStaticFramework = true\n`
+    );
   }
 
-  return cleanedPodfile;
-}
-
-function patchFile(filePath, replacements) {
-  if (!fs.existsSync(filePath)) {
-    return;
-  }
-
-  const source = fs.readFileSync(filePath, "utf8");
-  const patchedSource = replacements.reduce(
-    (contents, [from, to]) => contents.split(from).join(to),
-    source
+  const alreadyConfigured = TARGETED_MODULAR_PODS.every((podName) =>
+    patchedPodfile.includes(`pod '${podName}', :modular_headers => true`)
   );
 
-  if (patchedSource !== source) {
-    fs.writeFileSync(filePath, patchedSource);
+  if (!alreadyConfigured) {
+    const modularPodLines = TARGETED_MODULAR_PODS.map(
+      (podName) => `  pod '${podName}', :modular_headers => true`
+    ).join("\n");
+    const block = `\n  # Firebase Swift pods need modular headers for static framework integration.\n${modularPodLines}\n`;
+
+    patchedPodfile = patchedPodfile.replace(targetLine, (match) => `${match}${block}`);
   }
+
+  return patchedPodfile;
 }
 
-function patchReactNativeFirebaseImports(projectRoot) {
-  const rnfbRoot = path.join(projectRoot, "node_modules", "@react-native-firebase");
-  const broadFirebaseImport = "#import <Firebase/Firebase.h>";
+function addNonModularHeaderBuildSetting(podfile) {
+  const settingName = "CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES";
 
-  patchFile(path.join(rnfbRoot, "app", "ios", "RNFBApp", "RNFBAppModule.m"), [
-    [broadFirebaseImport, "#import <FirebaseCore/FirebaseCore.h>"],
-  ]);
-  patchFile(path.join(rnfbRoot, "auth", "ios", "RNFBAuth", "RNFBAuthModule.h"), [
-    [
-      broadFirebaseImport,
-      "#import <FirebaseCore/FirebaseCore.h>\n#import <FirebaseAuth/FirebaseAuth.h>",
-    ],
-  ]);
-  patchFile(path.join(rnfbRoot, "auth", "ios", "RNFBAuth", "RNFBAuthModule.m"), [
-    [
-      broadFirebaseImport,
-      "#import <FirebaseCore/FirebaseCore.h>\n#import <FirebaseAuth/FirebaseAuth.h>",
-    ],
-  ]);
+  if (podfile.includes(settingName)) {
+    return podfile;
+  }
+
+  const postInstallLine = /post_install do \|installer\|\n/;
+  const block = `    installer.pods_project.targets.each do |target|\n      if ['RNFBApp', 'RNFBAuth'].include?(target.name)\n        target.build_configurations.each do |config|\n          config.build_settings['${settingName}'] = 'YES'\n        end\n      end\n    end\n\n`;
+
+  if (postInstallLine.test(podfile)) {
+    return podfile.replace(postInstallLine, (match) => `${match}${block}`);
+  }
+
+  return `${podfile}\n\npost_install do |installer|\n${block}end\n`;
+}
+
+function patchPodfile(podfile) {
+  return addNonModularHeaderBuildSetting(addFirebasePodConfig(podfile));
 }
 
 module.exports = function withIosModularHeaders(config) {
@@ -79,10 +67,8 @@ module.exports = function withIosModularHeaders(config) {
 
       if (fs.existsSync(podfilePath)) {
         const podfile = fs.readFileSync(podfilePath, "utf8");
-        fs.writeFileSync(podfilePath, addModularHeaders(podfile));
+        fs.writeFileSync(podfilePath, patchPodfile(podfile));
       }
-
-      patchReactNativeFirebaseImports(modConfig.modRequest.projectRoot);
 
       return modConfig;
     },
