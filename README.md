@@ -91,6 +91,8 @@ Firebase iOS setup currently expects:
 ```text
 Bundle ID: com.saikittu332.waylo
 Config file: ./GoogleService-Info.plist
+Apple capability: Push Notifications enabled for the bundle ID
+Firebase Cloud Messaging: APNs auth key uploaded for the Waylo iOS app
 ```
 
 Backend Firebase Admin verification expects a local service account JSON at:
@@ -109,7 +111,15 @@ npx eas build:configure
 npx eas build --profile development --platform ios --clear-cache
 ```
 
-The iOS build uses `expo-build-properties` plus `plugins/with-ios-modular-headers.js` to make Firebase Swift pods install cleanly in EAS. The app uses static iOS frameworks for React Native Firebase, targeted `:modular_headers => true` pod declarations for Firebase support pods, and an RNFirebase-only Xcode setting that allows React's non-modular headers inside the Firebase framework modules.
+The iOS build uses `expo-build-properties` plus `plugins/with-ios-modular-headers.js` to make Firebase Swift pods install cleanly in EAS. The app uses static iOS frameworks for React Native Firebase, targeted `:modular_headers => true` pod declarations for Firebase support pods, and an RNFirebase-only Xcode setting that allows React's non-modular headers inside the Firebase framework modules. The iOS config also declares `aps-environment` and `remote-notification` because Firebase Phone Auth uses silent APNs verification on physical iPhones before falling back to reCAPTCHA. Waylo uses the production APNs environment for the EAS internal iPhone build because that build is signed for ad-hoc/internal distribution.
+
+If SMS OTP fails with `[auth/internal-error]`, rebuild the development app after confirming:
+
+- Phone sign-in is enabled in Firebase Authentication.
+- The Firebase iOS app bundle ID is exactly `com.saikittu332.waylo`.
+- `GoogleService-Info.plist` is the latest file downloaded for that same iOS app.
+- Push Notifications are enabled for `com.saikittu332.waylo` in Apple Developer Certificates, Identifiers & Profiles.
+- The APNs auth key is uploaded in Firebase Project Settings > Cloud Messaging for the Waylo iOS app.
 
 Firebase Android setup expects:
 

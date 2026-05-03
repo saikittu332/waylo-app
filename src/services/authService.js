@@ -2,6 +2,31 @@ import { loginWithFirebaseToken, loginWithPhone } from "./api";
 
 const OTP_REQUEST_TIMEOUT_MS = 45000;
 
+function getErrorText(error) {
+  return [
+    error?.code,
+    error?.nativeErrorCode,
+    error?.nativeErrorMessage,
+    error?.message,
+    error?.userInfo ? JSON.stringify(error.userInfo) : ""
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+export function logAuthDiagnostic(error) {
+  const diagnostic = {
+    code: error?.code,
+    message: error?.message,
+    nativeErrorCode: error?.nativeErrorCode,
+    nativeErrorMessage: error?.nativeErrorMessage,
+    userInfo: error?.userInfo,
+    name: error?.name
+  };
+
+  console.warn("Waylo Firebase auth diagnostic:", diagnostic);
+}
+
 function getNativeFirebaseAuthModule() {
   try {
     return require("@react-native-firebase/auth");
@@ -22,7 +47,7 @@ function withTimeout(promise, timeoutMessage) {
 }
 
 export function getAuthErrorMessage(error) {
-  const message = error?.message || "";
+  const message = getErrorText(error);
 
   if (message.includes("timed out")) {
     return "SMS verification is taking too long. Check that Phone Authentication is enabled in Firebase, your iPhone has network access, and this dev build was made after adding Firebase.";
@@ -42,6 +67,14 @@ export function getAuthErrorMessage(error) {
 
   if (message.includes("auth/app-not-authorized")) {
     return "This app build is not authorized for Firebase. Check the iOS bundle ID and GoogleService-Info.plist.";
+  }
+
+  if (message.includes("auth/operation-not-allowed")) {
+    return "Phone sign-in is not enabled for this Firebase project. In Firebase Console, enable Authentication > Sign-in method > Phone.";
+  }
+
+  if (message.includes("auth/internal-error")) {
+    return "Firebase could not complete iOS phone verification. Confirm the APNs auth key is uploaded to the Waylo iOS app in Firebase, Push Notifications are enabled for bundle ID com.saikittu332.waylo, then rebuild the development app.";
   }
 
   if (message.includes("auth/invalid-verification-code")) {

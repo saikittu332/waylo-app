@@ -21,6 +21,9 @@
         "UIBackgroundModes": [
           "remote-notification"
         ]
+      },
+      "entitlements": {
+        "aps-environment": "production"
       }
     },
     "android": {

@@ -7,7 +7,7 @@ import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
 import { colors, radii, screen, spacing, typography } from "../constants/theme";
 import { normalizePhone } from "../services/api";
-import { completePhoneLogin, getAuthErrorMessage, sendPhoneOtp, verifyOtp } from "../services/authService";
+import { completePhoneLogin, getAuthErrorMessage, logAuthDiagnostic, sendPhoneOtp, verifyOtp } from "../services/authService";
 
 function getUsPhoneDigits(value) {
   const digits = value.replace(/\D/g, "");
@@ -69,6 +69,7 @@ export default function LoginScreen({ navigation }) {
       navigation.navigate("AssistantName", { user: session.user, accessToken: session.access_token });
     } catch (authError) {
       console.warn("Waylo phone auth failed:", authError);
+      logAuthDiagnostic(authError);
       setError(getAuthErrorMessage(authError));
     } finally {
       setLoading(false);
