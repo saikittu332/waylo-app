@@ -9,6 +9,30 @@ import { colors, radii, screen, spacing, typography } from "../constants/theme";
 import { normalizePhone } from "../services/api";
 import { completePhoneLogin, getAuthErrorMessage, sendPhoneOtp, verifyOtp } from "../services/authService";
 
+function getUsPhoneDigits(value) {
+  const digits = value.replace(/\D/g, "");
+
+  if (digits.length > 10 && digits.startsWith("1")) {
+    return digits.slice(1, 11);
+  }
+
+  return digits.slice(0, 10);
+}
+
+function formatUsPhone(value) {
+  const digits = getUsPhoneDigits(value);
+
+  if (digits.length <= 3) {
+    return digits;
+  }
+
+  if (digits.length <= 6) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  }
+
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
 export default function LoginScreen({ navigation }) {
   const [phone, setPhone] = useState("");
   const [otpSent, setOtpSent] = useState(false);
@@ -18,9 +42,9 @@ export default function LoginScreen({ navigation }) {
   const [error, setError] = useState("");
 
   async function handleContinue() {
-    const digits = phone.replace(/\D/g, "");
-    if (digits.length < 10) {
-      setError("Enter a valid US phone number.");
+    const digits = getUsPhoneDigits(phone);
+    if (digits.length !== 10) {
+      setError("Enter a valid 10-digit US phone number.");
       return;
     }
     if (otpSent && code.join("").length !== 6) {
@@ -29,12 +53,12 @@ export default function LoginScreen({ navigation }) {
     }
     setError("");
     setLoading(true);
-    const normalizedPhone = normalizePhone(phone);
+    const normalizedPhone = normalizePhone(digits);
 
     try {
       if (!otpSent) {
         const nextConfirmation = await sendPhoneOtp(normalizedPhone);
-        setPhone(normalizedPhone);
+        setPhone(formatUsPhone(normalizedPhone));
         setConfirmation(nextConfirmation);
         setOtpSent(true);
         return;
@@ -63,9 +87,22 @@ export default function LoginScreen({ navigation }) {
         <PremiumCard style={styles.formCard}>
           <Text style={styles.label}>Phone number</Text>
           <View style={styles.phoneRow}>
-            <Text style={styles.flag}>US</Text>
-            <TextInput placeholder="+1 (555) 123-4567" placeholderTextColor={colors.mutedLight} value={phone} onChangeText={setPhone} keyboardType="phone-pad" style={styles.phoneInput} />
+            <View style={styles.countryCode}>
+              <Text style={styles.countryLabel}>US</Text>
+              <Text style={styles.countryDial}>+1</Text>
+            </View>
+            <TextInput
+              placeholder="(555) 123-4567"
+              placeholderTextColor={colors.mutedLight}
+              value={phone}
+              onChangeText={(value) => setPhone(formatUsPhone(value))}
+              keyboardType="phone-pad"
+              textContentType="telephoneNumber"
+              autoComplete="tel"
+              style={styles.phoneInput}
+            />
           </View>
+          <Text style={styles.phoneHint}>Waylo currently supports US phone numbers for SMS verification.</Text>
           <PrimaryButton title={otpSent ? "Verify OTP" : "Send OTP"} loading={loading} onPress={handleContinue} />
           {!!error && <Text style={styles.errorText}>{error}</Text>}
 
@@ -152,16 +189,38 @@ const styles = StyleSheet.create({
     minHeight: 56,
     paddingHorizontal: spacing.md
   },
-  flag: {
+  countryCode: {
+    alignItems: "center",
+    borderColor: colors.border,
+    borderRightWidth: 1,
+    gap: 1,
+    justifyContent: "center",
+    marginRight: spacing.md,
+    minHeight: 34,
+    paddingRight: spacing.md
+  },
+  countryLabel: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: "600"
+  },
+  countryDial: {
     color: colors.navy,
-    fontWeight: "500",
-    marginRight: spacing.md
+    fontSize: 15,
+    fontWeight: "600"
   },
   phoneInput: {
     color: colors.text,
     flex: 1,
     fontSize: 16,
     fontWeight: "500"
+  },
+  phoneHint: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "500",
+    lineHeight: 17,
+    marginTop: -spacing.xs
   },
   otpRow: {
     flexDirection: "row",
