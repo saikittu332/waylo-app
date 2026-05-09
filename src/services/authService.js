@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import { loginWithFirebaseToken, loginWithPhone } from "./api";
 
 const OTP_REQUEST_TIMEOUT_MS = 45000;
@@ -85,6 +86,13 @@ export function getAuthErrorMessage(error) {
 }
 
 export async function sendPhoneOtp(phoneNumber) {
+  if (Platform.OS === "web") {
+    return {
+      verificationId: "mock-verification-id",
+      phoneNumber
+    };
+  }
+
   const authModule = getNativeFirebaseAuthModule();
 
   if (authModule?.getAuth && authModule?.signInWithPhoneNumber) {
