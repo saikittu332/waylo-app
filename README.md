@@ -231,25 +231,28 @@ WAYLO_ENV=production
 WAYLO_API_TITLE=Waylo API
 DATABASE_URL=${{Postgres.DATABASE_URL}}
 CORS_ORIGINS=*
-FIREBASE_SERVICE_ACCOUNT_PATH=/etc/secrets/firebase-service-account.json
+FIREBASE_SERVICE_ACCOUNT_JSON=<paste the full Firebase Admin service account JSON>
 ```
 
 If your PostgreSQL service name is not `Postgres`, use the exact service name Railway shows in the variable reference.
 
-7. In the FastAPI service `Settings` -> `Networking`, generate a public domain.
-8. Open the deployed API health check:
+For `FIREBASE_SERVICE_ACCOUNT_JSON`, paste the complete JSON content from Firebase Console -> Project settings -> Service accounts -> Generate new private key. Do not commit that JSON file.
+
+7. Redeploy the FastAPI service after changing variables.
+8. In the FastAPI service `Settings` -> `Networking`, generate a public domain.
+9. Open the deployed API health check:
 
 ```text
 https://YOUR-WAYLO-API.up.railway.app/health
 ```
 
-9. Point the mobile app at the hosted API:
+10. Point the mobile app at the hosted API:
 
 ```env
 EXPO_PUBLIC_WAYLO_API_URL=https://YOUR-WAYLO-API.up.railway.app
 ```
 
-10. Restart Expo or rebuild the dev app after changing `EXPO_PUBLIC_WAYLO_API_URL`.
+11. Restart Expo or rebuild the dev app after changing `EXPO_PUBLIC_WAYLO_API_URL`.
 
 The backend container runs `python -m alembic upgrade head` before starting Uvicorn, so Railway PostgreSQL gets the latest schema on deploy.
 
@@ -261,7 +264,7 @@ Render is also supported, but Railway is the recommended first path for this pro
 2. Connect the GitHub repo.
 3. Create a new Blueprint from `render.yaml`.
 4. Let Render create `waylo-api` and `waylo-postgres`.
-5. Add `firebase-service-account.json` as a Render Secret File at `/etc/secrets/firebase-service-account.json` when Firebase backend verification is ready.
+5. Add `FIREBASE_SERVICE_ACCOUNT_JSON` as a secret environment variable when Firebase backend verification is ready.
 6. Open the deployed API health check:
 
 ```text

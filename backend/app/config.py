@@ -9,6 +9,7 @@ class Settings(BaseSettings):
         default="./firebase-service-account.json",
         validation_alias="FIREBASE_SERVICE_ACCOUNT_PATH",
     )
+    firebase_service_account_json: str = Field(default="", validation_alias="FIREBASE_SERVICE_ACCOUNT_JSON")
     database_url: str = Field(
         default="postgresql+psycopg://postgres:postgres@localhost:5432/waylo",
         validation_alias="DATABASE_URL",
