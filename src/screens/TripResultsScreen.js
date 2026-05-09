@@ -121,7 +121,8 @@ export default function TripResultsScreen({ navigation, route }) {
     finalStops,
     stopDecisions,
     stopCount: finalStops.length,
-    savedAt: "Saved just now"
+    savedAt: "Saved just now",
+    status: "planned"
   };
 
   async function handleSaveForLater() {

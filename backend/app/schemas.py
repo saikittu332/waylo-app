@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 FUEL_TYPES = {"gas", "diesel", "hybrid", "ev"}
 TRIP_MODES = {"Fastest", "Cheapest", "Scenic", "Comfort"}
-TRIP_STATUSES = {"planned", "active", "completed", "cancelled"}
+TRIP_STATUSES = {"draft", "planned", "ready_to_drive", "active", "completed", "cancelled"}
 STOP_DECISIONS = {"recommended", "added", "skipped"}
 
 
@@ -142,7 +142,7 @@ class TripCreate(BaseModel):
     origin: str
     destination: str
     trip_mode: str = "Cheapest"
-    status: str = "planned"
+    status: str = "draft"
     distance_miles: Optional[float] = None
     duration_hours: Optional[float] = None
     estimated_fuel_cost: Optional[float] = None
@@ -164,7 +164,7 @@ class TripCreate(BaseModel):
     @classmethod
     def validate_status(cls, value: str) -> str:
         if value not in TRIP_STATUSES:
-            raise ValueError("Trip status must be planned, active, completed, or cancelled.")
+            raise ValueError("Trip status must be draft, planned, ready_to_drive, active, completed, or cancelled.")
         return value
 
 
@@ -179,7 +179,7 @@ class TripUpdate(BaseModel):
     @classmethod
     def validate_status(cls, value: Optional[str]) -> Optional[str]:
         if value is not None and value not in TRIP_STATUSES:
-            raise ValueError("Trip status must be planned, active, completed, or cancelled.")
+            raise ValueError("Trip status must be draft, planned, ready_to_drive, active, completed, or cancelled.")
         return value
 
 

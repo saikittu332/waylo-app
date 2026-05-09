@@ -190,6 +190,68 @@ def test_create_user_vehicle_trip_and_get_trips_by_user(client: TestClient) -> N
     trip = trip_response.json()
     assert trip["user_id"] == user["id"]
     assert trip["vehicle_id"] == vehicle["id"]
+    assert trip["status"] == "planned"
+
+    invalid_direct_completion_response = client.patch(
+        f"/trips/{trip['id']}",
+        json={"status": "completed"},
+    )
+    assert invalid_direct_completion_response.status_code == 409
+
+    ready_trip_response = client.patch(
+        f"/trips/{trip['id']}",
+        json={"status": "ready_to_drive"},
+    )
+    assert ready_trip_response.status_code == 200
+    assert ready_trip_response.json()["status"] == "ready_to_drive"
+
+    active_trip_response = client.patch(
+        f"/trips/{trip['id']}",
+        json={"status": "active"},
+    )
+    assert active_trip_response.status_code == 200
+    assert active_trip_response.json()["status"] == "active"
+
+    complete_trip_response = client.patch(
+        f"/trips/{trip['id']}",
+        json={"status": "completed"},
+    )
+    assert complete_trip_response.status_code == 200
+    assert complete_trip_response.json()["status"] == "completed"
+
+    reopen_completed_trip_response = client.patch(
+        f"/trips/{trip['id']}",
+        json={"status": "planned"},
+    )
+    assert reopen_completed_trip_response.status_code == 409
+
+    draft_trip_response = client.post(
+        "/trips",
+        json={
+            "user_id": user["id"],
+            "vehicle_id": vehicle["id"],
+            "origin": "Oakland, CA",
+            "destination": "Monterey, CA",
+            "trip_mode": "Scenic",
+            "status": "draft",
+        },
+    )
+    assert draft_trip_response.status_code == 201
+    draft_trip = draft_trip_response.json()
+    assert draft_trip["status"] == "draft"
+
+    draft_to_active_response = client.patch(
+        f"/trips/{draft_trip['id']}",
+        json={"status": "active"},
+    )
+    assert draft_to_active_response.status_code == 409
+
+    draft_to_planned_response = client.patch(
+        f"/trips/{draft_trip['id']}",
+        json={"status": "planned"},
+    )
+    assert draft_to_planned_response.status_code == 200
+    assert draft_to_planned_response.json()["status"] == "planned"
 
     cross_user_trip_response = client.post(
         "/trips",
@@ -222,13 +284,6 @@ def test_create_user_vehicle_trip_and_get_trips_by_user(client: TestClient) -> N
     trips = trips_response.json()
     assert len(trips) == 1
     assert trips[0]["id"] == trip["id"]
-
-    complete_trip_response = client.patch(
-        f"/trips/{trip['id']}",
-        json={"status": "completed"},
-    )
-    assert complete_trip_response.status_code == 200
-    assert complete_trip_response.json()["status"] == "completed"
 
     trip_stop_response = client.post(
         "/trip-stops",

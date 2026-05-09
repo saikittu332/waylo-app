@@ -33,6 +33,15 @@ from app.schemas import (
 
 app = FastAPI(title=settings.api_title)
 
+TRIP_STATUS_TRANSITIONS = {
+    "draft": {"planned", "cancelled"},
+    "planned": {"ready_to_drive", "cancelled"},
+    "ready_to_drive": {"active", "planned", "cancelled"},
+    "active": {"completed", "cancelled"},
+    "completed": set(),
+    "cancelled": set(),
+}
+
 
 @app.get("/health")
 def health() -> dict[str, str]:
@@ -156,6 +165,8 @@ def create_trip(payload: TripCreate, db: Session = Depends(get_db)) -> Trip:
     ensure_user_exists(db, payload.user_id)
     if payload.vehicle_id:
         ensure_vehicle_belongs_to_user(db, payload.vehicle_id, payload.user_id)
+    if payload.status not in {"draft", "planned"}:
+        raise HTTPException(status_code=400, detail="Trips can only be created as draft or planned.")
     trip = Trip(**payload.model_dump())
     db.add(trip)
     db.commit()
@@ -180,7 +191,10 @@ def update_trip(trip_id: uuid.UUID, payload: TripUpdate, db: Session = Depends(g
     trip = db.get(Trip, trip_id)
     if trip is None:
         raise HTTPException(status_code=404, detail="Trip not found.")
-    for key, value in payload.model_dump(exclude_unset=True).items():
+    update_data = payload.model_dump(exclude_unset=True)
+    if "status" in update_data:
+        ensure_trip_status_transition(trip.status, update_data["status"])
+    for key, value in update_data.items():
         setattr(trip, key, value)
     db.commit()
     db.refresh(trip)
@@ -285,6 +299,18 @@ def ensure_trip_belongs_to_user(db: Session, trip_id: uuid.UUID, user_id: uuid.U
         raise HTTPException(status_code=404, detail="Trip not found.")
     if trip.user_id != user_id:
         raise HTTPException(status_code=400, detail="Trip does not belong to this user.")
+
+
+def ensure_trip_status_transition(current_status: str, next_status: str) -> None:
+    if current_status == next_status:
+        return
+    allowed_next_statuses = TRIP_STATUS_TRANSITIONS.get(current_status, set())
+    if next_status not in allowed_next_statuses:
+        allowed = ", ".join(sorted(allowed_next_statuses)) or "none"
+        raise HTTPException(
+            status_code=409,
+            detail=f"Invalid trip status transition: {current_status} -> {next_status}. Allowed next statuses: {allowed}.",
+        )
 
 
 def ensure_unique_vehicle_name(

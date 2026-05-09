@@ -15,6 +15,10 @@ export function routeTitle(from, to) {
 
 export function routeMetaLabel(plan) {
   const details = [];
+  if (plan?.status) {
+    const statusLabel = String(plan.status).replace(/_/g, " ");
+    details.push(statusLabel.charAt(0).toUpperCase() + statusLabel.slice(1));
+  }
   if (plan?.mode) details.push(`${plan.mode} route`);
   if (plan?.vehicleName) details.push(plan.vehicleName);
   if (plan?.distanceMiles) details.push(`${Math.round(Number(plan.distanceMiles))} mi`);

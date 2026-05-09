@@ -99,7 +99,8 @@ export function apiSavedPlanToApp(plan) {
     selectedStopCount: payload.selectedStopCount,
     skippedStopCount: payload.skippedStopCount,
     routePayload: payload.route || null,
-    savedAt: "Saved in Waylo"
+    savedAt: "Saved in Waylo",
+    status: payload.status || "planned"
   };
 }
 
@@ -197,7 +198,7 @@ export async function createTripRecord({ userId, vehicle, route, insights }) {
       origin: route.from,
       destination: route.to,
       trip_mode: route.mode,
-      status: "planned",
+      status: "draft",
       distance_miles: route.distanceMiles,
       duration_hours: route.durationHours,
       estimated_fuel_cost: insights.estimatedFuelCost,
@@ -212,6 +213,11 @@ export async function updateTrip(tripId, payload) {
     body: JSON.stringify(payload),
     method: "PATCH"
   });
+}
+
+export async function transitionTripStatus(tripId, status) {
+  if (!tripId) return null;
+  return updateTrip(tripId, { status });
 }
 
 export function appStopToApi(stop, tripId, decision = "recommended") {
@@ -269,7 +275,22 @@ export async function updateTripStop(stopId, payload) {
 }
 
 export async function completeTrip(tripId) {
-  return updateTrip(tripId, { status: "completed" });
+  try {
+    await transitionTripStatus(tripId, "planned");
+  } catch (error) {
+    // The trip may already be planned or farther along in the lifecycle.
+  }
+  try {
+    await transitionTripStatus(tripId, "ready_to_drive");
+  } catch (error) {
+    // The trip may already be ready or active.
+  }
+  try {
+    await transitionTripStatus(tripId, "active");
+  } catch (error) {
+    // The trip may already be active.
+  }
+  return transitionTripStatus(tripId, "completed");
 }
 
 export async function getTrips(userId) {
@@ -294,6 +315,7 @@ export function buildSavedPlanPayload({ route, vehicle, insights, finalStops = [
     stopDecisions,
     selectedStopCount: finalStops.length,
     skippedStopCount: Object.values(stopDecisions).filter((value) => value === "skipped").length,
+    status: "planned",
     route: {
       from: route.from,
       to: route.to,
@@ -310,6 +332,13 @@ export function buildSavedPlanPayload({ route, vehicle, insights, finalStops = [
 
 export async function savePlan({ userId, tripId, route, vehicle, insights, finalStops = [], stopDecisions = {}, allStops = [] }) {
   const planPayload = buildSavedPlanPayload({ route, vehicle, insights, finalStops, stopDecisions, allStops });
+  if (tripId) {
+    try {
+      await transitionTripStatus(tripId, "planned");
+    } catch (error) {
+      console.warn("Waylo API trip plan status update unavailable:", error.message);
+    }
+  }
   return request("/saved-plans", {
     body: JSON.stringify({
       user_id: userId,

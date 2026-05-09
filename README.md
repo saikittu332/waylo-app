@@ -189,6 +189,10 @@ npx expo start
 
 The backend currently includes User, Vehicle, Trip, and SavedPlan models plus API endpoints used by the MVP app. Trip planning now persists Mapbox-backed route distance and duration when the frontend has a valid Mapbox token. Full Firebase phone auth in Expo Go, turn-by-turn navigation, fuel price APIs, and AI planning are intentionally not integrated yet.
 
+### Trip lifecycle
+
+Waylo now treats the backend as the source of truth for trip status. Route previews are created as `draft`, saving a plan promotes it to `planned`, and real drive completion must move through `ready_to_drive` -> `active` -> `completed`. Trips can be cancelled before completion, and terminal statuses cannot be reopened. This keeps previewing, saving, driving, and completing from behaving like the same action.
+
 ## Future integration points
 
 - `src/services/authService.js`: replace the Expo Go phone-login fallback with Firebase Phone Auth when an EAS development build is available.
