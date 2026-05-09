@@ -199,10 +199,63 @@ The repo now includes production deployment scaffolding for FastAPI + PostgreSQL
 
 - `backend/Dockerfile` builds and runs the API.
 - `render.yaml` defines a Render web service plus managed PostgreSQL database.
+- `backend/railway.json` defines Railway health check and restart behavior when the Railway service root is `backend`.
 - `DATABASE_URL` values from cloud providers are normalized to the installed `psycopg` driver.
 - `CORS_ORIGINS` is configurable for web builds and future hosted dashboards.
 
-Recommended first production path:
+### Railway deployment
+
+Recommended for Waylo now:
+
+1. Create or sign in to a Railway account.
+2. Create a new Railway project.
+3. Add a PostgreSQL database:
+   - Click `+ New`.
+   - Choose `Database`.
+   - Choose `PostgreSQL`.
+4. Add the FastAPI service:
+   - Click `+ New`.
+   - Choose `GitHub Repo`.
+   - Select `saikittu332/waylo-app`.
+   - In the service settings, set the root directory to:
+
+```text
+backend
+```
+
+5. Railway should use `backend/Dockerfile` and `backend/railway.json`.
+6. In the FastAPI service variables, add:
+
+```env
+WAYLO_ENV=production
+WAYLO_API_TITLE=Waylo API
+DATABASE_URL=${{Postgres.DATABASE_URL}}
+CORS_ORIGINS=*
+FIREBASE_SERVICE_ACCOUNT_PATH=/etc/secrets/firebase-service-account.json
+```
+
+If your PostgreSQL service name is not `Postgres`, use the exact service name Railway shows in the variable reference.
+
+7. In the FastAPI service `Settings` -> `Networking`, generate a public domain.
+8. Open the deployed API health check:
+
+```text
+https://YOUR-WAYLO-API.up.railway.app/health
+```
+
+9. Point the mobile app at the hosted API:
+
+```env
+EXPO_PUBLIC_WAYLO_API_URL=https://YOUR-WAYLO-API.up.railway.app
+```
+
+10. Restart Expo or rebuild the dev app after changing `EXPO_PUBLIC_WAYLO_API_URL`.
+
+The backend container runs `python -m alembic upgrade head` before starting Uvicorn, so Railway PostgreSQL gets the latest schema on deploy.
+
+### Render alternative
+
+Render is also supported, but Railway is the recommended first path for this project.
 
 1. Create or sign in to a Render account.
 2. Connect the GitHub repo.
