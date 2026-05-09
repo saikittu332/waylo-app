@@ -1,11 +1,24 @@
 import os
+import sys
 import time
 import uuid
+from pathlib import Path
 from typing import Optional
 
 import pytest
+
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+backend_path = str(BACKEND_DIR)
+removed_import_paths = []
+for import_path in ("", backend_path):
+    while import_path in sys.path:
+        sys.path.remove(import_path)
+        removed_import_paths.append(import_path)
 from alembic import command
 from alembic.config import Config
+for import_path in reversed(removed_import_paths):
+    sys.path.insert(0, import_path)
+
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
