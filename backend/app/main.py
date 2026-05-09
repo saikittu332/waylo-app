@@ -2,6 +2,7 @@ import uuid
 from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Query, status
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -32,6 +33,14 @@ from app.schemas import (
 )
 
 app = FastAPI(title=settings.api_title)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origin_list,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 TRIP_STATUS_TRANSITIONS = {
     "draft": {"planned", "cancelled"},

@@ -295,8 +295,9 @@ def test_create_user_vehicle_trip_and_get_trips_by_user(client: TestClient) -> N
     trips_response = client.get("/trips", params={"user_id": user["id"]})
     assert trips_response.status_code == 200
     trips = trips_response.json()
-    assert len(trips) == 1
-    assert trips[0]["id"] == trip["id"]
+    trip_ids = {item["id"] for item in trips}
+    assert trip["id"] in trip_ids
+    assert draft_trip["id"] in trip_ids
 
     trip_stop_response = client.post(
         "/trip-stops",

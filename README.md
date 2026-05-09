@@ -193,6 +193,38 @@ The backend currently includes User, Vehicle, Trip, and SavedPlan models plus AP
 
 Waylo now treats the backend as the source of truth for trip status. Route previews are created as `draft`, saving a plan promotes it to `planned`, and real drive completion must move through `ready_to_drive` -> `active` -> `completed`. Trips can be cancelled before completion, and terminal statuses cannot be reopened. This keeps previewing, saving, driving, and completing from behaving like the same action.
 
+## Production backend deployment
+
+The repo now includes production deployment scaffolding for FastAPI + PostgreSQL:
+
+- `backend/Dockerfile` builds and runs the API.
+- `render.yaml` defines a Render web service plus managed PostgreSQL database.
+- `DATABASE_URL` values from cloud providers are normalized to the installed `psycopg` driver.
+- `CORS_ORIGINS` is configurable for web builds and future hosted dashboards.
+
+Recommended first production path:
+
+1. Create or sign in to a Render account.
+2. Connect the GitHub repo.
+3. Create a new Blueprint from `render.yaml`.
+4. Let Render create `waylo-api` and `waylo-postgres`.
+5. Add `firebase-service-account.json` as a Render Secret File at `/etc/secrets/firebase-service-account.json` when Firebase backend verification is ready.
+6. Open the deployed API health check:
+
+```text
+https://YOUR-WAYLO-API.onrender.com/health
+```
+
+7. Point the app at the hosted API:
+
+```env
+EXPO_PUBLIC_WAYLO_API_URL=https://YOUR-WAYLO-API.onrender.com
+```
+
+8. Restart Expo or rebuild the dev app after changing `EXPO_PUBLIC_WAYLO_API_URL`.
+
+Render runs `python -m alembic upgrade head` automatically before starting Uvicorn, so the production database gets the latest schema on deploy.
+
 ## Future integration points
 
 - `src/services/authService.js`: replace the Expo Go phone-login fallback with Firebase Phone Auth when an EAS development build is available.

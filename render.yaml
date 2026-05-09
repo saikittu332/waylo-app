@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: waylo-api
+    runtime: docker
+    rootDir: backend
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: WAYLO_ENV
+        value: production
+      - key: WAYLO_API_TITLE
+        value: Waylo API
+      - key: DATABASE_URL
+        fromDatabase:
+          name: waylo-postgres
+          property: connectionString
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: FIREBASE_SERVICE_ACCOUNT_PATH
+        value: /etc/secrets/firebase-service-account.json
+
+databases:
+  - name: waylo-postgres
+    databaseName: waylo
+    user: waylo
+    plan: starter

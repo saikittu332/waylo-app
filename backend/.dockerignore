@@ -1,0 +1,9 @@
+.env
+.venv
+.deps
+deps
+.pytest_cache
+firebase-service-account.json
+secrets
+__pycache__
+*.pyc

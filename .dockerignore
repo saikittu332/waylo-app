@@ -1,0 +1,16 @@
+node_modules
+.expo
+.git
+android
+ios
+dist*
+qa-expo-*.log
+.env
+firebase-service-account.json
+backend/firebase-service-account.json
+backend/.venv
+backend/.deps
+backend/deps
+backend/.pytest_cache
+__pycache__
+*.pyc

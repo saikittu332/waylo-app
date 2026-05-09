@@ -13,11 +13,26 @@ class Settings(BaseSettings):
         default="postgresql+psycopg://postgres:postgres@localhost:5432/waylo",
         validation_alias="DATABASE_URL",
     )
+    cors_origins: str = Field(default="*", validation_alias="CORS_ORIGINS")
 
     model_config = SettingsConfigDict(
         env_file=".env",
         extra="ignore",
     )
+
+    @property
+    def sqlalchemy_database_url(self) -> str:
+        if self.database_url.startswith("postgresql://"):
+            return self.database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+        if self.database_url.startswith("postgres://"):
+            return self.database_url.replace("postgres://", "postgresql+psycopg://", 1)
+        return self.database_url
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        if self.cors_origins.strip() == "*":
+            return ["*"]
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
 
 settings = Settings()
