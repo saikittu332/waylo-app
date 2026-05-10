@@ -141,7 +141,7 @@ export default function VehicleSetupScreen({ navigation, route }) {
             <View style={styles.rangeTrack}>
               <View style={[styles.rangeFill, { width: `${fullRange ? 80 : 8}%` }]} />
             </View>
-            <Text style={styles.rangeMeta}>{fullRange ? `${Math.round(fullRange)} mi full range before reserve` : "Enter highway MPG and tank size to calculate range."}</Text>
+            <Text style={styles.rangeMeta}>{fullRange ? `Waylo uses 80% of your ${Math.round(fullRange)} mi estimated range so you are not forced to refuel at the last minute.` : "Enter highway MPG and tank size to calculate range."}</Text>
           </View>
         </PremiumCard>
 
@@ -154,7 +154,7 @@ export default function VehicleSetupScreen({ navigation, route }) {
           ))}
         </View>
 
-        <Text style={styles.helper}>You can edit values if needed</Text>
+        <Text style={styles.helper}>Edit manually if your vehicle specs look different.</Text>
         <EditableField label="Vehicle Name" value={vehicle.vehicleName} error={errors.vehicleName} onChangeText={(v) => updateField("vehicleName", v)} />
         <EditableField label="City MPG" keyboardType="numeric" value={String(vehicle.cityMpg)} error={errors.cityMpg} onChangeText={(v) => updateNumericField("cityMpg", v)} />
         <EditableField label="Highway MPG" keyboardType="numeric" value={String(vehicle.highwayMpg)} error={errors.highwayMpg} onChangeText={(v) => updateNumericField("highwayMpg", v)} />

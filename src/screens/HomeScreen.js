@@ -14,7 +14,7 @@ import { CURRENT_LOCATION_PLACE, geocodeAddress, hasMapboxToken } from "../servi
 import { routeMetaLabel, routeTitle } from "../utils/placeLabels";
 import { calculateRange, calculateSafeRange, estimateFuelCost, formatCurrency, formatHours } from "../utils/tripCalculator";
 
-const modes = ["Fastest", "Cheapest", "Scenic", "Comfort"];
+const modes = ["Recommended", "Cheapest", "Scenic", "Comfort"];
 const locationSuggestions = [
   CURRENT_LOCATION_PLACE,
   { id: "sf-fallback", label: "San Francisco, CA", coordinates: [-122.4194, 37.7749] },
@@ -394,8 +394,8 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
         <View style={styles.sheetHandle} />
         <View style={styles.sheetHeaderRow}>
           <View>
-            <Text style={styles.cardTitle}>Where to?</Text>
-            <Text style={styles.sheetSubtitle}>Search, compare modes, then let Waylo tune the stops.</Text>
+            <Text style={styles.cardTitle}>Where are you going?</Text>
+            <Text style={styles.sheetSubtitle}>Waylo will pick the best balance of cost, time, and comfort.</Text>
           </View>
           <View style={styles.sheetRangePill}>
             <Ionicons color={colors.green} name="battery-charging-outline" size={15} />
@@ -424,7 +424,7 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
           suggestions={locationSuggestions.filter((item) => item.id !== CURRENT_LOCATION_PLACE.id)}
         />
         <View style={styles.routeCompareHeader}>
-          <Text style={styles.label}>Compare route style</Text>
+          <Text style={styles.label}>Trip style</Text>
           <Text style={styles.compareHint}>Selected: {mode}</Text>
         </View>
         <View style={styles.modeCards}>
@@ -433,7 +433,7 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
           ))}
         </View>
         <PrimaryButton
-          disabled={isSearchingLocations}
+          disabled={isSearchingLocations || !String(to || "").trim() || !vehicle?.vehicleName}
           title={isSearchingLocations ? "Searching locations..." : "Plan Smart Trip"}
           onPress={continuePlan}
         />
@@ -477,18 +477,6 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
           </View>
         )}
       </View>
-      <TripsContent
-        assistantName={assistantName}
-        user={user}
-        vehicle={vehicle}
-        navigation={navigation}
-        from={from}
-        to={to}
-        mode={mode}
-        compact
-        plannedTrips={plannedTrips}
-        completedTrips={completedTrips}
-      />
     </>
   );
 }
@@ -507,7 +495,7 @@ function MiniMetric({ icon, label, value }) {
 
 function RouteModeCard({ label, selected, onPress, vehicle }) {
   const modeData = {
-    Fastest: { icon: "flash-outline", detail: "Shortest time", delta: "-12 min" },
+    Recommended: { icon: "sparkles-outline", detail: "Best balance", delta: "Waylo pick" },
     Cheapest: { icon: "pricetag-outline", detail: "Fuel optimized", delta: formatCurrency(Math.max(3.8, quickFuelCost(vehicle) * 0.11)) },
     Scenic: { icon: "camera-outline", detail: "Better stops", delta: "+18 min" },
     Comfort: { icon: "cafe-outline", detail: "More breaks", delta: "2 rests" }
@@ -1088,7 +1076,7 @@ function TripField({ label, value, onChangeText, onSelectPlace, onSearchStateCha
         .catch((error) => {
           if (!active) return;
           setRemoteSuggestions([]);
-          setSearchError(error.code === "MAPBOX_TOKEN_MISSING" ? "Add a Mapbox token to search real places." : "Could not search locations right now.");
+          setSearchError(error.code === "MAPBOX_TOKEN_MISSING" ? "Place search is not connected yet. Use a quick pick or type your place." : "Could not search locations right now.");
         })
         .finally(() => {
           if (!active) return;

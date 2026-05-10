@@ -21,7 +21,6 @@ export default function StopDetailsScreen({ navigation, route }) {
   const detourMinutes = stop.detourMinutes || (isFuel ? 4 : stop.type === "scenic" ? 12 : 7);
   const parsedSavingsImpact = Number(stop.savingsImpact);
   const savingsImpact = Number.isFinite(parsedSavingsImpact) ? parsedSavingsImpact : isFuel ? 4 : 0;
-  const score = stop.intelligenceScore || 72;
   const riskImpact = isFuel ? `Reserve ${Math.max(20, 100 - Number(stop.lowFuelRisk || 68))}%+` : "Low route friction";
   const hero = getStopHero(stop.type);
 
@@ -53,10 +52,12 @@ export default function StopDetailsScreen({ navigation, route }) {
           <Text style={styles.address}>{stop.address || "1200 W Tehachapi Blvd, Tehachapi, CA"}</Text>
           <Text style={styles.rating}>{trustLine}</Text>
           <View style={styles.scoreBand}>
-            <Text style={styles.scoreValue}>{score}</Text>
+            <View style={styles.scoreValueIcon}>
+              <Ionicons color={colors.blue} name="sparkles-outline" size={22} />
+            </View>
             <View style={styles.scoreCopy}>
-              <Text style={styles.scoreLabel}>Waylo recommendation score</Text>
-              <Text style={styles.scoreText}>{stop.impactSummary || "Scored by timing, detour, route fit, and trip mode."}</Text>
+              <Text style={styles.scoreLabel}>Recommended because</Text>
+              <Text style={styles.scoreText}>{stop.impactSummary || "It fits the route timing, detour, and trip style."}</Text>
             </View>
           </View>
 
@@ -247,10 +248,13 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     padding: spacing.md
   },
-  scoreValue: {
-    color: colors.green,
-    fontSize: 28,
-    fontWeight: "600"
+  scoreValueIcon: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderRadius: radii.pill,
+    height: 42,
+    justifyContent: "center",
+    width: 42
   },
   scoreCopy: {
     flex: 1

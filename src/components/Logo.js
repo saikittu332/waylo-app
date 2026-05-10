@@ -5,14 +5,45 @@ import { colors } from "../constants/theme";
 export default function Logo({ size = "md", light = false, showText = true, image = false }) {
   if (image) {
     const markSize = size === "lg" ? 132 : size === "sm" ? 64 : 94;
+    const pinSize = markSize * 0.28;
     return (
       <View accessibilityLabel="Waylo logo" style={styles.brandLockup}>
         <View style={[styles.logoMark, { height: markSize, width: markSize }]}>
-          <Text style={[styles.markW, { fontSize: markSize * 0.76 }]}>W</Text>
-          <View style={styles.roadSweep} />
-          <View style={styles.roadStripe} />
-          <View style={styles.pin}>
-            <View style={styles.pinHole} />
+          <Text style={[styles.markW, { fontSize: markSize * 0.7, lineHeight: markSize * 0.74 }]}>W</Text>
+          <View
+            style={[
+              styles.roadSweep,
+              {
+                bottom: markSize * 0.08,
+                height: markSize * 0.46,
+                right: markSize * 0.18,
+                width: markSize * 0.13
+              }
+            ]}
+          />
+          <View
+            style={[
+              styles.roadStripe,
+              {
+                bottom: markSize * 0.19,
+                height: markSize * 0.2,
+                right: markSize * 0.245,
+                width: Math.max(4, markSize * 0.036)
+              }
+            ]}
+          />
+          <View
+            style={[
+              styles.pin,
+              {
+                height: pinSize,
+                right: markSize * 0.07,
+                top: markSize * 0.02,
+                width: pinSize
+              }
+            ]}
+          >
+            <View style={[styles.pinHole, { height: pinSize * 0.42, width: pinSize * 0.42 }]} />
           </View>
         </View>
         <Text style={[styles.wordmark, { fontSize: size === "lg" ? 38 : 28 }]}>
@@ -53,45 +84,31 @@ const styles = StyleSheet.create({
   markW: {
     color: colors.blueDeep,
     fontWeight: "800",
-    letterSpacing: -5,
-    lineHeight: 100
+    letterSpacing: -4
   },
   roadSweep: {
     backgroundColor: colors.navyDeep,
     borderRadius: 999,
-    bottom: 8,
-    height: "58%",
     position: "absolute",
-    right: 10,
-    transform: [{ rotate: "27deg" }],
-    width: 26
+    transform: [{ rotate: "29deg" }]
   },
   roadStripe: {
     backgroundColor: colors.surface,
     borderRadius: 999,
-    bottom: 26,
-    height: "28%",
     position: "absolute",
-    right: 24,
-    transform: [{ rotate: "27deg" }],
-    width: 7
+    transform: [{ rotate: "29deg" }]
   },
   pin: {
     alignItems: "center",
     backgroundColor: colors.green,
     borderRadius: 999,
-    height: 42,
     justifyContent: "center",
     position: "absolute",
-    right: 12,
-    top: 0,
-    width: 42
+    zIndex: 2
   },
   pinHole: {
     backgroundColor: colors.surface,
-    borderRadius: 999,
-    height: 17,
-    width: 17
+    borderRadius: 999
   },
   wordmark: {
     color: colors.navy,

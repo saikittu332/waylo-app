@@ -23,7 +23,7 @@ export default function TripSummaryScreen({ navigation, route }) {
     title: routeTitle(routeSummary?.from || "San Francisco", routeSummary?.to || "Los Angeles"),
     from: routeSummary?.from || "San Francisco",
     to: routeSummary?.to || "Los Angeles",
-    mode: routeSummary?.mode || "Cheapest",
+    mode: routeSummary?.mode || "Recommended",
     vehicleName: tripPlan?.vehicleName || "Toyota Camry 2021",
     distanceMiles: routeSummary?.distanceMiles || 383,
     durationHours: routeSummary?.durationHours || 6.75,

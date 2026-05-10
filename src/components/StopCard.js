@@ -22,6 +22,11 @@ export default function StopCard({ stop, onPress, decision, timeline = false }) 
   const isSkipped = decision === "skipped";
   const hasDecision = isAdded || isSkipped;
   const sourceLabel = stop.placeSource ? "Real place" : "Route logic";
+  const reasonLabel = stop.recommendation
+    ? `Recommended because ${lowercaseFirst(stop.recommendation)}`
+    : stop.rating
+      ? `Rating ${stop.rating}`
+      : sourceLabel;
 
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.card, timeline && styles.timelineCard, isAdded && styles.addedCard, isSkipped && styles.skippedCard, pressed && styles.pressed]}>
@@ -43,7 +48,7 @@ export default function StopCard({ stop, onPress, decision, timeline = false }) 
         )}
       </View>
       <View style={styles.footer}>
-        <Text style={styles.rating}>{stop.intelligenceScore ? `Waylo score ${stop.intelligenceScore}` : stop.rating ? `Rating ${stop.rating}` : sourceLabel}</Text>
+        <Text style={styles.rating}>{reasonLabel}</Text>
         {stop.fuelPrice ? <Text style={styles.price}>${stop.fuelPrice}/gal</Text> : <Text style={styles.price}>Good fit</Text>}
       </View>
       {!!stop.impactSummary && (
@@ -54,6 +59,12 @@ export default function StopCard({ stop, onPress, decision, timeline = false }) 
       )}
     </Pressable>
   );
+}
+
+function lowercaseFirst(value) {
+  const text = String(value || "").trim();
+  if (!text) return text;
+  return text.charAt(0).toLowerCase() + text.slice(1);
 }
 
 const styles = StyleSheet.create({

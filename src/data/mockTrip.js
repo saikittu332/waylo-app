@@ -1,7 +1,7 @@
 export const mockTripRequest = {
   from: "Current location",
   to: "Los Angeles, CA",
-  mode: "Cheapest"
+  mode: "Recommended"
 };
 
 export const mockRoute = {
