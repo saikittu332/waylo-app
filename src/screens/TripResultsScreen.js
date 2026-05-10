@@ -182,14 +182,32 @@ export default function TripResultsScreen({ navigation, route }) {
     navigation.navigate("StopDetails", { stop, decision });
   }
 
+  function chooseStop(stop, status) {
+    setStopDecisions((current) => {
+      const next = { ...current };
+      if (status === "recommended") {
+        delete next[stop.id];
+      } else {
+        next[stop.id] = status;
+      }
+      return next;
+    });
+    if (stop?.persistedStopId) {
+      updateTripStop(stop.persistedStopId, { decision: status }).catch((error) => {
+        console.warn("Waylo API stop decision update unavailable:", error.message);
+      });
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.heroCard}>
           <View style={styles.heroText}>
-            <Text style={styles.eyebrow}>Waylo route plan</Text>
+            <Text style={styles.eyebrow}>Waylo recommends this plan</Text>
             <Text style={styles.routeTitle}>{routeLabel}</Text>
-            <Text style={styles.routeMeta}>{plannedRoute.mode} mode | {vehicle.vehicleName}</Text>
+            <Text style={styles.routeMeta}>Best balance of fuel cost, drive time, and comfort.</Text>
+            <Text style={styles.editingMeta}>{plannedRoute.mode} mode | {vehicle.vehicleName}</Text>
             {!!existingPlan && <Text style={styles.editingMeta}>Editing saved plan</Text>}
           </View>
           <View style={styles.savingsBadge}>
@@ -205,9 +223,10 @@ export default function TripResultsScreen({ navigation, route }) {
         />
 
         <View style={styles.routeStrip}>
-          <RouteStripItem icon="shield-checkmark-outline" label="Reserve" value={`${Math.round(insights.safeRange)} mi`} />
+          <RouteStripItem icon="map-outline" label="Distance" value={`${plannedRoute.distanceMiles} mi`} />
           <RouteStripItem icon="time-outline" label="Drive time" value={formatHours(plannedRoute.durationHours)} />
-          <RouteStripItem icon="sparkles-outline" label="Confidence" value={`${Math.max(82, Math.min(96, Math.round(100 - finalStops.length * 2)))}%`} />
+          <RouteStripItem icon="pricetag-outline" label="Fuel cost" value={formatCurrency(insights.estimatedFuelCost)} />
+          <RouteStripItem icon="leaf-outline" label="Savings" value={formatCurrency(insights.estimatedSavings)} />
         </View>
 
         <PremiumCard style={styles.proofCard}>
@@ -226,19 +245,19 @@ export default function TripResultsScreen({ navigation, route }) {
         <PremiumCard style={styles.aiCoachCard}>
           <View style={styles.stopsHeader}>
             <View>
-              <Text style={styles.stopsTitle}>Assistant picks</Text>
-              <Text style={styles.planSubtitle}>Ranked by cost impact, detour, route fit, and comfort timing.</Text>
+              <Text style={styles.stopsTitle}>Recommended because</Text>
+              <Text style={styles.planSubtitle}>Waylo picked stops that improve cost, timing, or comfort without adding unnecessary friction.</Text>
             </View>
             <Text style={styles.stopsMeta}>{plannedRoute.mode}</Text>
           </View>
           {topStops.map((stop) => (
             <View key={`rank-${stop.id}`} style={styles.rankRow}>
               <View style={styles.rankScore}>
-                <Text style={styles.rankScoreText}>{stop.intelligenceScore || "--"}</Text>
+                <Ionicons color={colors.surface} name={stop.type === "fuel" ? "pricetag-outline" : stop.type === "rest" ? "bed-outline" : stop.type === "food" ? "restaurant-outline" : "camera-outline"} size={17} />
               </View>
               <View style={styles.rankCopy}>
                 <Text style={styles.rankTitle}>{stop.name}</Text>
-                <Text style={styles.rankMeta}>{stop.routeFitLabel || "Route fit"} | {stop.detourMinutes || 0} min detour | {stop.type}</Text>
+                <Text style={styles.rankMeta}>{stop.impactSummary || stop.recommendation || `${stop.routeFitLabel || "Route fit"} with about ${stop.detourMinutes || 0} min detour.`}</Text>
               </View>
             </View>
           ))}
@@ -260,6 +279,8 @@ export default function TripResultsScreen({ navigation, route }) {
                 decision={stopDecisions[stop.id] || (stop.decision === "added" || stop.decision === "skipped" ? stop.decision : undefined)}
                 stop={stop}
                 timeline
+                onAdd={() => chooseStop(stop, "added")}
+                onSkip={() => chooseStop(stop, "skipped")}
                 onPress={() => openStopDetails(stop)}
               />
             ))}
@@ -517,6 +538,7 @@ const styles = StyleSheet.create({
   },
   routeStrip: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.sm,
     marginTop: -4
   },
@@ -526,7 +548,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radii.md,
     borderWidth: 1,
-    flex: 1,
+    flexBasis: "47%",
+    flexGrow: 1,
     gap: spacing.xs,
     padding: spacing.md,
     ...shadows.soft

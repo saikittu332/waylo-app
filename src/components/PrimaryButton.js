@@ -38,9 +38,9 @@ const styles = StyleSheet.create({
   button: {
     alignItems: "center",
     backgroundColor: colors.blueDeep,
-    borderRadius: radii.md,
+    borderRadius: 22,
     justifyContent: "center",
-    minHeight: 52,
+    minHeight: 56,
     paddingHorizontal: spacing.lg,
     shadowColor: colors.blue,
     shadowOpacity: 0.12,

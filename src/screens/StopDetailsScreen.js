@@ -55,7 +55,7 @@ export default function StopDetailsScreen({ navigation, route }) {
           <View style={styles.scoreBand}>
             <Text style={styles.scoreValue}>{score}</Text>
             <View style={styles.scoreCopy}>
-              <Text style={styles.scoreLabel}>Waylo recommendation score</Text>
+              <Text style={styles.scoreLabel}>Recommendation strength</Text>
               <Text style={styles.scoreText}>{stop.impactSummary || "Scored by timing, detour, route fit, and trip mode."}</Text>
             </View>
           </View>

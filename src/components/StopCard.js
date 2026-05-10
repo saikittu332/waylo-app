@@ -17,7 +17,7 @@ const typeIcons = {
   scenic: "camera-outline"
 };
 
-export default function StopCard({ stop, onPress, decision, timeline = false }) {
+export default function StopCard({ stop, onPress, onAdd, onSkip, decision, timeline = false }) {
   const isAdded = decision === "added";
   const isSkipped = decision === "skipped";
   const hasDecision = isAdded || isSkipped;
@@ -43,7 +43,9 @@ export default function StopCard({ stop, onPress, decision, timeline = false }) 
         )}
       </View>
       <View style={styles.footer}>
-        <Text style={styles.rating}>{stop.intelligenceScore ? `Waylo score ${stop.intelligenceScore}` : stop.rating ? `Rating ${stop.rating}` : sourceLabel}</Text>
+        <Text style={styles.rating}>
+          {stop.recommendation ? `Recommended because ${lowercaseFirst(stop.recommendation)}` : stop.rating ? `Rating ${stop.rating}` : sourceLabel}
+        </Text>
         {stop.fuelPrice ? <Text style={styles.price}>${stop.fuelPrice}/gal</Text> : <Text style={styles.price}>Good fit</Text>}
       </View>
       {!!stop.impactSummary && (
@@ -52,8 +54,41 @@ export default function StopCard({ stop, onPress, decision, timeline = false }) 
           <Text style={styles.impactText}>{stop.impactSummary}</Text>
         </View>
       )}
+      {(onAdd || onSkip) && (
+        <View style={styles.actionRow}>
+          {!!onAdd && (
+            <Pressable
+              onPress={(event) => {
+                event?.stopPropagation?.();
+                onAdd();
+              }}
+              style={[styles.stopAction, isAdded && styles.stopActionSelected]}
+            >
+              <Ionicons color={isAdded ? colors.surface : colors.green} name={isAdded ? "checkmark-circle" : "add-circle-outline"} size={15} />
+              <Text style={[styles.stopActionText, isAdded && styles.stopActionTextSelected]}>{isAdded ? "Added" : "Add"}</Text>
+            </Pressable>
+          )}
+          {!!onSkip && (
+            <Pressable
+              onPress={(event) => {
+                event?.stopPropagation?.();
+                onSkip();
+              }}
+              style={[styles.stopAction, isSkipped && styles.stopActionSkipped]}
+            >
+              <Ionicons color={isSkipped ? colors.surface : colors.muted} name={isSkipped ? "remove-circle" : "close-circle-outline"} size={15} />
+              <Text style={[styles.stopActionText, isSkipped && styles.stopActionTextSelected]}>{isSkipped ? "Skipped" : "Skip"}</Text>
+            </Pressable>
+          )}
+        </View>
+      )}
     </Pressable>
   );
+}
+
+function lowercaseFirst(text) {
+  if (!text) return "";
+  return `${text.charAt(0).toLowerCase()}${text.slice(1)}`;
 }
 
 const styles = StyleSheet.create({
@@ -125,8 +160,10 @@ const styles = StyleSheet.create({
   },
   rating: {
     color: colors.navy,
+    flex: 1,
     fontSize: 12,
-    fontWeight: "500"
+    fontWeight: "500",
+    lineHeight: 16
   },
   timelineBadge: {
     backgroundColor: colors.paleBlue
@@ -151,6 +188,39 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "500",
     lineHeight: 17
+  },
+  actionRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginTop: spacing.md
+  },
+  stopAction: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
+    justifyContent: "center",
+    minHeight: 36,
+    paddingHorizontal: spacing.md
+  },
+  stopActionSelected: {
+    backgroundColor: colors.green,
+    borderColor: colors.green
+  },
+  stopActionSkipped: {
+    backgroundColor: colors.navySoft,
+    borderColor: colors.navySoft
+  },
+  stopActionText: {
+    color: colors.navy,
+    fontSize: 12,
+    fontWeight: "700"
+  },
+  stopActionTextSelected: {
+    color: colors.surface
   },
   decisionPill: {
     alignItems: "center",

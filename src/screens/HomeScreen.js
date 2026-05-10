@@ -11,10 +11,10 @@ import { defaultVehicle } from "../data/mockVehicleSpecs";
 import { apiTripToCompletedTrip, deleteVehicle, getSavedPlans, getTrips, getVehicles, updateUser } from "../services/api";
 import { getCurrentLocationPlace } from "../services/locationService";
 import { CURRENT_LOCATION_PLACE, geocodeAddress, hasMapboxToken } from "../services/mapService";
-import { routeMetaLabel, routeTitle } from "../utils/placeLabels";
+import { routeMetaLabel, routeTitle, shortPlaceLabel } from "../utils/placeLabels";
 import { calculateRange, calculateSafeRange, estimateFuelCost, formatCurrency, formatHours } from "../utils/tripCalculator";
 
-const modes = ["Fastest", "Cheapest", "Scenic", "Comfort"];
+const modes = ["Recommended", "Cheapest", "Scenic", "Comfort"];
 const locationSuggestions = [
   CURRENT_LOCATION_PLACE,
   { id: "sf-fallback", label: "San Francisco, CA", coordinates: [-122.4194, 37.7749] },
@@ -113,6 +113,7 @@ export default function HomeScreen({ navigation, route }) {
   const [showVehiclePicker, setShowVehiclePicker] = useState(false);
   const [plannedTrips, setPlannedTrips] = useState([]);
   const [completedTrips, setCompletedTrips] = useState([]);
+  const [homeNotice, setHomeNotice] = useState("");
 
   useFocusEffect(
     React.useCallback(() => {
@@ -131,6 +132,7 @@ export default function HomeScreen({ navigation, route }) {
       }
       if (route.params?.savedPlan) {
         setPlannedTrips((current) => mergePlans(current, [route.params.savedPlan]));
+        setHomeNotice("Trip plan saved. Find it in Trips or Drive.");
         navigation.setParams({ savedPlan: undefined });
       }
       if (route.params?.completedTrip) {
@@ -205,8 +207,8 @@ export default function HomeScreen({ navigation, route }) {
             showVehiclePicker={showVehiclePicker}
             setShowVehiclePicker={setShowVehiclePicker}
             setSelectedVehicle={setSelectedVehicle}
-            plannedTrips={plannedTrips}
-            completedTrips={completedTrips}
+            homeNotice={homeNotice}
+            setHomeNotice={setHomeNotice}
           />
         )}
         {activeTab === "Trips" && (
@@ -275,7 +277,7 @@ export default function HomeScreen({ navigation, route }) {
   );
 }
 
-function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, from, setFrom, fromPlace, setFromPlace, to, setTo, toPlace, setToPlace, mode, setMode, showVehiclePicker, setShowVehiclePicker, setSelectedVehicle, plannedTrips, completedTrips }) {
+function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, from, setFrom, fromPlace, setFromPlace, to, setTo, toPlace, setToPlace, mode, setMode, showVehiclePicker, setShowVehiclePicker, setSelectedVehicle, homeNotice, setHomeNotice }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [locationSearchState, setLocationSearchState] = useState({ from: false, to: false });
   const [locating, setLocating] = useState(false);
@@ -284,8 +286,7 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
   const isSearchingLocations = locationSearchState.from || locationSearchState.to;
   const safeRange = safeVehicleRange(vehicle);
   const estimatedLaFuel = quickFuelCost(vehicle);
-  const nextPlan = plannedTrips[0];
-  const recentSavings = completedTrips.reduce((total, trip) => total + planSavings(trip), 0) || 14.28;
+  const canPlanTrip = Boolean(to?.trim()) && Boolean(from?.trim()) && Boolean(vehicle) && !isSearchingLocations;
 
   React.useEffect(() => {
     if (notificationsOpen) {
@@ -355,14 +356,14 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
         </Pressable>
         <View style={styles.canvasTopCopy}>
           <Text style={styles.heroEyebrow}>Waylo brief</Text>
-          <Text style={styles.heroTitle}>Plan LA, fuel about {formatCurrency(estimatedLaFuel)}</Text>
+          <Text style={styles.heroTitle}>Plan {shortPlaceLabel(to || "your drive")}, fuel about {formatCurrency(estimatedLaFuel)}</Text>
           <Text style={styles.heroCopy}>
-            {nextPlan ? `${routeTitle(nextPlan.from, nextPlan.to)} is ready to preview.` : `${Math.round(safeRange)} mi safe range in your ${vehicle.vehicleName.replace("Toyota ", "")}.`}
+            Waylo will pick the best balance of cost, time, and comfort.
           </Text>
         </View>
         <View style={styles.canvasMetricShelf}>
           <MiniMetric icon="speedometer-outline" label="Safe range" value={`${Math.round(safeRange)} mi`} />
-          <MiniMetric icon="leaf-outline" label="Recent saved" value={formatCurrency(recentSavings)} />
+          <MiniMetric icon="pricetag-outline" label="Est. fuel" value={formatCurrency(estimatedLaFuel)} />
         </View>
         {notificationsOpen && (
           <Animated.View
@@ -392,10 +393,17 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
       </View>
       <View style={styles.planningSheet}>
         <View style={styles.sheetHandle} />
+        {!!homeNotice && (
+          <Pressable onPress={() => setHomeNotice("")} style={styles.successNotice}>
+            <Ionicons color={colors.green} name="checkmark-circle" size={18} />
+            <Text style={styles.successNoticeText}>{homeNotice}</Text>
+            <Ionicons color={colors.muted} name="close" size={16} />
+          </Pressable>
+        )}
         <View style={styles.sheetHeaderRow}>
           <View>
-            <Text style={styles.cardTitle}>Where to?</Text>
-            <Text style={styles.sheetSubtitle}>Search, compare modes, then let Waylo tune the stops.</Text>
+            <Text style={styles.cardTitle}>Where are you going?</Text>
+            <Text style={styles.sheetSubtitle}>Waylo will pick the best balance of cost, time, and comfort.</Text>
           </View>
           <View style={styles.sheetRangePill}>
             <Ionicons color={colors.green} name="battery-charging-outline" size={15} />
@@ -424,17 +432,18 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
           suggestions={locationSuggestions.filter((item) => item.id !== CURRENT_LOCATION_PLACE.id)}
         />
         <View style={styles.routeCompareHeader}>
-          <Text style={styles.label}>Compare route style</Text>
-          <Text style={styles.compareHint}>Selected: {mode}</Text>
+          <Text style={styles.label}>Waylo recommendation</Text>
+          <Text style={styles.compareHint}>{mode}</Text>
         </View>
+        <Text style={styles.modeIntro}>Recommended is selected by default. Adjust only if this drive has a specific priority.</Text>
         <View style={styles.modeCards}>
           {modes.map((item) => (
             <RouteModeCard key={item} label={item} selected={mode === item} onPress={() => setMode(item)} vehicle={vehicle} />
           ))}
         </View>
         <PrimaryButton
-          disabled={isSearchingLocations}
-          title={isSearchingLocations ? "Searching locations..." : "Plan Smart Trip"}
+          disabled={!canPlanTrip}
+          title={isSearchingLocations ? "Searching locations..." : !vehicle ? "Add a Vehicle First" : !to?.trim() ? "Choose a Destination" : "Plan Smart Trip"}
           onPress={continuePlan}
         />
         <Pressable onPress={() => setShowVehiclePicker((value) => !value)} style={styles.selectedVehicleCard}>
@@ -477,18 +486,6 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
           </View>
         )}
       </View>
-      <TripsContent
-        assistantName={assistantName}
-        user={user}
-        vehicle={vehicle}
-        navigation={navigation}
-        from={from}
-        to={to}
-        mode={mode}
-        compact
-        plannedTrips={plannedTrips}
-        completedTrips={completedTrips}
-      />
     </>
   );
 }
@@ -507,18 +504,19 @@ function MiniMetric({ icon, label, value }) {
 
 function RouteModeCard({ label, selected, onPress, vehicle }) {
   const modeData = {
-    Fastest: { icon: "flash-outline", detail: "Shortest time", delta: "-12 min" },
-    Cheapest: { icon: "pricetag-outline", detail: "Fuel optimized", delta: formatCurrency(Math.max(3.8, quickFuelCost(vehicle) * 0.11)) },
-    Scenic: { icon: "camera-outline", detail: "Better stops", delta: "+18 min" },
+    Recommended: { icon: "sparkles-outline", detail: "Balanced plan", delta: "Best fit" },
+    Cheapest: { icon: "pricetag-outline", detail: "Fuel savings", delta: formatCurrency(Math.max(3.8, quickFuelCost(vehicle) * 0.11)) },
+    Scenic: { icon: "camera-outline", detail: "Optional views", delta: "+18 min" },
     Comfort: { icon: "cafe-outline", detail: "More breaks", delta: "2 rests" }
   }[label];
 
   return (
-    <Pressable onPress={onPress} style={[styles.modeCard, selected && styles.modeCardActive]}>
+    <Pressable onPress={onPress} style={[styles.modeCard, label === "Recommended" && styles.recommendedModeCard, selected && styles.modeCardActive]}>
       <View style={[styles.modeIcon, selected && styles.modeIconActive]}>
         <Ionicons color={selected ? colors.surface : colors.blue} name={modeData.icon} size={16} />
       </View>
       <Text style={[styles.modeCardTitle, selected && styles.modeCardTitleActive]}>{label}</Text>
+      <Text style={[styles.modeCardDetail, selected && styles.modeCardDetailActive]}>{modeData.detail}</Text>
       <Text style={[styles.modeDelta, selected && styles.modeDeltaActive]}>{modeData.delta}</Text>
     </Pressable>
   );
@@ -547,7 +545,7 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
   return (
     <>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{compact && recentCompletedTrip ? "Recent Drive" : compact ? "Upcoming Drives" : "Trips"}</Text>
+        <Text style={styles.sectionTitle}>{compact && recentCompletedTrip ? "Recent Drive" : compact ? "Saved Plans" : "Trips"}</Text>
       </View>
       <PremiumCard style={styles.recentCard}>
         {!compact && (
@@ -559,13 +557,13 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
                 style={[styles.tripSectionTab, selectedSection === section && styles.tripSectionTabActive]}
               >
                 <Text style={[styles.tripSectionText, selectedSection === section && styles.tripSectionTextActive]}>
-                  {section === "Ready" ? "Upcoming" : "Completed"}
+                  {section === "Ready" ? "Ready to Drive" : "Completed"}
                 </Text>
               </Pressable>
             ))}
           </View>
         )}
-        {compact && <Text style={styles.groupLabel}>{recentCompletedTrip ? "Completed" : "Upcoming"}</Text>}
+        {compact && <Text style={styles.groupLabel}>{recentCompletedTrip ? "Completed" : "Ready to Drive"}</Text>}
         {(compact || showingReady) && (
           visiblePlans.length === 0 ? (
             recentCompletedTrip ? (
@@ -576,7 +574,7 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
                 onPress={() => navigation.navigate("TripDetail", { assistantName, user, vehicle, completedTrip: recentCompletedTrip, plan: recentCompletedTrip, type: "completed" })}
               />
             ) : (
-              <Text style={styles.emptyText}>Saved routes will appear here after you build a trip plan.</Text>
+              <Text style={styles.emptyText}>Saved trip plans will appear here.</Text>
             )
           ) : (
             visiblePlans.map((plan, index) => (
@@ -594,7 +592,7 @@ function TripsContent({ assistantName, user, vehicle, navigation, from, to, mode
         )}
         {!compact && !showingReady && (
           completedTrips.length === 0 ? (
-            <Text style={styles.emptyText}>Finished trips will appear here after you end navigation and save the summary.</Text>
+            <Text style={styles.emptyText}>Completed trips will appear here after your drives.</Text>
           ) : (
             completedTrips.map((trip, index) => (
               <React.Fragment key={trip.id}>
@@ -820,6 +818,7 @@ function ProfileContent({ assistantName, setAssistantName, user, setUser, naviga
   const [editing, setEditing] = useState(false);
   const [nameError, setNameError] = useState("");
   const [assistantNameError, setAssistantNameError] = useState("");
+  const [profileNotice, setProfileNotice] = useState("");
   const [fuelAlerts, setFuelAlerts] = useState(user?.fuelSavingsAlerts ?? user?.fuel_savings_alerts ?? true);
   const [restReminders, setRestReminders] = useState(user?.restRemindersEnabled ?? user?.rest_reminders_enabled ?? true);
   const [restInterval, setRestInterval] = useState(`${user?.restReminderHours ?? user?.rest_reminder_hours ?? 2.5} hours`);
@@ -835,6 +834,7 @@ function ProfileContent({ assistantName, setAssistantName, user, setUser, naviga
       rest_reminder_hours: next.rest_reminder_hours ?? Number(restInterval.replace(" hours", ""))
     };
     setUser?.(nextUser);
+    setProfileNotice("Preferences saved.");
     if (!user?.id) return;
     try {
       const updated = await updateUser(user.id, next);
@@ -883,6 +883,7 @@ function ProfileContent({ assistantName, setAssistantName, user, setUser, naviga
           .catch((error) => console.warn("Waylo API profile update unavailable:", error.message));
       }
       setAssistantName(nextAssistantName);
+      setProfileNotice("Profile saved.");
       setEditing(false);
     }
   }
@@ -905,6 +906,13 @@ function ProfileContent({ assistantName, setAssistantName, user, setUser, naviga
         </Pressable>
       </View>
       <PremiumCard style={styles.profileCard}>
+        {!!profileNotice && (
+          <Pressable onPress={() => setProfileNotice("")} style={styles.successNotice}>
+            <Ionicons color={colors.green} name="checkmark-circle" size={18} />
+            <Text style={styles.successNoticeText}>{profileNotice}</Text>
+            <Ionicons color={colors.muted} name="close" size={16} />
+          </Pressable>
+        )}
         {editing ? (
           <>
             <ProfileInput label="Name" value={profileName} onChangeText={setProfileName} error={nameError} />
@@ -939,11 +947,13 @@ function ProfileContent({ assistantName, setAssistantName, user, setUser, naviga
       <PremiumCard style={styles.accountCard}>
         <View style={styles.sessionStatus}>
           <View style={styles.sessionDot} />
-          <Text style={styles.sessionText}>{user?.id ? "Account connected" : "Demo session"}</Text>
+          <Text style={styles.sessionText}>{user?.id ? "Account connected" : "Guest session"}</Text>
         </View>
         <View>
           <Text style={styles.cardTitle}>Account</Text>
-          <Text style={styles.profileMeta}>Your trip setup stays on this device during the current development session.</Text>
+          <Text style={styles.profileMeta}>Verified identity: {phone}</Text>
+          <Text style={styles.profileMeta}>App version: 0.1.0</Text>
+          <Text style={styles.profileMeta}>Support: hello@waylo.app</Text>
         </View>
         <PrimaryButton title="Return to Welcome" variant="secondary" onPress={signOut} />
       </PremiumCard>
@@ -1088,7 +1098,7 @@ function TripField({ label, value, onChangeText, onSelectPlace, onSearchStateCha
         .catch((error) => {
           if (!active) return;
           setRemoteSuggestions([]);
-          setSearchError(error.code === "MAPBOX_TOKEN_MISSING" ? "Add a Mapbox token to search real places." : "Could not search locations right now.");
+          setSearchError(error.code === "MAPBOX_TOKEN_MISSING" ? "Place search is not connected yet. Use a quick pick or type your place." : "Could not search locations right now.");
         })
         .finally(() => {
           if (!active) return;
@@ -1604,6 +1614,23 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
     width: 44
   },
+  successNotice: {
+    alignItems: "center",
+    backgroundColor: colors.paleGreen,
+    borderColor: "rgba(18,184,117,0.2)",
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    padding: spacing.sm
+  },
+  successNoticeText: {
+    color: colors.navy,
+    flex: 1,
+    fontSize: 12,
+    fontWeight: "600",
+    lineHeight: 16
+  },
   sheetHeaderRow: {
     alignItems: "flex-start",
     flexDirection: "row",
@@ -1850,9 +1877,16 @@ const styles = StyleSheet.create({
     justifyContent: "space-between"
   },
   compareHint: {
+    color: colors.green,
+    fontSize: 12,
+    fontWeight: "700"
+  },
+  modeIntro: {
     color: colors.muted,
-    fontSize: 11,
-    fontWeight: "500"
+    fontSize: 12,
+    fontWeight: "400",
+    lineHeight: 16,
+    marginTop: -spacing.sm
   },
   modeCards: {
     flexDirection: "row",
@@ -1870,6 +1904,11 @@ const styles = StyleSheet.create({
     minHeight: 78,
     outlineStyle: "none",
     padding: spacing.sm
+  },
+  recommendedModeCard: {
+    flexBasis: "100%",
+    minHeight: 88,
+    padding: spacing.md
   },
   modeCardActive: {
     backgroundColor: colors.navy,
@@ -1894,6 +1933,15 @@ const styles = StyleSheet.create({
   },
   modeCardTitleActive: {
     color: colors.surface
+  },
+  modeCardDetail: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "400",
+    lineHeight: 16
+  },
+  modeCardDetailActive: {
+    color: "rgba(255,255,255,0.78)"
   },
   modeDelta: {
     color: colors.green,
