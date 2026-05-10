@@ -1,10 +1,9 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
 import Logo from "../components/Logo";
 import PrimaryButton from "../components/PrimaryButton";
-import { colors, radii, screen, spacing } from "../constants/theme";
+import { colors, screen, spacing } from "../constants/theme";
 
 export default function SplashScreen({ navigation }) {
   return (
@@ -21,13 +20,9 @@ export default function SplashScreen({ navigation }) {
       <SafeAreaView style={styles.safe}>
         <View style={styles.container}>
           <View style={styles.logoBlock}>
-            <Logo size="lg" image />
-          </View>
-
-          <View style={styles.glassCard}>
-            <Feature icon="pricetag-outline" title="Smart fuel stops" detail="Find the best fuel prices" />
-            <Feature icon="trending-down-outline" title="Lower trip cost" detail="Save more on every mile" />
-            <Feature icon="navigate-outline" title="Better road trips" detail="Comfort, safety and fun" />
+            <Logo size="lg" />
+            <Text style={styles.tagline}>Drive smart. Spend less.</Text>
+            <Text style={styles.introCopy}>Fuel, rest stops, and trip cost in one clean plan.</Text>
           </View>
 
           <View style={styles.actions}>
@@ -35,20 +30,6 @@ export default function SplashScreen({ navigation }) {
           </View>
         </View>
       </SafeAreaView>
-    </View>
-  );
-}
-
-function Feature({ icon, title, detail }) {
-  return (
-    <View style={styles.feature}>
-      <View style={styles.featureIcon}>
-        <Ionicons color={colors.surface} name={icon} size={16} />
-      </View>
-      <View>
-        <Text style={styles.featureTitle}>{title}</Text>
-        <Text style={styles.featureDetail}>{detail}</Text>
-      </View>
     </View>
   );
 }
@@ -139,7 +120,7 @@ const styles = StyleSheet.create({
   },
   logoBlock: {
     alignItems: "center",
-    marginTop: 44
+    marginTop: 150
   },
   tagline: {
     color: colors.navy,
@@ -147,42 +128,13 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     marginTop: spacing.sm
   },
-  glassCard: {
-    alignSelf: "center",
-    backgroundColor: "rgba(255,255,255,0.86)",
-    borderColor: "rgba(8,103,242,0.12)",
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    gap: spacing.md,
-    padding: spacing.md,
-    shadowColor: colors.navy,
-    shadowOpacity: 0.08,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 12 },
-    width: "82%"
-  },
-  feature: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.sm
-  },
-  featureIcon: {
-    alignItems: "center",
-    backgroundColor: colors.blue,
-    borderRadius: radii.pill,
-    height: 28,
-    justifyContent: "center",
-    width: 28
-  },
-  featureTitle: {
-    color: colors.navy,
-    fontSize: 14,
-    fontWeight: "500"
-  },
-  featureDetail: {
+  introCopy: {
     color: colors.muted,
-    fontSize: 12,
-    marginTop: 2
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: spacing.sm,
+    maxWidth: 250,
+    textAlign: "center"
   },
   actions: {
     marginBottom: spacing.xl

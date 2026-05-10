@@ -109,7 +109,6 @@ export default function TripResultsScreen({ navigation, route }) {
   const finalStops = stops.filter((stop) => stopDecisions[stop.id] === "added");
   const skippedStops = stops.filter((stop) => stopDecisions[stop.id] === "skipped");
   const recommendedStops = stops.filter((stop) => !stopDecisions[stop.id] || stopDecisions[stop.id] === "recommended");
-  const standardFuelCost = insights.estimatedFuelCost + insights.estimatedSavings;
   const destination = plannedRoute.to || "Los Angeles, CA";
   const routeLabel = routeTitle(plannedRoute.from, destination);
   const topStops = [...stops].sort((a, b) => Number(b.intelligenceScore || 0) - Number(a.intelligenceScore || 0)).slice(0, 3);
@@ -189,7 +188,7 @@ export default function TripResultsScreen({ navigation, route }) {
           <View style={styles.heroText}>
             <Text style={styles.eyebrow}>Waylo recommends this plan</Text>
             <Text style={styles.routeTitle}>{routeLabel}</Text>
-            <Text style={styles.routeMeta}>Best balance of fuel cost, drive time, and comfort.</Text>
+            <Text style={styles.routeMeta}>{formatHours(plannedRoute.durationHours)} · {formatCurrency(insights.estimatedFuelCost)} fuel</Text>
             <Text style={styles.editingMeta}>{plannedRoute.mode} mode | {vehicle.vehicleName}</Text>
             {!!existingPlan && <Text style={styles.editingMeta}>Editing saved plan</Text>}
           </View>
@@ -210,19 +209,6 @@ export default function TripResultsScreen({ navigation, route }) {
           <RouteStripItem icon="time-outline" label="Drive time" value={formatHours(plannedRoute.durationHours)} />
           <RouteStripItem icon="pricetag-outline" label="Fuel cost" value={formatCurrency(insights.estimatedFuelCost)} />
         </View>
-
-        <PremiumCard style={styles.proofCard}>
-          <Text style={styles.planTitle}>Why this plan works</Text>
-          <View style={styles.proofGrid}>
-            <ProofMetric label="Safe range" value={`${Math.round(insights.safeRange)} mi`} detail={`${Math.round(insights.range)} mi full range`} />
-            <ProofMetric label="Waylo fuel" value={formatCurrency(insights.estimatedFuelCost)} detail={`${insights.fuelUsed.toFixed(1)} gal est.`} />
-            <ProofMetric label="Standard" value={formatCurrency(standardFuelCost)} detail="same route at higher price" />
-          </View>
-          <View style={styles.comparisonBar}>
-            <View style={[styles.comparisonFill, { width: `${Math.max(20, 100 - (insights.estimatedSavings / Math.max(standardFuelCost, 1)) * 100)}%` }]} />
-          </View>
-          <Text style={styles.planSubtitle}>Savings are estimated from route distance, your vehicle MPG, and comparison fuel pricing.</Text>
-        </PremiumCard>
 
         <PremiumCard style={styles.aiCoachCard}>
           <View style={styles.stopsHeader}>
@@ -338,16 +324,6 @@ function RouteStripItem({ icon, label, value }) {
       <Ionicons color={colors.blue} name={icon} size={17} />
       <Text style={styles.routeStripLabel}>{label}</Text>
       <Text style={styles.routeStripValue}>{value}</Text>
-    </View>
-  );
-}
-
-function ProofMetric({ label, value, detail }) {
-  return (
-    <View style={styles.proofMetric}>
-      <Text style={styles.proofLabel}>{label}</Text>
-      <Text style={styles.proofValue}>{value}</Text>
-      <Text style={styles.proofDetail}>{detail}</Text>
     </View>
   );
 }

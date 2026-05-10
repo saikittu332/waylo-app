@@ -285,7 +285,6 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
   const safeRange = safeVehicleRange(vehicle);
   const estimatedLaFuel = quickFuelCost(vehicle);
   const nextPlan = plannedTrips[0];
-  const recentSavings = completedTrips.reduce((total, trip) => total + planSavings(trip), 0) || 14.28;
 
   React.useEffect(() => {
     if (notificationsOpen) {
@@ -354,15 +353,13 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
           <View style={styles.bellDot} />
         </Pressable>
         <View style={styles.canvasTopCopy}>
-          <Text style={styles.heroEyebrow}>Waylo brief</Text>
-          <Text style={styles.heroTitle}>Plan LA, fuel about {formatCurrency(estimatedLaFuel)}</Text>
+          <Text style={styles.heroTitle}>Plan a smarter drive</Text>
           <Text style={styles.heroCopy}>
-            {nextPlan ? `${routeTitle(nextPlan.from, nextPlan.to)} is ready to preview.` : `${Math.round(safeRange)} mi safe range in your ${vehicle.vehicleName.replace("Toyota ", "")}.`}
+            {nextPlan ? `${routeTitle(nextPlan.from, nextPlan.to)} is ready.` : `${Math.round(safeRange)} mi safe range · fuel about ${formatCurrency(estimatedLaFuel)} to LA.`}
           </Text>
         </View>
         <View style={styles.canvasMetricShelf}>
           <MiniMetric icon="speedometer-outline" label="Safe range" value={`${Math.round(safeRange)} mi`} />
-          <MiniMetric icon="leaf-outline" label="Recent saved" value={formatCurrency(recentSavings)} />
         </View>
         {notificationsOpen && (
           <Animated.View
@@ -395,7 +392,7 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
         <View style={styles.sheetHeaderRow}>
           <View>
             <Text style={styles.cardTitle}>Where are you going?</Text>
-            <Text style={styles.sheetSubtitle}>Waylo will pick the best balance of cost, time, and comfort.</Text>
+            <Text style={styles.sheetSubtitle}>Enter a destination. Waylo handles the stop plan.</Text>
           </View>
           <View style={styles.sheetRangePill}>
             <Ionicons color={colors.green} name="battery-charging-outline" size={15} />
@@ -423,6 +420,46 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
           pinColor={colors.red}
           suggestions={locationSuggestions.filter((item) => item.id !== CURRENT_LOCATION_PLACE.id)}
         />
+        <Pressable onPress={() => setShowVehiclePicker((value) => !value)} style={styles.selectedVehicleCard}>
+          <View style={styles.vehicleIconMini}>
+            <Ionicons color={colors.blue} name="car-sport-outline" size={20} />
+          </View>
+          <View style={styles.selectedVehicleText}>
+            <Text style={styles.selectedVehicleLabel}>Vehicle</Text>
+            <Text style={styles.selectedVehicleName}>{vehicle.vehicleName} · {Math.round(safeRange)} mi safe range</Text>
+          </View>
+          <Ionicons color={colors.muted} name={showVehiclePicker ? "chevron-up" : "chevron-down"} size={20} />
+        </Pressable>
+        {showVehiclePicker && (
+          <View style={styles.vehiclePicker}>
+            <View style={styles.pickerHeader}>
+              <Text style={styles.label}>Choose vehicle</Text>
+              <Pressable onPress={() => setShowVehiclePicker(false)} hitSlop={8} style={styles.textAction}>
+                <Text style={styles.doneText}>Done</Text>
+              </Pressable>
+            </View>
+            {vehicles.map((item) => (
+              <Pressable
+                key={item.vehicleName}
+                onPress={() => {
+                  selectVehicleForTrip(item);
+                }}
+                style={[styles.vehicleOption, item.vehicleName === vehicle.vehicleName && styles.vehicleOptionActive]}
+              >
+                <Ionicons color={colors.blue} name="car-sport-outline" size={19} />
+                <View style={styles.selectedVehicleText}>
+                  <Text style={styles.vehicleOptionName}>{item.vehicleName}</Text>
+                  <Text style={styles.vehicleOptionMeta}>{item.highwayMpg} highway MPG | {item.tankCapacity} gal</Text>
+                </View>
+                {item.vehicleName === vehicle.vehicleName && <Ionicons color={colors.green} name="checkmark-circle" size={18} />}
+              </Pressable>
+            ))}
+            <Pressable onPress={() => navigation.navigate("VehicleSetup", { assistantName, user, mode: "new", vehicles })} style={styles.addVehicleInline}>
+              <Ionicons color={colors.blue} name="add-circle-outline" size={19} />
+              <Text style={styles.addVehicleText}>Add new vehicle</Text>
+            </Pressable>
+          </View>
+        )}
         <View style={styles.routeCompareHeader}>
           <Text style={styles.label}>Trip style</Text>
           <Text style={styles.compareHint}>Selected: {mode}</Text>
@@ -437,45 +474,6 @@ function PlanTripContent({ assistantName, user, vehicle, vehicles, navigation, f
           title={isSearchingLocations ? "Searching locations..." : "Plan Smart Trip"}
           onPress={continuePlan}
         />
-        <Pressable onPress={() => setShowVehiclePicker((value) => !value)} style={styles.selectedVehicleCard}>
-          <View style={styles.vehicleIconMini}>
-            <Ionicons color={colors.blue} name="car-sport-outline" size={20} />
-          </View>
-          <View style={styles.selectedVehicleText}>
-            <Text style={styles.selectedVehicleLabel}>Vehicle</Text>
-            <Text style={styles.selectedVehicleName}>{vehicle.vehicleName}</Text>
-          </View>
-          <Ionicons color={colors.muted} name={showVehiclePicker ? "chevron-up" : "chevron-down"} size={20} />
-        </Pressable>
-        {showVehiclePicker && (
-          <View style={styles.vehiclePicker}>
-            <View style={styles.pickerHeader}>
-              <Text style={styles.label}>Choose vehicle for this trip</Text>
-              <Pressable onPress={() => setShowVehiclePicker(false)} hitSlop={8} style={styles.textAction}>
-                <Text style={styles.doneText}>Done</Text>
-              </Pressable>
-            </View>
-            {vehicles.map((item) => (
-              <Pressable
-                key={item.vehicleName}
-                onPress={() => {
-                  selectVehicleForTrip(item);
-                }}
-                style={styles.vehicleOption}
-              >
-                <Ionicons color={colors.blue} name="car-sport-outline" size={19} />
-                <View style={styles.selectedVehicleText}>
-                  <Text style={styles.vehicleOptionName}>{item.vehicleName}</Text>
-                  <Text style={styles.vehicleOptionMeta}>{item.highwayMpg} highway MPG | {item.tankCapacity} gal</Text>
-                </View>
-              </Pressable>
-            ))}
-            <Pressable onPress={() => navigation.navigate("VehicleSetup", { assistantName, user, mode: "new", vehicles })} style={styles.addVehicleInline}>
-              <Ionicons color={colors.blue} name="add-circle-outline" size={19} />
-              <Text style={styles.addVehicleText}>Add new vehicle</Text>
-            </Pressable>
-          </View>
-        )}
       </View>
     </>
   );
@@ -495,7 +493,7 @@ function MiniMetric({ icon, label, value }) {
 
 function RouteModeCard({ label, selected, onPress, vehicle }) {
   const modeData = {
-    Recommended: { icon: "sparkles-outline", detail: "Best balance", delta: "Waylo pick" },
+    Recommended: { title: "Best", detail: "Best balance", delta: "Waylo pick" },
     Cheapest: { icon: "pricetag-outline", detail: "Fuel optimized", delta: formatCurrency(Math.max(3.8, quickFuelCost(vehicle) * 0.11)) },
     Scenic: { icon: "camera-outline", detail: "Better stops", delta: "+18 min" },
     Comfort: { icon: "cafe-outline", detail: "More breaks", delta: "2 rests" }
@@ -503,10 +501,7 @@ function RouteModeCard({ label, selected, onPress, vehicle }) {
 
   return (
     <Pressable onPress={onPress} style={[styles.modeCard, selected && styles.modeCardActive]}>
-      <View style={[styles.modeIcon, selected && styles.modeIconActive]}>
-        <Ionicons color={selected ? colors.surface : colors.blue} name={modeData.icon} size={16} />
-      </View>
-      <Text style={[styles.modeCardTitle, selected && styles.modeCardTitleActive]}>{label}</Text>
+      <Text style={[styles.modeCardTitle, selected && styles.modeCardTitleActive]}>{modeData.title || label}</Text>
       <Text style={[styles.modeDelta, selected && styles.modeDeltaActive]}>{modeData.delta}</Text>
     </Pressable>
   );
@@ -1445,13 +1440,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.xs
   },
-  heroEyebrow: {
-    color: colors.green,
-    fontSize: 12,
-    fontWeight: "600",
-    letterSpacing: 0,
-    textTransform: "uppercase"
-  },
   heroStatus: {
     backgroundColor: colors.surface,
     borderRadius: radii.pill,
@@ -1844,7 +1832,6 @@ const styles = StyleSheet.create({
   },
   modeCards: {
     flexDirection: "row",
-    flexWrap: "wrap",
     gap: spacing.sm
   },
   modeCard: {
@@ -1852,12 +1839,13 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radii.md,
     borderWidth: 1,
-    flexBasis: "47%",
-    flexGrow: 1,
-    gap: spacing.xs,
-    minHeight: 78,
+    flex: 1,
+    gap: 2,
+    justifyContent: "center",
+    minHeight: 54,
     outlineStyle: "none",
-    padding: spacing.sm
+    paddingHorizontal: 6,
+    paddingVertical: spacing.sm
   },
   modeCardActive: {
     backgroundColor: colors.navy,
@@ -1876,18 +1864,18 @@ const styles = StyleSheet.create({
   },
   modeCardTitle: {
     color: colors.text,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
-    marginTop: 2
+    textAlign: "center"
   },
   modeCardTitleActive: {
     color: colors.surface
   },
   modeDelta: {
     color: colors.green,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
-    marginTop: 2
+    textAlign: "center"
   },
   modeDeltaActive: {
     color: "#8EE7C8"
@@ -2148,6 +2136,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     outlineStyle: "none",
     padding: spacing.sm
+  },
+  vehicleOptionActive: {
+    backgroundColor: colors.paleGreen
   },
   vehicleOptionName: {
     color: colors.text,
