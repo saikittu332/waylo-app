@@ -473,12 +473,12 @@ const styles = StyleSheet.create({
   heroCard: {
     backgroundColor: colors.glass,
     borderColor: colors.border,
-    borderRadius: radii.xl,
+    borderRadius: radii.lg,
     borderWidth: 1,
     flexDirection: "row",
     gap: spacing.md,
     justifyContent: "space-between",
-    padding: spacing.md
+    padding: 18
   },
   heroText: {
     flex: 1
@@ -492,12 +492,13 @@ const styles = StyleSheet.create({
   routeTitle: {
     color: colors.text,
     fontSize: 20,
-    fontWeight: "500"
+    fontWeight: "700",
+    lineHeight: 26
   },
   routeMeta: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: "400",
     marginTop: 4
   },
   editingMeta: {
@@ -512,7 +513,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     justifyContent: "center",
     minWidth: 116,
-    padding: spacing.sm
+    padding: spacing.md
   },
   routeStrip: {
     flexDirection: "row",
@@ -526,29 +527,29 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     borderWidth: 1,
     flex: 1,
-    gap: 3,
-    padding: spacing.sm,
+    gap: spacing.xs,
+    padding: spacing.md,
     ...shadows.soft
   },
   routeStripLabel: {
     color: colors.muted,
-    fontSize: 10,
-    fontWeight: "500"
+    fontSize: 12,
+    fontWeight: "400"
   },
   routeStripValue: {
     color: colors.navy,
-    fontSize: 13,
-    fontWeight: "600"
+    fontSize: 14,
+    fontWeight: "700"
   },
   savingsBadgeLabel: {
     color: "#0E7A4A",
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: "500"
   },
   savingsBadgeValue: {
     color: "#0E7A4A",
     fontSize: 22,
-    fontWeight: "500",
+    fontWeight: "700",
     marginTop: 2
   },
   proofCard: {
@@ -557,12 +558,12 @@ const styles = StyleSheet.create({
   planTitle: {
     color: colors.text,
     fontSize: 16,
-    fontWeight: "500"
+    fontWeight: "700"
   },
   planSubtitle: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: "400",
     lineHeight: 17
   },
   proofGrid: {
@@ -585,7 +586,7 @@ const styles = StyleSheet.create({
   proofValue: {
     color: colors.navy,
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: "700",
     marginTop: 5
   },
   proofDetail: {
@@ -634,12 +635,12 @@ const styles = StyleSheet.create({
   selectedStopTitle: {
     color: colors.text,
     fontSize: 13,
-    fontWeight: "500"
+    fontWeight: "600"
   },
   selectedStopMeta: {
     color: colors.muted,
     fontSize: 11,
-    fontWeight: "500",
+    fontWeight: "400",
     marginTop: 2
   },
   emptyStopsText: {
@@ -656,7 +657,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: "row",
     gap: spacing.sm,
-    padding: spacing.sm
+    padding: spacing.md
   },
   rankScore: {
     alignItems: "center",
@@ -677,12 +678,12 @@ const styles = StyleSheet.create({
   rankTitle: {
     color: colors.text,
     fontSize: 13,
-    fontWeight: "600"
+    fontWeight: "700"
   },
   rankMeta: {
     color: colors.muted,
     fontSize: 11,
-    fontWeight: "500",
+    fontWeight: "400",
     marginTop: 2
   },
   stopsHeader: {
@@ -693,7 +694,7 @@ const styles = StyleSheet.create({
   stopsTitle: {
     color: colors.text,
     fontSize: 16,
-    fontWeight: "500"
+    fontWeight: "700"
   },
   stopsMeta: {
     color: colors.muted,

@@ -59,10 +59,10 @@ export default function StopCard({ stop, onPress, decision, timeline = false }) 
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderColor: "transparent",
+    borderColor: colors.border,
     borderWidth: 1,
-    borderRadius: radii.md,
-    padding: spacing.md,
+    borderRadius: radii.lg,
+    padding: 18,
     ...shadows.soft
   },
   timelineCard: {
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   },
   badge: {
     alignItems: "center",
-    backgroundColor: colors.paleOrange,
+    backgroundColor: colors.paleBlue,
     borderRadius: radii.pill,
     height: 36,
     justifyContent: "center",
@@ -99,22 +99,23 @@ const styles = StyleSheet.create({
   name: {
     color: colors.text,
     flex: 1,
-    fontSize: 17,
-    fontWeight: "500"
+    fontSize: 16,
+    fontWeight: "700"
   },
   type: {
-    backgroundColor: colors.paleOrange,
+    backgroundColor: colors.paleBlue,
     borderRadius: radii.pill,
-    color: colors.orange,
+    color: colors.blue,
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: "600",
     overflow: "hidden",
     paddingHorizontal: spacing.sm,
     paddingVertical: 5
   },
   meta: {
     color: colors.muted,
-    fontSize: 13,
+    fontSize: 12,
+    lineHeight: 16,
     marginTop: spacing.sm
   },
   footer: {
@@ -124,6 +125,7 @@ const styles = StyleSheet.create({
   },
   rating: {
     color: colors.navy,
+    fontSize: 12,
     fontWeight: "500"
   },
   timelineBadge: {
@@ -131,7 +133,8 @@ const styles = StyleSheet.create({
   },
   price: {
     color: colors.green,
-    fontWeight: "500"
+    fontSize: 12,
+    fontWeight: "700"
   },
   impactRow: {
     alignItems: "flex-start",

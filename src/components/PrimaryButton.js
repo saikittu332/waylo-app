@@ -38,9 +38,9 @@ const styles = StyleSheet.create({
   button: {
     alignItems: "center",
     backgroundColor: colors.blueDeep,
-    borderRadius: radii.pill,
+    borderRadius: radii.md,
     justifyContent: "center",
-    minHeight: 50,
+    minHeight: 52,
     paddingHorizontal: spacing.lg,
     shadowColor: colors.blue,
     shadowOpacity: 0.12,
@@ -75,8 +75,8 @@ const styles = StyleSheet.create({
   },
   text: {
     color: colors.surface,
-    fontSize: 15,
-    fontWeight: "500"
+    fontSize: 16,
+    fontWeight: "700"
   },
   secondaryText: {
     color: colors.navy

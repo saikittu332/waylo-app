@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     borderWidth: 1,
     flexDirection: "row",
-    minHeight: 50,
+    minHeight: 56,
     paddingHorizontal: spacing.md
   },
   searchIcon: {
@@ -272,10 +272,13 @@ const styles = StyleSheet.create({
   searchInput: {
     color: colors.text,
     flex: 1,
-    fontWeight: "500"
+    fontSize: 14,
+    fontWeight: "400",
+    outlineStyle: "none"
   },
   vehicleCard: {
-    gap: spacing.sm
+    gap: spacing.md,
+    padding: 18
   },
   carImage: {
     alignItems: "center",
@@ -303,12 +306,12 @@ const styles = StyleSheet.create({
   vehicleName: {
     color: colors.text,
     fontSize: 18,
-    fontWeight: "500"
+    fontWeight: "700"
   },
   verified: {
     color: colors.green,
     fontSize: 13,
-    fontWeight: "500"
+    fontWeight: "600"
   },
   statsRow: {
     alignItems: "center",
@@ -320,9 +323,9 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radii.md,
     borderWidth: 1,
-    gap: spacing.xs,
+    gap: spacing.sm,
     marginTop: spacing.sm,
-    padding: spacing.md
+    padding: 18
   },
   rangeHeader: {
     alignItems: "center",
@@ -332,12 +335,12 @@ const styles = StyleSheet.create({
   rangeLabel: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "500"
+    fontWeight: "400"
   },
   rangeValue: {
     color: colors.green,
-    fontSize: 16,
-    fontWeight: "500"
+    fontSize: 22,
+    fontWeight: "700"
   },
   rangeTrack: {
     backgroundColor: colors.border,
@@ -353,7 +356,7 @@ const styles = StyleSheet.create({
   rangeMeta: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: "400",
     lineHeight: 17
   },
   vehiclePreview: {
@@ -429,6 +432,7 @@ const styles = StyleSheet.create({
   },
   fuelText: {
     color: colors.text,
+    fontSize: 14,
     fontWeight: "500"
   },
   activeFuelText: {
@@ -437,10 +441,10 @@ const styles = StyleSheet.create({
   helper: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "500"
+    fontWeight: "400"
   },
   fieldRow: {
-    gap: spacing.xs
+    gap: spacing.sm
   },
   fieldLabel: {
     color: colors.muted,
@@ -450,10 +454,12 @@ const styles = StyleSheet.create({
   fieldInput: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: radii.sm,
+    borderRadius: radii.md,
     borderWidth: 1,
     color: colors.text,
-    minHeight: 42,
+    fontSize: 14,
+    minHeight: 56,
+    outlineStyle: "none",
     paddingHorizontal: spacing.md
   },
   invalidInput: {

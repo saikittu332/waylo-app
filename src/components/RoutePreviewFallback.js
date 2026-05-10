@@ -7,8 +7,8 @@ export default function RoutePreviewFallback({ route, originLabel, destinationLa
   const distance = route?.distanceMiles ? `${Math.round(route.distanceMiles)} mi` : "Route preview";
   const duration = route?.durationHours ? `${Math.floor(route.durationHours)}h ${Math.round((route.durationHours % 1) * 60)}m` : "Preview";
   const badgeText = route?.map?.isDemoRoute
-    ? "Demo distance only"
-    : hasMapboxToken() ? "Map rendering fallback" : "Mapbox token needed";
+    ? "Estimated route"
+    : hasMapboxToken() ? "Route preview" : "Route preview unavailable";
   return (
     <View style={styles.mapCard}>
       <View style={styles.water} />
@@ -28,7 +28,7 @@ export default function RoutePreviewFallback({ route, originLabel, destinationLa
       <View style={styles.fallbackBadge}>
         <Text style={styles.fallbackBadgeText}>{badgeText}</Text>
         <Text style={styles.fallbackBadgeSub}>
-          {hasMapboxToken() && !route?.map?.isDemoRoute ? "Route data is real; this view uses a lightweight preview map." : "This visual is not live navigation."}
+          {hasMapboxToken() && !route?.map?.isDemoRoute ? "Distance and drive time use your selected route." : "Add route data to improve this preview."}
         </Text>
       </View>
     </View>

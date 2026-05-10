@@ -939,7 +939,7 @@ function ProfileContent({ assistantName, setAssistantName, user, setUser, naviga
       <PremiumCard style={styles.accountCard}>
         <View style={styles.sessionStatus}>
           <View style={styles.sessionDot} />
-          <Text style={styles.sessionText}>{user?.id ? "Backend session active" : "Local demo session"}</Text>
+          <Text style={styles.sessionText}>{user?.id ? "Account connected" : "Demo session"}</Text>
         </View>
         <View>
           <Text style={styles.cardTitle}>Account</Text>
@@ -1289,13 +1289,13 @@ const styles = StyleSheet.create({
   },
   greeting: {
     color: colors.navy,
-    fontSize: 19,
-    fontWeight: "500"
+    fontSize: 18,
+    fontWeight: "700"
   },
   assistant: {
     color: colors.muted,
     fontSize: 13,
-    fontWeight: "500",
+    fontWeight: "400",
     marginTop: spacing.xs
   },
   bellButton: {
@@ -1310,7 +1310,7 @@ const styles = StyleSheet.create({
     width: 38
   },
   bellDot: {
-    backgroundColor: colors.orange,
+    backgroundColor: colors.green,
     borderColor: colors.surface,
     borderRadius: radii.pill,
     borderWidth: 2,
@@ -1322,7 +1322,7 @@ const styles = StyleSheet.create({
   },
   container: {
     alignSelf: "center",
-    gap: spacing.md,
+    gap: spacing.lg,
     maxWidth: screen.maxWidth,
     paddingHorizontal: screen.padding,
     paddingBottom: 112,
@@ -1331,12 +1331,12 @@ const styles = StyleSheet.create({
   },
   mapPlanningCanvas: {
     backgroundColor: colors.mapBlue,
-    borderColor: "rgba(47,128,237,0.12)",
-    borderRadius: radii.xl,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
     borderWidth: 1,
     height: 210,
     overflow: "hidden",
-    padding: 14,
+    padding: spacing.md,
     position: "relative",
     zIndex: 10,
     ...shadows.soft
@@ -1394,9 +1394,9 @@ const styles = StyleSheet.create({
     width: 28
   },
   canvasTopCopy: {
-    backgroundColor: "rgba(255,255,255,0.9)",
-    borderColor: "rgba(47,128,237,0.1)",
-    borderRadius: radii.lg,
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderColor: colors.border,
+    borderRadius: radii.md,
     borderWidth: 1,
     maxWidth: 280,
     padding: spacing.sm
@@ -1587,12 +1587,12 @@ const styles = StyleSheet.create({
   },
   planningSheet: {
     backgroundColor: colors.surface,
-    borderColor: "rgba(35, 71, 101, 0.07)",
+    borderColor: colors.border,
     borderRadius: radii.lg,
     borderWidth: 1,
     gap: spacing.md,
     marginTop: -28,
-    padding: spacing.md,
+    padding: 18,
     zIndex: 2,
     ...shadows.card
   },
@@ -1634,8 +1634,8 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     color: colors.text,
-    fontSize: 19,
-    fontWeight: "600"
+    fontSize: 18,
+    fontWeight: "700"
   },
   label: {
     color: colors.text,
@@ -1649,8 +1649,8 @@ const styles = StyleSheet.create({
   tripField: {
     alignItems: "stretch",
     backgroundColor: "#FBFDFF",
-    borderColor: "rgba(31,78,115,0.12)",
-    borderRadius: radii.lg,
+    borderColor: colors.border,
+    borderRadius: radii.md,
     borderWidth: 1,
     flexDirection: "row",
     gap: spacing.sm,
@@ -1659,7 +1659,7 @@ const styles = StyleSheet.create({
   },
   tripFieldActive: {
     backgroundColor: colors.surface,
-    borderColor: "rgba(47,128,237,0.42)",
+    borderColor: colors.blue,
     shadowColor: colors.blue,
     shadowOpacity: 0.08,
     shadowRadius: 16,
@@ -1866,10 +1866,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexBasis: "47%",
     flexGrow: 1,
-    gap: 3,
-    minHeight: 58,
+    gap: spacing.xs,
+    minHeight: 78,
     outlineStyle: "none",
-    padding: 8
+    padding: spacing.sm
   },
   modeCardActive: {
     backgroundColor: colors.navy,
@@ -1888,8 +1888,8 @@ const styles = StyleSheet.create({
   },
   modeCardTitle: {
     color: colors.text,
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 13,
+    fontWeight: "700",
     marginTop: 2
   },
   modeCardTitleActive: {
@@ -1897,8 +1897,8 @@ const styles = StyleSheet.create({
   },
   modeDelta: {
     color: colors.green,
-    fontSize: 10,
-    fontWeight: "600",
+    fontSize: 12,
+    fontWeight: "700",
     marginTop: 2
   },
   modeDeltaActive: {
@@ -1911,8 +1911,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: colors.text,
-    fontSize: 16,
-    fontWeight: "600"
+    fontSize: 18,
+    fontWeight: "700"
   },
   viewAll: {
     color: colors.blue,
@@ -1923,8 +1923,7 @@ const styles = StyleSheet.create({
     outlineStyle: "none"
   },
   recentCard: {
-    gap: spacing.xs,
-    paddingVertical: spacing.sm
+    gap: spacing.sm
   },
   groupLabel: {
     color: colors.muted,
@@ -2016,13 +2015,13 @@ const styles = StyleSheet.create({
   },
   tripPlanCard: {
     backgroundColor: colors.surface,
-    borderColor: "rgba(47,128,237,0.11)",
+    borderColor: colors.border,
     borderRadius: radii.md,
     borderWidth: 1,
     gap: spacing.sm,
     marginVertical: spacing.xs,
     outlineStyle: "none",
-    padding: spacing.sm
+    padding: spacing.md
   },
   tripPlanTop: {
     alignItems: "center",
@@ -2110,7 +2109,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: "row",
     gap: spacing.sm,
-    minHeight: 58,
+    minHeight: 56,
     outlineStyle: "none",
     padding: spacing.sm
   },
@@ -2323,7 +2322,7 @@ const styles = StyleSheet.create({
   },
   previewStopPin: {
     alignItems: "center",
-    backgroundColor: colors.orange,
+    backgroundColor: colors.blue,
     borderColor: colors.surface,
     borderRadius: radii.pill,
     borderWidth: 3,

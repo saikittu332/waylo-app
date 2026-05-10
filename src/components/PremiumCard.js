@@ -9,10 +9,10 @@ export default function PremiumCard({ children, style, flat = false }) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderColor: "rgba(35, 71, 101, 0.08)",
-    borderRadius: radii.md,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
     borderWidth: 1,
-    padding: spacing.md,
+    padding: 18,
     ...shadows.card
   },
   flat: {

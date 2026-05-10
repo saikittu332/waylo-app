@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   },
   featureIcon: {
     alignItems: "center",
-    backgroundColor: colors.orange,
+    backgroundColor: colors.blue,
     borderRadius: radii.pill,
     height: 28,
     justifyContent: "center",

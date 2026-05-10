@@ -15,7 +15,7 @@ export default function StopDetailsScreen({ navigation, route }) {
   };
   const decision = route.params?.decision;
   const isFuel = stop.type === "fuel";
-  const sourceLabel = stop.placeSource || stop.source || "Waylo route logic";
+  const sourceLabel = cleanSourceLabel(stop.placeSource || stop.source);
   const fuelPriceLabel = stop.fuelPrice ? `$${stop.fuelPrice}/gal` : "TBD";
   const trustLine = stop.rating ? `${stop.rating} rating | ${sourceLabel}` : sourceLabel;
   const detourMinutes = stop.detourMinutes || (isFuel ? 4 : stop.type === "scenic" ? 12 : 7);
@@ -64,7 +64,7 @@ export default function StopDetailsScreen({ navigation, route }) {
             <Feature icon={isFuel ? "pricetag-outline" : "navigate-outline"} label={isFuel ? "Fuel Price" : "Detour"} value={isFuel ? fuelPriceLabel : "Low"} />
             <Feature icon="map-outline" label="Route Mile" value={`${Math.round(stop.distanceFromStart || 0)} mi`} />
             <Feature icon="information-circle-outline" label="Type" value={String(stop.type || "stop")} />
-            <Feature icon="business-outline" label="Source" value={stop.placeSource ? "Mapbox" : "Waylo"} />
+            <Feature icon="business-outline" label="Source" value={sourceLabel.includes("Mapbox") ? "Mapbox" : "Waylo"} />
           </View>
 
           <Text style={styles.sectionTitle}>Why Waylo recommends this stop</Text>
@@ -95,10 +95,16 @@ export default function StopDetailsScreen({ navigation, route }) {
   );
 }
 
+function cleanSourceLabel(source) {
+  if (!source || String(source).toLowerCase().includes("fallback")) return "Waylo route logic";
+  if (source === "Mapbox place search") return "Mapbox place data";
+  return source;
+}
+
 function getStopHero(type) {
   const options = {
-    fuel: { icon: "pricetag-outline", kicker: "Fuel strategy", title: "Lower-cost stop near your route", background: "#D8ECFF", accent: colors.orange },
-    food: { icon: "restaurant-outline", kicker: "Meal break", title: "A useful pause near midpoint", background: "#FFF4E8", accent: colors.orange },
+    fuel: { icon: "pricetag-outline", kicker: "Fuel strategy", title: "Lower-cost stop near your route", background: "#D8ECFF", accent: colors.blue },
+    food: { icon: "restaurant-outline", kicker: "Meal break", title: "A useful pause near midpoint", background: "#FFF4E8", accent: colors.blue },
     rest: { icon: "bed-outline", kicker: "Comfort timing", title: "Rest break before fatigue builds", background: "#E8F8F1", accent: colors.green },
     scenic: { icon: "camera-outline", kicker: "Scenic option", title: "A better stop without a big detour", background: "#EDF6FF", accent: colors.blue }
   };
@@ -226,9 +232,9 @@ const styles = StyleSheet.create({
     fontWeight: "500"
   },
   rating: {
-    color: colors.orange,
+    color: colors.muted,
     fontSize: 13,
-    fontWeight: "500"
+    fontWeight: "400"
   },
   scoreBand: {
     alignItems: "center",
@@ -295,8 +301,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: colors.text,
-    fontSize: 15,
-    fontWeight: "500",
+    fontSize: 16,
+    fontWeight: "700",
     marginTop: spacing.md
   },
   impactGrid: {
