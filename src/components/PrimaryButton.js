@@ -18,7 +18,8 @@ export default function PrimaryButton({ title, onPress, variant = "primary", dis
         styles.button,
         isSecondary && styles.secondary,
         isDanger && styles.danger,
-        (pressed || disabled) && styles.dimmed
+        disabled && styles.disabled,
+        pressed && !disabled && styles.pressed
       ]}
     >
       {loading ? (
@@ -39,12 +40,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.blueDeep,
     borderRadius: radii.pill,
     justifyContent: "center",
-    minHeight: 52,
+    minHeight: 50,
     paddingHorizontal: spacing.lg,
     shadowColor: colors.blue,
-    shadowOpacity: 0.18,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
     elevation: 3,
     outlineStyle: "none"
   },
@@ -59,8 +60,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.red,
     shadowColor: colors.red
   },
-  dimmed: {
+  disabled: {
     opacity: 0.72
+  },
+  pressed: {
+    opacity: 0.86,
+    transform: [{ scale: 0.99 }]
   },
   content: {
     alignItems: "center",
@@ -71,7 +76,7 @@ const styles = StyleSheet.create({
   text: {
     color: colors.surface,
     fontSize: 15,
-    fontWeight: "600"
+    fontWeight: "500"
   },
   secondaryText: {
     color: colors.navy

@@ -1,5 +1,5 @@
 import React from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import PremiumCard from "../components/PremiumCard";
@@ -39,7 +39,7 @@ export default function NavigationScreen({ navigation, route }) {
           <View style={styles.turnCard}>
             <Ionicons color={colors.surface} name="map-outline" size={30} />
             <View>
-              <Text style={styles.turnText}>Route Preview</Text>
+              <Text style={styles.turnText}>Drive Preview</Text>
               <Text numberOfLines={1} style={styles.turnDistance}>{destinationLabel}</Text>
             </View>
             <View style={styles.voiceButton}>
@@ -47,9 +47,9 @@ export default function NavigationScreen({ navigation, route }) {
             </View>
           </View>
 
-          <View style={styles.controls}>
-            <FloatingControl label="65" sublabel="speed" />
-            <FloatingControl label="58" sublabel="mph" />
+          <View style={styles.previewBadge}>
+            <Ionicons color={colors.blue} name="information-circle-outline" size={16} />
+            <Text style={styles.previewBadgeText}>Preview mode. Your saved route is ready to review before you drive.</Text>
           </View>
 
           <PremiumCard style={styles.bottomCard}>
@@ -60,14 +60,20 @@ export default function NavigationScreen({ navigation, route }) {
               </View>
               <Text style={styles.stopCountPill}>{selectedStops.length || "Smart"} stops</Text>
             </View>
-            <View style={styles.stopRail}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.stopRail} contentContainerStyle={styles.stopRailContent}>
               {selectedStops.slice(0, 4).map((stop) => (
                 <View key={stop.id || stop.name} style={styles.stopChip}>
                   <Ionicons color={colors.blue} name={stop.type === "fuel" ? "pricetag-outline" : stop.type === "food" ? "restaurant-outline" : "bed-outline"} size={14} />
                   <Text numberOfLines={1} style={styles.stopChipText}>{stop.name}</Text>
                 </View>
               ))}
-            </View>
+              {selectedStops.length === 0 && (
+                <View style={styles.stopChip}>
+                  <Ionicons color={colors.muted} name="add-circle-outline" size={14} />
+                  <Text numberOfLines={1} style={styles.stopChipText}>No stops added yet</Text>
+                </View>
+              )}
+            </ScrollView>
             <SmartRow color={colors.blue} icon="pricetag-outline" title="Next Fuel Stop" value={firstFuelStop?.name || "Best fuel stop"} meta="Planned from your saved route" />
             <View style={styles.dividerLine} />
             <SmartRow color={colors.skyBlue} icon="bed-outline" title="Take a break" value="Recommended in 1h 45m" meta="" />
@@ -79,12 +85,12 @@ export default function NavigationScreen({ navigation, route }) {
               <StatItem compact label="hrs" value={formatHours(routeSummary?.durationHours || 6.75)} />
               <StatItem compact label="mi" value={`${routeSummary?.distanceMiles || 383}`} />
               <Pressable
-                accessibilityLabel="Finish route preview"
+                accessibilityLabel="Close route preview"
                 accessibilityRole="button"
                 onPress={() => setFinishOpen(true)}
                 style={styles.endButton}
               >
-                <Text style={styles.endButtonText}>Finish</Text>
+                <Text style={styles.endButtonText}>Close</Text>
               </Pressable>
             </View>
           </PremiumCard>
@@ -96,25 +102,25 @@ export default function NavigationScreen({ navigation, route }) {
             <View style={styles.confirmIcon}>
               <Ionicons color={colors.blue} name="flag-outline" size={24} />
             </View>
-            <Text style={styles.confirmTitle}>What happened with this drive?</Text>
-            <Text style={styles.confirmCopy}>This screen is a route preview. Only mark the trip complete if you actually finished the drive.</Text>
-            <Pressable
-              onPress={() => {
-                setFinishOpen(false);
-                navigation.navigate("TripSummary", { tripPlan, completionCandidate: true });
-              }}
-              style={styles.confirmPrimary}
-            >
-              <Text style={styles.confirmPrimaryText}>Mark Drive Complete</Text>
-            </Pressable>
+            <Text style={styles.confirmTitle}>Close drive preview?</Text>
+            <Text style={styles.confirmCopy}>Keep this route planned, or mark it complete only if the drive actually finished.</Text>
             <Pressable
               onPress={() => {
                 setFinishOpen(false);
                 navigation.navigate("Home");
               }}
+              style={styles.confirmPrimary}
+            >
+              <Text style={styles.confirmPrimaryText}>Keep as Planned</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setFinishOpen(false);
+                navigation.navigate("TripSummary", { tripPlan, completionCandidate: true });
+              }}
               style={styles.confirmSecondary}
             >
-              <Text style={styles.confirmSecondaryText}>Exit Preview, Keep Planned</Text>
+              <Text style={styles.confirmSecondaryText}>Mark Completed</Text>
             </Pressable>
             <Pressable onPress={() => setFinishOpen(false)} style={styles.confirmGhost}>
               <Text style={styles.confirmGhostText}>Continue Preview</Text>
@@ -122,15 +128,6 @@ export default function NavigationScreen({ navigation, route }) {
           </PremiumCard>
         </View>
       </Modal>
-    </View>
-  );
-}
-
-function FloatingControl({ label, sublabel }) {
-  return (
-    <View style={styles.floatControl}>
-      <Text style={styles.floatLabel}>{label}</Text>
-      <Text style={styles.floatSub}>{sublabel}</Text>
     </View>
   );
 }
@@ -252,28 +249,25 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "500"
   },
-  controls: {
-    gap: spacing.sm,
+  previewBadge: {
+    alignItems: "flex-start",
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(255,255,255,0.92)",
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
     marginTop: "auto",
-    width: 60
-  },
-  floatControl: {
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderRadius: radii.sm,
-    padding: spacing.xs,
+    maxWidth: 260,
+    padding: spacing.sm,
     ...shadows.soft
   },
-  floatLabel: {
+  previewBadgeText: {
     color: colors.navy,
-    fontSize: 18,
-    fontWeight: "500"
-  },
-  floatSub: {
-    color: colors.muted,
-    fontSize: 9,
-    fontWeight: "500",
-    textTransform: "uppercase"
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17
   },
   bottomCard: {
     borderBottomLeftRadius: radii.xl,
@@ -309,9 +303,11 @@ const styles = StyleSheet.create({
     paddingVertical: 5
   },
   stopRail: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.xs
+    marginHorizontal: -2
+  },
+  stopRailContent: {
+    gap: spacing.xs,
+    paddingHorizontal: 2
   },
   stopChip: {
     alignItems: "center",
@@ -321,7 +317,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: "row",
     gap: 4,
-    maxWidth: "48%",
+    maxWidth: 170,
     paddingHorizontal: spacing.sm,
     paddingVertical: 6
   },
@@ -378,7 +374,7 @@ const styles = StyleSheet.create({
   },
   endButton: {
     alignItems: "center",
-    backgroundColor: colors.red,
+    backgroundColor: colors.blue,
     borderRadius: radii.md,
     height: 54,
     justifyContent: "center",
@@ -421,7 +417,7 @@ const styles = StyleSheet.create({
   },
   confirmPrimary: {
     alignItems: "center",
-    backgroundColor: colors.green,
+    backgroundColor: colors.blue,
     borderRadius: radii.pill,
     minHeight: 48,
     justifyContent: "center"
@@ -440,7 +436,7 @@ const styles = StyleSheet.create({
     justifyContent: "center"
   },
   confirmSecondaryText: {
-    color: colors.navy,
+    color: colors.red,
     fontSize: 14,
     fontWeight: "600"
   },

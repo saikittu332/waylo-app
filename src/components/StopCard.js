@@ -20,6 +20,7 @@ const typeIcons = {
 export default function StopCard({ stop, onPress, decision, timeline = false }) {
   const isAdded = decision === "added";
   const isSkipped = decision === "skipped";
+  const hasDecision = isAdded || isSkipped;
   const sourceLabel = stop.placeSource ? "Real place" : "Route logic";
 
   return (
@@ -32,7 +33,7 @@ export default function StopCard({ stop, onPress, decision, timeline = false }) 
           <Text style={styles.name}>{stop.name}</Text>
           <Text style={styles.meta}>{stop.distanceFromStart} mi into route | {stop.recommendation || `${stop.distanceFromCurrent} mi away`}</Text>
         </View>
-        {decision ? (
+        {hasDecision ? (
           <View style={[styles.decisionPill, isAdded ? styles.addedPill : styles.skippedPill]}>
             <Ionicons color={isAdded ? colors.green : colors.muted} name={isAdded ? "checkmark-circle" : "remove-circle-outline"} size={14} />
             <Text style={[styles.decisionText, isAdded ? styles.addedText : styles.skippedText]}>{isAdded ? "Added" : "Skipped"}</Text>
@@ -99,14 +100,14 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
     fontSize: 17,
-    fontWeight: "600"
+    fontWeight: "500"
   },
   type: {
     backgroundColor: colors.paleOrange,
     borderRadius: radii.pill,
     color: colors.orange,
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "500",
     overflow: "hidden",
     paddingHorizontal: spacing.sm,
     paddingVertical: 5
@@ -123,14 +124,14 @@ const styles = StyleSheet.create({
   },
   rating: {
     color: colors.navy,
-    fontWeight: "600"
+    fontWeight: "500"
   },
   timelineBadge: {
     backgroundColor: colors.paleBlue
   },
   price: {
     color: colors.green,
-    fontWeight: "600"
+    fontWeight: "500"
   },
   impactRow: {
     alignItems: "flex-start",
@@ -164,7 +165,7 @@ const styles = StyleSheet.create({
   },
   decisionText: {
     fontSize: 12,
-    fontWeight: "600"
+    fontWeight: "500"
   },
   addedText: {
     color: colors.green

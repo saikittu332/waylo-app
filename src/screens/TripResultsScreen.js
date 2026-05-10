@@ -49,10 +49,18 @@ export default function TripResultsScreen({ navigation, route }) {
   useEffect(() => {
     const decision = route.params?.stopDecision;
     if (decision?.id) {
-      setStopDecisions((current) => ({ ...current, [decision.id]: decision.status }));
+      setStopDecisions((current) => {
+        const next = { ...current };
+        if (decision.status === "recommended") {
+          delete next[decision.id];
+        } else {
+          next[decision.id] = decision.status;
+        }
+        return next;
+      });
       const stop = tripPlan?.stops?.find((item) => item.id === decision.id);
       if (stop?.persistedStopId) {
-        updateTripStop(stop.persistedStopId, { decision: decision.status }).catch((error) => {
+        updateTripStop(stop.persistedStopId, { decision: decision.status === "recommended" ? "recommended" : decision.status }).catch((error) => {
           console.warn("Waylo API stop decision update unavailable:", error.message);
         });
       }
@@ -170,7 +178,8 @@ export default function TripResultsScreen({ navigation, route }) {
   }
 
   async function openStopDetails(stop) {
-    navigation.navigate("StopDetails", { stop, decision: stopDecisions[stop.id] || stop.decision });
+    const decision = stopDecisions[stop.id] || (stop.decision === "added" || stop.decision === "skipped" ? stop.decision : undefined);
+    navigation.navigate("StopDetails", { stop, decision });
   }
 
   return (
@@ -248,7 +257,7 @@ export default function TripResultsScreen({ navigation, route }) {
             {stops.map((stop) => (
               <StopCard
                 key={stop.id}
-                decision={stopDecisions[stop.id] || stop.decision}
+                decision={stopDecisions[stop.id] || (stop.decision === "added" || stop.decision === "skipped" ? stop.decision : undefined)}
                 stop={stop}
                 timeline
                 onPress={() => openStopDetails(stop)}

@@ -28,7 +28,7 @@ export default function RoutePreviewFallback({ route, originLabel, destinationLa
       <View style={styles.fallbackBadge}>
         <Text style={styles.fallbackBadgeText}>{badgeText}</Text>
         <Text style={styles.fallbackBadgeSub}>
-          {hasMapboxToken() && !route?.map?.isDemoRoute ? "Route data is real; native map rendering needs the dev build." : "This visual is not live navigation."}
+          {hasMapboxToken() && !route?.map?.isDemoRoute ? "Route data is real; this view uses a lightweight preview map." : "This visual is not live navigation."}
         </Text>
       </View>
     </View>
@@ -140,13 +140,13 @@ const styles = StyleSheet.create({
   routeBadgeLabel: {
     color: colors.green,
     fontSize: 10,
-    fontWeight: "600",
+    fontWeight: "500",
     textTransform: "uppercase"
   },
   routeBadgeText: {
     color: colors.navy,
     fontSize: 18,
-    fontWeight: "600"
+    fontWeight: "500"
   },
   routeBadgeSub: {
     color: colors.muted,
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   fallbackBadgeText: {
     color: colors.navy,
     fontSize: 12,
-    fontWeight: "600"
+    fontWeight: "500"
   },
   fallbackBadgeSub: {
     color: colors.muted,
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   mapPinText: {
     color: colors.navy,
     fontSize: 11,
-    fontWeight: "600",
+    fontWeight: "500",
     marginTop: 2
   },
   pinStart: {

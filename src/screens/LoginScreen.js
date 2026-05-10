@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import Logo from "../components/Logo";
@@ -42,6 +42,7 @@ export default function LoginScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [confirmation, setConfirmation] = useState(null);
   const [error, setError] = useState("");
+  const [resendSeconds, setResendSeconds] = useState(0);
 
   useEffect(() => {
     if (otpSent) {
@@ -49,8 +50,15 @@ export default function LoginScreen({ navigation }) {
         otpRefs.current[0]?.focus();
         scrollRef.current?.scrollToEnd({ animated: true });
       });
+      setResendSeconds(30);
     }
   }, [otpSent]);
+
+  useEffect(() => {
+    if (!otpSent || resendSeconds <= 0) return undefined;
+    const timer = setTimeout(() => setResendSeconds((current) => Math.max(0, current - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [otpSent, resendSeconds]);
 
   function updateOtp(value, index) {
     const digits = value.replace(/\D/g, "");
@@ -98,6 +106,7 @@ export default function LoginScreen({ navigation }) {
         const nextConfirmation = await sendPhoneOtp(normalizedPhone);
         setPhone(formatUsPhone(normalizedPhone));
         setConfirmation(nextConfirmation);
+        setCode(["", "", "", "", "", ""]);
         setOtpSent(true);
         return;
       }
@@ -107,6 +116,30 @@ export default function LoginScreen({ navigation }) {
       navigation.navigate("AssistantName", { user: session.user, accessToken: session.access_token });
     } catch (authError) {
       console.warn("Waylo phone auth failed:", authError);
+      logAuthDiagnostic(authError);
+      setError(getAuthErrorMessage(authError));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function resendOtp() {
+    if (resendSeconds > 0 || loading) return;
+    const digits = getUsPhoneDigits(phone);
+    if (digits.length !== 10) {
+      setError("Enter a valid 10-digit US phone number.");
+      return;
+    }
+    const normalizedPhone = normalizePhone(digits);
+    setError("");
+    setLoading(true);
+    setCode(["", "", "", "", "", ""]);
+    try {
+      const nextConfirmation = await sendPhoneOtp(normalizedPhone);
+      setConfirmation(nextConfirmation);
+      setResendSeconds(30);
+    } catch (authError) {
+      console.warn("Waylo phone auth resend failed:", authError);
       logAuthDiagnostic(authError);
       setError(getAuthErrorMessage(authError));
     } finally {
@@ -172,7 +205,11 @@ export default function LoginScreen({ navigation }) {
                   />
                 ))}
               </View>
-              <Text style={styles.resend}>Resend OTP in 00:30</Text>
+              <Pressable disabled={resendSeconds > 0 || loading} onPress={resendOtp} style={styles.resendButton}>
+                <Text style={[styles.resend, resendSeconds === 0 && styles.resendReady]}>
+                  {resendSeconds > 0 ? `Resend OTP in 00:${String(resendSeconds).padStart(2, "0")}` : "Resend code"}
+                </Text>
+              </Pressable>
             </>
           ) : (
             <View style={styles.otpPreview}>
@@ -292,6 +329,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "500",
     textAlign: "center"
+  },
+  resendButton: {
+    alignSelf: "center",
+    minHeight: 34,
+    justifyContent: "center",
+    outlineStyle: "none",
+    paddingHorizontal: spacing.md
+  },
+  resendReady: {
+    color: colors.blue
   },
   sentBanner: {
     alignItems: "flex-start",

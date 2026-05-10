@@ -1,19 +1,25 @@
 import React from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { colors } from "../constants/theme";
-
-const brandLogo = require("../../assets/waylo-brand-logo.png");
 
 export default function Logo({ size = "md", light = false, showText = true, image = false }) {
   if (image) {
-    const imageSize = size === "lg" ? 210 : size === "sm" ? 82 : 132;
+    const markSize = size === "lg" ? 132 : size === "sm" ? 64 : 94;
     return (
-      <Image
-        accessibilityLabel="Waylo logo"
-        resizeMode="contain"
-        source={brandLogo}
-        style={{ height: imageSize, width: imageSize }}
-      />
+      <View accessibilityLabel="Waylo logo" style={styles.brandLockup}>
+        <View style={[styles.logoMark, { height: markSize, width: markSize }]}>
+          <Text style={[styles.markW, { fontSize: markSize * 0.76 }]}>W</Text>
+          <View style={styles.roadSweep} />
+          <View style={styles.roadStripe} />
+          <View style={styles.pin}>
+            <View style={styles.pinHole} />
+          </View>
+        </View>
+        <Text style={[styles.wordmark, { fontSize: size === "lg" ? 38 : 28 }]}>
+          Wayl<Text style={styles.tealText}>o</Text>
+        </Text>
+        <Text style={styles.tagline}>Drive smart. Spend less.</Text>
+      </View>
     );
   }
 
@@ -35,8 +41,72 @@ const styles = StyleSheet.create({
   wrap: {
     alignItems: "center"
   },
+  brandLockup: {
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  logoMark: {
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative"
+  },
+  markW: {
+    color: colors.blueDeep,
+    fontWeight: "800",
+    letterSpacing: -5,
+    lineHeight: 100
+  },
+  roadSweep: {
+    backgroundColor: colors.navyDeep,
+    borderRadius: 999,
+    bottom: 8,
+    height: "58%",
+    position: "absolute",
+    right: 10,
+    transform: [{ rotate: "27deg" }],
+    width: 26
+  },
+  roadStripe: {
+    backgroundColor: colors.surface,
+    borderRadius: 999,
+    bottom: 26,
+    height: "28%",
+    position: "absolute",
+    right: 24,
+    transform: [{ rotate: "27deg" }],
+    width: 7
+  },
+  pin: {
+    alignItems: "center",
+    backgroundColor: colors.green,
+    borderRadius: 999,
+    height: 42,
+    justifyContent: "center",
+    position: "absolute",
+    right: 12,
+    top: 0,
+    width: 42
+  },
+  pinHole: {
+    backgroundColor: colors.surface,
+    borderRadius: 999,
+    height: 17,
+    width: 17
+  },
+  wordmark: {
+    color: colors.navy,
+    fontWeight: "600",
+    letterSpacing: 0,
+    marginTop: -8
+  },
+  tagline: {
+    color: colors.navy,
+    fontSize: 12,
+    fontWeight: "500",
+    marginTop: 2
+  },
   text: {
-    fontWeight: "700",
+    fontWeight: "600",
     letterSpacing: 0,
     marginTop: -2
   },

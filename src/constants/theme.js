@@ -31,18 +31,18 @@ export const colors = {
 export const fonts = {
   regular: "Inter_400Regular",
   medium: "Inter_500Medium",
-  semibold: "Inter_600SemiBold",
-  bold: "Inter_700Bold",
+  semibold: "Inter_500Medium",
+  bold: "Inter_600SemiBold",
   fallback: "System"
 };
 
 export const spacing = {
-  xs: 6,
-  sm: 10,
+  xs: 4,
+  sm: 8,
   md: 16,
   lg: 24,
   xl: 32,
-  xxl: 44
+  xxl: 40
 };
 
 export const radii = {
@@ -56,43 +56,43 @@ export const radii = {
 export const typography = {
   hero: {
     fontFamily: fonts.semibold,
-    fontSize: 28,
-    fontWeight: "600",
+    fontSize: 26,
+    fontWeight: "500",
     letterSpacing: 0,
-    lineHeight: 36,
+    lineHeight: 34,
     color: colors.navy
   },
   title: {
     fontFamily: fonts.semibold,
-    fontSize: 30,
-    fontWeight: "600",
+    fontSize: 26,
+    fontWeight: "500",
     letterSpacing: 0,
     color: colors.navy
   },
   heading: {
     fontFamily: fonts.semibold,
-    fontSize: 22,
-    fontWeight: "600",
+    fontSize: 21,
+    fontWeight: "500",
     letterSpacing: 0,
-    lineHeight: 30,
+    lineHeight: 28,
     color: colors.text
   },
   section: {
     fontFamily: fonts.medium,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "500",
     letterSpacing: 0,
     color: colors.text
   },
   body: {
     fontFamily: fonts.regular,
-    fontSize: 16,
-    lineHeight: 23,
+    fontSize: 15,
+    lineHeight: 22,
     color: colors.text
   },
   caption: {
     fontFamily: fonts.medium,
-    fontSize: 13,
+    fontSize: 12,
     lineHeight: 18,
     color: colors.muted
   }

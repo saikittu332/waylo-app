@@ -79,8 +79,17 @@ export default function StopDetailsScreen({ navigation, route }) {
           <Checklist text="Can be added or skipped before you save the route" />
         </PremiumCard>
 
-        <PrimaryButton icon={decision === "added" ? "checkmark-circle-outline" : "add-circle-outline"} title={decision === "added" ? "Added to Route" : "Add to Route"} onPress={() => chooseStop("added")} />
-        <PrimaryButton icon={decision === "skipped" ? "remove-circle-outline" : "close-circle-outline"} title={decision === "skipped" ? "Skipped" : "Skip Stop"} variant="secondary" onPress={() => chooseStop("skipped")} />
+        {decision && (
+          <View style={[styles.decisionBanner, decision === "added" ? styles.decisionAdded : styles.decisionSkipped]}>
+            <Ionicons color={decision === "added" ? colors.green : colors.muted} name={decision === "added" ? "checkmark-circle" : "remove-circle-outline"} size={18} />
+            <Text style={styles.decisionBannerText}>
+              {decision === "added" ? "This stop is in your final route." : "This stop is skipped for now."}
+            </Text>
+          </View>
+        )}
+        <PrimaryButton icon={decision === "added" ? "checkmark-circle-outline" : "add-circle-outline"} title={decision === "added" ? "Keep Added" : "Add to Route"} onPress={() => chooseStop("added")} />
+        <PrimaryButton icon={decision === "skipped" ? "remove-circle-outline" : "close-circle-outline"} title={decision === "skipped" ? "Keep Skipped" : "Skip Stop"} variant="secondary" onPress={() => chooseStop("skipped")} />
+        {!!decision && <PrimaryButton icon="refresh-outline" title="Undo Decision" variant="secondary" onPress={() => chooseStop("recommended")} />}
       </ScrollView>
     </SafeAreaView>
   );
@@ -333,5 +342,30 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 13,
     fontWeight: "500"
+  },
+  decisionBanner: {
+    alignItems: "center",
+    alignSelf: "center",
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    maxWidth: screen.maxWidth - screen.padding * 2,
+    padding: spacing.md,
+    width: "100%"
+  },
+  decisionAdded: {
+    backgroundColor: colors.paleGreen,
+    borderColor: "rgba(18,184,134,0.22)"
+  },
+  decisionSkipped: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border
+  },
+  decisionBannerText: {
+    color: colors.text,
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18
   }
 });

@@ -67,6 +67,25 @@ function planStops(plan) {
     || 0;
 }
 
+function planKey(plan) {
+  return [
+    String(plan?.tripId || plan?.routePayload?.id || ""),
+    String(plan?.from || "").trim().toLowerCase(),
+    String(plan?.to || "").trim().toLowerCase(),
+    String(plan?.mode || "").trim().toLowerCase()
+  ].join("|");
+}
+
+function mergePlans(currentPlans, incomingPlans) {
+  const merged = [];
+  [...incomingPlans, ...currentPlans].forEach((plan) => {
+    const key = planKey(plan);
+    const exists = merged.some((item) => item.id === plan.id || (key !== "|||" && planKey(item) === key));
+    if (!exists) merged.push(plan);
+  });
+  return merged;
+}
+
 function formatPhoneForDisplay(phone) {
   const digits = String(phone || "").replace(/\D/g, "");
   if (digits.length === 10) {
@@ -111,10 +130,7 @@ export default function HomeScreen({ navigation, route }) {
         setSelectedVehicle(route.params.vehicle);
       }
       if (route.params?.savedPlan) {
-        setPlannedTrips((current) => {
-          const exists = current.some((item) => item.id === route.params.savedPlan.id);
-          return exists ? current.map((item) => (item.id === route.params.savedPlan.id ? route.params.savedPlan : item)) : [route.params.savedPlan, ...current];
-        });
+        setPlannedTrips((current) => mergePlans(current, [route.params.savedPlan]));
         navigation.setParams({ savedPlan: undefined });
       }
       if (route.params?.completedTrip) {
@@ -149,7 +165,7 @@ export default function HomeScreen({ navigation, route }) {
             const activeVehicleId = user?.activeVehicleId || user?.active_vehicle_id;
             setSelectedVehicle((current) => apiVehicles.find((item) => item.id === activeVehicleId) || apiVehicles.find((item) => item.id === current?.id) || apiVehicles[0]);
           }
-          setPlannedTrips(apiPlans);
+          setPlannedTrips((current) => mergePlans(current, apiPlans));
           setCompletedTrips(
             apiTrips
               .filter((trip) => trip.status === "completed")

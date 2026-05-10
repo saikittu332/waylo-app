@@ -198,7 +198,7 @@ export async function createTripRecord({ userId, vehicle, route, insights }) {
       origin: route.from,
       destination: route.to,
       trip_mode: route.mode,
-      status: "draft",
+      status: "planned",
       distance_miles: route.distanceMiles,
       duration_hours: route.durationHours,
       estimated_fuel_cost: insights.estimatedFuelCost,
