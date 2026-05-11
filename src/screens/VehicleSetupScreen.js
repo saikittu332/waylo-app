@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CommonActions } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -20,7 +20,7 @@ export default function VehicleSetupScreen({ navigation, route }) {
   const isNewVehicle = route.params?.mode === "new";
   const isEditingExisting = Boolean(route.params?.vehicle) && !isNewVehicle;
   const emptyVehicle = { vehicleName: "", fuelType: "gas", cityMpg: "", highwayMpg: "", tankCapacity: "" };
-  const initialVehicle = isNewVehicle ? emptyVehicle : route.params?.vehicle || defaultVehicle;
+  const initialVehicle = isEditingExisting ? route.params.vehicle : emptyVehicle;
   const existingVehicles = route.params?.vehicles || (route.params?.vehicle ? [route.params.vehicle] : []);
   const [vehicle, setVehicle] = useState(initialVehicle);
   const [search, setSearch] = useState(initialVehicle.vehicleName || "");
@@ -39,12 +39,21 @@ export default function VehicleSetupScreen({ navigation, route }) {
   const [guidedLoading, setGuidedLoading] = useState(false);
   const [guidedError, setGuidedError] = useState("");
   const [activeStep, setActiveStep] = useState("year");
+  const [selectorOpen, setSelectorOpen] = useState(null);
+  const [selectorSearch, setSelectorSearch] = useState("");
   const localMatches = vehicleSuggestions
     .filter((item) => item.vehicleName.toLowerCase().includes(search.trim().toLowerCase()))
     .slice(0, 4);
   const matchingVehicles = remoteVehicles.length > 0 ? remoteVehicles : localMatches;
+  const shouldShowSearchResults = search.trim().length > 0 || lookupLoading || Boolean(lookupError);
   const fullRange = calculateRange(vehicle.highwayMpg, vehicle.tankCapacity);
   const safeRange = calculateSafeRange(fullRange);
+  const selectorItems = useMemo(() => {
+    if (selectorOpen === "year") return years;
+    if (selectorOpen === "make") return makes;
+    if (selectorOpen === "model") return models;
+    return [];
+  }, [selectorOpen, years, makes, models]);
 
   useEffect(() => {
     const query = search.trim();
@@ -162,6 +171,10 @@ export default function VehicleSetupScreen({ navigation, route }) {
     };
   }, [selectedYear, selectedMake, selectedModel]);
 
+  useEffect(() => {
+    setSelectorSearch("");
+  }, [selectorOpen]);
+
   function updateField(key, value) {
     setVehicle((current) => ({ ...current, [key]: value }));
   }
@@ -173,16 +186,31 @@ export default function VehicleSetupScreen({ navigation, route }) {
   function chooseYear(value) {
     setSelectedYear(value);
     setActiveStep("make");
+    setSelectorOpen(null);
   }
 
   function chooseMake(value) {
     setSelectedMake(value);
     setActiveStep("model");
+    setSelectorOpen(null);
   }
 
   function chooseModel(value) {
     setSelectedModel(value);
     setActiveStep("trim");
+    setSelectorOpen(null);
+  }
+
+  function openSelector(step) {
+    if (step === "make" && !selectedYear) return;
+    if (step === "model" && !selectedMake) return;
+    setSelectorOpen(step);
+  }
+
+  function selectVehiclePart(value) {
+    if (selectorOpen === "year") chooseYear(value);
+    if (selectorOpen === "make") chooseMake(value);
+    if (selectorOpen === "model") chooseModel(value);
   }
 
   function validateVehicle() {
@@ -264,50 +292,36 @@ export default function VehicleSetupScreen({ navigation, route }) {
               <Text style={styles.guidedSubtitle}>Select three quick details. Waylo fills MPG and fuel type from EPA data.</Text>
             </View>
           </View>
-          <View style={styles.finderSteps}>
-            <StepSummary
+          <View style={styles.finderPanel}>
+            <FinderRow
               active={activeStep === "year"}
               complete={Boolean(selectedYear)}
               label="Year"
-              onPress={() => setActiveStep("year")}
+              onPress={() => openSelector("year")}
+              step="01"
               value={selectedYear}
             />
-            <StepSummary
+            <FinderRow
               active={activeStep === "make"}
               complete={Boolean(selectedMake)}
               disabled={!selectedYear}
               label="Make"
-              onPress={() => setActiveStep("make")}
+              onPress={() => openSelector("make")}
+              placeholder={selectedYear ? "Choose make" : "Choose year first"}
+              step="02"
               value={selectedMake}
             />
-            <StepSummary
+            <FinderRow
               active={activeStep === "model"}
               complete={Boolean(selectedModel)}
               disabled={!selectedMake}
               label="Model"
-              onPress={() => setActiveStep("model")}
+              onPress={() => openSelector("model")}
+              placeholder={selectedMake ? "Choose model" : "Choose make first"}
+              step="03"
               value={selectedModel}
             />
           </View>
-          {activeStep === "year" && <OptionRail title="Choose year" items={years} selected={selectedYear} onSelect={chooseYear} />}
-          {activeStep === "make" && (
-            <OptionRail
-              emptyText={selectedYear ? "Loading makes..." : "Choose a year first"}
-              title="Choose make"
-              items={makes}
-              selected={selectedMake}
-              onSelect={chooseMake}
-            />
-          )}
-          {activeStep === "model" && (
-            <OptionRail
-              emptyText={selectedMake ? "Loading models..." : "Choose a make first"}
-              title="Choose model"
-              items={models}
-              selected={selectedModel}
-              onSelect={chooseModel}
-            />
-          )}
           {guidedLoading && (
             <View style={styles.guidedStatus}>
               <ActivityIndicator color={colors.blue} />
@@ -332,11 +346,11 @@ export default function VehicleSetupScreen({ navigation, route }) {
         </PremiumCard>
 
         <View>
-          <Text style={styles.label}>Or search by name</Text>
+          <Text style={styles.label}>Can't find it?</Text>
           <View style={styles.searchBox}>
             <Ionicons color={colors.muted} name="search" size={17} style={styles.searchIcon} />
             <TextInput
-              placeholder="2021 Toyota Camry"
+              placeholder="Search year, make, model"
               placeholderTextColor={colors.mutedLight}
               value={search}
               onChangeText={setSearch}
@@ -346,7 +360,7 @@ export default function VehicleSetupScreen({ navigation, route }) {
               <Ionicons color={colors.mutedLight} name="close-circle-outline" size={18} />
             </Pressable>
           </View>
-          <Text style={styles.lookupHint}>Example: 2021 Toyota Camry. This is here as a faster fallback.</Text>
+          <Text style={styles.lookupHint}>Try "2021 Toyota Camry" or enter specs manually below.</Text>
         </View>
 
         <PremiumCard style={styles.vehicleCard}>
@@ -400,8 +414,9 @@ export default function VehicleSetupScreen({ navigation, route }) {
         <EditableField label="Highway MPG" keyboardType="numeric" value={String(vehicle.highwayMpg)} error={errors.highwayMpg} onChangeText={(v) => updateNumericField("highwayMpg", v)} />
         <EditableField label="Tank Capacity (gal)" keyboardType="numeric" value={String(vehicle.tankCapacity)} error={errors.tankCapacity} onChangeText={(v) => updateNumericField("tankCapacity", v)} />
 
+        {shouldShowSearchResults && (
         <View style={styles.suggestions}>
-          <Text style={styles.suggestionsTitle}>{search.trim() ? "Matching vehicles" : "Popular vehicles"}</Text>
+          <Text style={styles.suggestionsTitle}>Search results</Text>
           {lookupLoading ? (
             <View style={styles.emptySuggestion}>
               <ActivityIndicator color={colors.blue} />
@@ -428,10 +443,22 @@ export default function VehicleSetupScreen({ navigation, route }) {
             </View>
           )}
         </View>
+        )}
 
         <PrimaryButton title="Save Vehicle" loading={saving} onPress={saveVehicle} />
         <PrimaryButton title="Cancel" variant="secondary" onPress={cancelEdit} />
       </ScrollView>
+      <SelectorSheet
+        activeValue={selectorOpen === "year" ? selectedYear : selectorOpen === "make" ? selectedMake : selectedModel}
+        items={selectorItems}
+        loading={guidedLoading}
+        onClose={() => setSelectorOpen(null)}
+        onSelect={selectVehiclePart}
+        open={Boolean(selectorOpen)}
+        query={selectorSearch}
+        setQuery={setSelectorSearch}
+        title={selectorOpen === "year" ? "Choose year" : selectorOpen === "make" ? "Choose make" : "Choose model"}
+      />
     </SafeAreaView>
   );
 }
@@ -446,48 +473,84 @@ function EditableField({ label, value, onChangeText, error, keyboardType = "defa
   );
 }
 
-function StepSummary({ label, value, active, complete, disabled, onPress }) {
+function FinderRow({ label, value, active, complete, disabled, onPress, placeholder = "Choose", step }) {
   return (
     <Pressable
       disabled={disabled}
       onPress={onPress}
-      style={[styles.stepSummary, active && styles.stepSummaryActive, complete && styles.stepSummaryComplete, disabled && styles.stepSummaryDisabled]}
+      style={[styles.finderRow, active && styles.finderRowActive, complete && styles.finderRowComplete, disabled && styles.finderRowDisabled]}
     >
-      <View style={styles.stepNumber}>
+      <View style={[styles.finderNumber, complete && styles.finderNumberDone]}>
         {complete ? (
           <Ionicons color={colors.surface} name="checkmark" size={13} />
         ) : (
-          <Text style={styles.stepNumberText}>{label.slice(0, 1)}</Text>
+          <Text style={styles.finderNumberText}>{step}</Text>
         )}
       </View>
-      <Text style={[styles.stepSummaryLabel, active && styles.stepSummaryLabelActive]}>{label}</Text>
-      <Text numberOfLines={1} style={[styles.stepSummaryValue, active && styles.stepSummaryValueActive]}>{value || "Select"}</Text>
+      <View style={styles.finderRowCopy}>
+        <Text style={styles.finderRowLabel}>{label}</Text>
+        <Text numberOfLines={1} style={[styles.finderRowValue, !value && styles.finderRowPlaceholder]}>{value || placeholder}</Text>
+      </View>
+      <Ionicons color={disabled ? colors.mutedLight : colors.navy} name="chevron-forward" size={18} />
     </Pressable>
   );
 }
 
-function OptionRail({ title, items, selected, onSelect, emptyText = "No options yet" }) {
-  const visibleItems = items.slice(0, 24);
+function SelectorSheet({ activeValue, items, loading, onClose, onSelect, open, query, setQuery, title }) {
+  const filteredItems = items
+    .filter((item) => item.toLowerCase().includes(query.trim().toLowerCase()))
+    .slice(0, 80);
+
   return (
-    <View style={styles.optionRail}>
-      <Text style={styles.optionRailTitle}>{title}</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.optionChips}>
-        {visibleItems.length ? (
-          visibleItems.map((item) => {
-            const isActive = selected === item;
-            return (
-              <Pressable key={`${title}-${item}`} onPress={() => onSelect(item)} style={[styles.optionChip, isActive && styles.optionChipActive]}>
-                <Text style={[styles.optionChipText, isActive && styles.optionChipTextActive]}>{item}</Text>
+    <Modal animationType="fade" transparent visible={open} onRequestClose={onClose}>
+      <Pressable style={styles.selectorBackdrop} onPress={onClose}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.selectorKeyboard}>
+          <Pressable style={styles.selectorSheet}>
+            <View style={styles.selectorHandle} />
+            <View style={styles.selectorHeader}>
+              <Text style={styles.selectorTitle}>{title}</Text>
+              <Pressable hitSlop={8} onPress={onClose} style={styles.selectorClose}>
+                <Ionicons color={colors.navy} name="close" size={20} />
               </Pressable>
-            );
-          })
-        ) : (
-          <View style={styles.optionEmpty}>
-            <Text style={styles.optionEmptyText}>{emptyText}</Text>
-          </View>
-        )}
-      </ScrollView>
-    </View>
+            </View>
+            <View style={styles.selectorSearch}>
+              <Ionicons color={colors.muted} name="search" size={17} />
+              <TextInput
+                autoFocus={Platform.OS === "web"}
+                onChangeText={setQuery}
+                placeholder={`Search ${title.replace("Choose ", "").toLowerCase()}`}
+                placeholderTextColor={colors.mutedLight}
+                style={styles.selectorSearchInput}
+                value={query}
+              />
+            </View>
+            {loading ? (
+              <View style={styles.selectorEmpty}>
+                <ActivityIndicator color={colors.blue} />
+                <Text style={styles.selectorEmptyText}>Loading options...</Text>
+              </View>
+            ) : (
+              <ScrollView showsVerticalScrollIndicator={false} style={styles.selectorList}>
+                {filteredItems.length ? filteredItems.map((item) => {
+                  const isActive = activeValue === item;
+                  return (
+                    <Pressable key={`${title}-${item}`} onPress={() => onSelect(item)} style={[styles.selectorItem, isActive && styles.selectorItemActive]}>
+                      <Text style={[styles.selectorItemText, isActive && styles.selectorItemTextActive]}>{item}</Text>
+                      {isActive && <Ionicons color={colors.green} name="checkmark-circle" size={20} />}
+                    </Pressable>
+                  );
+                }) : (
+                  <View style={styles.selectorEmpty}>
+                    <Ionicons color={colors.muted} name="search-outline" size={22} />
+                    <Text style={styles.selectorEmptyText}>No matches. Try another search.</Text>
+                  </View>
+                )}
+              </ScrollView>
+            )}
+          </Pressable>
+        </KeyboardAvoidingView>
+      </Pressable>
+    </Modal>
   );
 }
 
@@ -619,111 +682,166 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17
   },
-  finderSteps: {
+  finderPanel: {
+    backgroundColor: "#F8FBFF",
+    borderColor: colors.border,
+    borderRadius: 24,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.sm
+  },
+  finderRow: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: "transparent",
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    minHeight: 68,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm
+  },
+  finderRowActive: {
+    borderColor: "rgba(40,116,240,0.36)"
+  },
+  finderRowComplete: {
+    backgroundColor: "#FBFDFC"
+  },
+  finderRowDisabled: {
+    opacity: 0.54
+  },
+  finderNumber: {
+    alignItems: "center",
+    backgroundColor: "#EAF2FF",
+    borderRadius: radii.pill,
+    height: 34,
+    justifyContent: "center",
+    width: 34
+  },
+  finderNumberDone: {
+    backgroundColor: colors.green
+  },
+  finderNumberText: {
+    color: colors.blue,
+    fontSize: 11,
+    fontWeight: "700"
+  },
+  finderRowCopy: {
+    flex: 1,
+    gap: 2
+  },
+  finderRowLabel: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "500"
+  },
+  finderRowValue: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: "700"
+  },
+  finderRowPlaceholder: {
+    color: colors.muted,
+    fontWeight: "500"
+  },
+  selectorBackdrop: {
+    backgroundColor: "rgba(7,30,61,0.28)",
+    flex: 1,
+    justifyContent: "flex-end"
+  },
+  selectorKeyboard: {
+    flex: 1,
+    justifyContent: "flex-end"
+  },
+  selectorSheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    maxHeight: "78%",
+    padding: spacing.lg,
+    paddingBottom: spacing.xl
+  },
+  selectorHandle: {
+    alignSelf: "center",
+    backgroundColor: colors.border,
+    borderRadius: radii.pill,
+    height: 5,
+    marginBottom: spacing.md,
+    width: 46
+  },
+  selectorHeader: {
     alignItems: "center",
     flexDirection: "row",
-    gap: spacing.sm
+    justifyContent: "space-between",
+    marginBottom: spacing.md
   },
-  stepSummary: {
+  selectorTitle: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: "700"
+  },
+  selectorClose: {
+    alignItems: "center",
+    backgroundColor: colors.appBackground,
+    borderRadius: radii.pill,
+    height: 38,
+    justifyContent: "center",
+    width: 38
+  },
+  selectorSearch: {
+    alignItems: "center",
     backgroundColor: colors.appBackground,
     borderColor: colors.border,
     borderRadius: 18,
     borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    minHeight: 52,
+    paddingHorizontal: spacing.md
+  },
+  selectorSearchInput: {
+    color: colors.text,
     flex: 1,
-    gap: 4,
-    minHeight: 92,
-    padding: spacing.sm
+    fontSize: 15,
+    outlineStyle: "none"
   },
-  stepSummaryActive: {
-    backgroundColor: colors.navy,
-    borderColor: colors.navy
+  selectorList: {
+    marginTop: spacing.md
   },
-  stepSummaryComplete: {
-    borderColor: "rgba(40,116,240,0.28)"
-  },
-  stepSummaryDisabled: {
-    opacity: 0.52
-  },
-  stepNumber: {
+  selectorItem: {
     alignItems: "center",
-    backgroundColor: colors.blue,
-    borderRadius: radii.pill,
-    height: 22,
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    minHeight: 54,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.sm
+  },
+  selectorItemActive: {
+    backgroundColor: "#F2FBF7"
+  },
+  selectorItemText: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: "600"
+  },
+  selectorItemTextActive: {
+    color: colors.green
+  },
+  selectorEmpty: {
+    alignItems: "center",
+    gap: spacing.sm,
     justifyContent: "center",
-    width: 22
+    minHeight: 140,
+    padding: spacing.lg
   },
-  stepNumberText: {
-    color: colors.surface,
-    fontSize: 11,
-    fontWeight: "700"
-  },
-  stepSummaryLabel: {
-    color: colors.muted,
-    fontSize: 11,
-    fontWeight: "700",
-    textTransform: "uppercase"
-  },
-  stepSummaryLabelActive: {
-    color: "rgba(255,255,255,0.72)"
-  },
-  stepSummaryValue: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: "700"
-  },
-  stepSummaryValueActive: {
-    color: colors.surface
-  },
-  optionRail: {
-    backgroundColor: "#FBFDFF",
-    borderColor: colors.border,
-    borderRadius: 22,
-    borderWidth: 1,
-    gap: spacing.sm,
-    padding: spacing.sm
-  },
-  optionRailTitle: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: "700",
-    paddingHorizontal: spacing.xs
-  },
-  optionChips: {
-    gap: spacing.sm,
-    paddingRight: spacing.sm
-  },
-  optionChip: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm
-  },
-  optionChipActive: {
-    backgroundColor: colors.blue,
-    borderColor: colors.blue
-  },
-  optionChipText: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: "600"
-  },
-  optionChipTextActive: {
-    color: colors.surface
-  },
-  optionEmpty: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm
-  },
-  optionEmptyText: {
+  selectorEmptyText: {
     color: colors.muted,
     fontSize: 13,
-    fontWeight: "600"
+    lineHeight: 18,
+    textAlign: "center"
   },
   trimList: {
     gap: spacing.sm
