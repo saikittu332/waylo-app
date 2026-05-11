@@ -87,15 +87,15 @@ function timingScore(stop, context) {
 
 function buildImpactSummary(stop, score, detourMinutes, savesAmount, lowFuelRisk, context) {
   if (stop.type === "fuel") {
-    return `Score ${score}: saves about $${savesAmount.toFixed(2)}, adds ${detourMinutes} min, keeps reserve above ${Math.max(20, 100 - lowFuelRisk)}%.`;
+    return `Saves about $${savesAmount.toFixed(2)}, adds ${detourMinutes} min, and keeps reserve above ${Math.max(20, 100 - lowFuelRisk)}%.`;
   }
   if (stop.type === "rest") {
-    return `Score ${score}: adds ${detourMinutes} min and keeps breaks near your ${context.restInterval || 2.5}h rhythm.`;
+    return `Adds ${detourMinutes} min and keeps breaks near your ${context.restInterval || 2.5}h rhythm.`;
   }
   if (stop.type === "food") {
-    return `Score ${score}: meal stop near the route midpoint with about ${detourMinutes} min added.`;
+    return `Meal stop near the route midpoint with about ${detourMinutes} min added.`;
   }
-  return `Score ${score}: ${context.mode === "Scenic" ? "fits Scenic mode" : "optional view stop"} with about ${detourMinutes} min added.`;
+  return `${context.mode === "Scenic" ? "Fits Scenic mode" : "Optional view stop"} with about ${detourMinutes} min added.`;
 }
 
 function buildRecommendation(stop, detourMinutes, savesAmount, lowFuelRisk, context) {
