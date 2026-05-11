@@ -38,6 +38,7 @@ export default function VehicleSetupScreen({ navigation, route }) {
   const [selectedModel, setSelectedModel] = useState("");
   const [guidedLoading, setGuidedLoading] = useState(false);
   const [guidedError, setGuidedError] = useState("");
+  const [activeStep, setActiveStep] = useState("year");
   const localMatches = vehicleSuggestions
     .filter((item) => item.vehicleName.toLowerCase().includes(search.trim().toLowerCase()))
     .slice(0, 4);
@@ -169,6 +170,21 @@ export default function VehicleSetupScreen({ navigation, route }) {
     updateField(key, value.replace(/[^\d.]/g, ""));
   }
 
+  function chooseYear(value) {
+    setSelectedYear(value);
+    setActiveStep("make");
+  }
+
+  function chooseMake(value) {
+    setSelectedMake(value);
+    setActiveStep("model");
+  }
+
+  function chooseModel(value) {
+    setSelectedModel(value);
+    setActiveStep("trim");
+  }
+
   function validateVehicle() {
     const nextErrors = {};
     const name = vehicle.vehicleName.trim();
@@ -241,16 +257,57 @@ export default function VehicleSetupScreen({ navigation, route }) {
         <PremiumCard style={styles.guidedCard}>
           <View style={styles.guidedHeader}>
             <View style={styles.guidedIcon}>
-              <Ionicons color={colors.blue} name="sparkles-outline" size={18} />
+              <Ionicons color={colors.blue} name="car-sport-outline" size={20} />
             </View>
             <View style={styles.guidedCopy}>
-              <Text style={styles.guidedTitle}>Find specs automatically</Text>
-              <Text style={styles.guidedSubtitle}>EPA fuel economy fills MPG and fuel type. Tank size stays editable.</Text>
+              <Text style={styles.guidedTitle}>Find your vehicle</Text>
+              <Text style={styles.guidedSubtitle}>Select three quick details. Waylo fills MPG and fuel type from EPA data.</Text>
             </View>
           </View>
-          <StepSelector label="Year" value={selectedYear || "Select"} items={years} onSelect={setSelectedYear} />
-          <StepSelector label="Make" value={selectedMake || (selectedYear ? "Select" : "Choose year first")} items={makes} disabled={!selectedYear} onSelect={setSelectedMake} />
-          <StepSelector label="Model" value={selectedModel || (selectedMake ? "Select" : "Choose make first")} items={models} disabled={!selectedMake} onSelect={setSelectedModel} />
+          <View style={styles.finderSteps}>
+            <StepSummary
+              active={activeStep === "year"}
+              complete={Boolean(selectedYear)}
+              label="Year"
+              onPress={() => setActiveStep("year")}
+              value={selectedYear}
+            />
+            <StepSummary
+              active={activeStep === "make"}
+              complete={Boolean(selectedMake)}
+              disabled={!selectedYear}
+              label="Make"
+              onPress={() => setActiveStep("make")}
+              value={selectedMake}
+            />
+            <StepSummary
+              active={activeStep === "model"}
+              complete={Boolean(selectedModel)}
+              disabled={!selectedMake}
+              label="Model"
+              onPress={() => setActiveStep("model")}
+              value={selectedModel}
+            />
+          </View>
+          {activeStep === "year" && <OptionRail title="Choose year" items={years} selected={selectedYear} onSelect={chooseYear} />}
+          {activeStep === "make" && (
+            <OptionRail
+              emptyText={selectedYear ? "Loading makes..." : "Choose a year first"}
+              title="Choose make"
+              items={makes}
+              selected={selectedMake}
+              onSelect={chooseMake}
+            />
+          )}
+          {activeStep === "model" && (
+            <OptionRail
+              emptyText={selectedMake ? "Loading models..." : "Choose a make first"}
+              title="Choose model"
+              items={models}
+              selected={selectedModel}
+              onSelect={chooseModel}
+            />
+          )}
           {guidedLoading && (
             <View style={styles.guidedStatus}>
               <ActivityIndicator color={colors.blue} />
@@ -389,31 +446,44 @@ function EditableField({ label, value, onChangeText, error, keyboardType = "defa
   );
 }
 
-function StepSelector({ label, value, items, onSelect, disabled }) {
-  const visibleItems = items.slice(0, 18);
+function StepSummary({ label, value, active, complete, disabled, onPress }) {
   return (
-    <View style={[styles.stepSelector, disabled && styles.stepSelectorDisabled]}>
-      <View style={styles.stepTopRow}>
-        <Text style={styles.stepLabel}>{label}</Text>
-        <Text style={styles.stepValue}>{value}</Text>
+    <Pressable
+      disabled={disabled}
+      onPress={onPress}
+      style={[styles.stepSummary, active && styles.stepSummaryActive, complete && styles.stepSummaryComplete, disabled && styles.stepSummaryDisabled]}
+    >
+      <View style={styles.stepNumber}>
+        {complete ? (
+          <Ionicons color={colors.surface} name="checkmark" size={13} />
+        ) : (
+          <Text style={styles.stepNumberText}>{label.slice(0, 1)}</Text>
+        )}
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.stepChips}>
-        {visibleItems.map((item) => {
-          const isActive = value === item;
-          return (
-            <Pressable
-              disabled={disabled}
-              key={`${label}-${item}`}
-              onPress={() => onSelect(item)}
-              style={[styles.stepChip, isActive && styles.stepChipActive]}
-            >
-              <Text style={[styles.stepChipText, isActive && styles.stepChipTextActive]}>{item}</Text>
-            </Pressable>
-          );
-        })}
-        {!visibleItems.length && (
-          <View style={styles.stepChip}>
-            <Text style={styles.stepChipText}>{disabled ? "Waiting" : "No results"}</Text>
+      <Text style={[styles.stepSummaryLabel, active && styles.stepSummaryLabelActive]}>{label}</Text>
+      <Text numberOfLines={1} style={[styles.stepSummaryValue, active && styles.stepSummaryValueActive]}>{value || "Select"}</Text>
+    </Pressable>
+  );
+}
+
+function OptionRail({ title, items, selected, onSelect, emptyText = "No options yet" }) {
+  const visibleItems = items.slice(0, 24);
+  return (
+    <View style={styles.optionRail}>
+      <Text style={styles.optionRailTitle}>{title}</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.optionChips}>
+        {visibleItems.length ? (
+          visibleItems.map((item) => {
+            const isActive = selected === item;
+            return (
+              <Pressable key={`${title}-${item}`} onPress={() => onSelect(item)} style={[styles.optionChip, isActive && styles.optionChipActive]}>
+                <Text style={[styles.optionChipText, isActive && styles.optionChipTextActive]}>{item}</Text>
+              </Pressable>
+            );
+          })
+        ) : (
+          <View style={styles.optionEmpty}>
+            <Text style={styles.optionEmptyText}>{emptyText}</Text>
           </View>
         )}
       </ScrollView>
@@ -505,8 +575,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs
   },
   guidedCard: {
+    borderRadius: 28,
     gap: spacing.md,
-    padding: 18
+    padding: 20
   },
   guidedHeader: {
     alignItems: "center",
@@ -515,18 +586,18 @@ const styles = StyleSheet.create({
   },
   guidedIcon: {
     alignItems: "center",
-    backgroundColor: colors.paleBlue,
+    backgroundColor: "#EAF2FF",
     borderRadius: radii.pill,
-    height: 40,
+    height: 48,
     justifyContent: "center",
-    width: 40
+    width: 48
   },
   guidedCopy: {
     flex: 1
   },
   guidedTitle: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "700"
   },
   guidedSubtitle: {
@@ -548,37 +619,80 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17
   },
-  stepSelector: {
+  finderSteps: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm
+  },
+  stepSummary: {
+    backgroundColor: colors.appBackground,
+    borderColor: colors.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    flex: 1,
+    gap: 4,
+    minHeight: 92,
+    padding: spacing.sm
+  },
+  stepSummaryActive: {
+    backgroundColor: colors.navy,
+    borderColor: colors.navy
+  },
+  stepSummaryComplete: {
+    borderColor: "rgba(40,116,240,0.28)"
+  },
+  stepSummaryDisabled: {
+    opacity: 0.52
+  },
+  stepNumber: {
+    alignItems: "center",
+    backgroundColor: colors.blue,
+    borderRadius: radii.pill,
+    height: 22,
+    justifyContent: "center",
+    width: 22
+  },
+  stepNumberText: {
+    color: colors.surface,
+    fontSize: 11,
+    fontWeight: "700"
+  },
+  stepSummaryLabel: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "700",
+    textTransform: "uppercase"
+  },
+  stepSummaryLabelActive: {
+    color: "rgba(255,255,255,0.72)"
+  },
+  stepSummaryValue: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "700"
+  },
+  stepSummaryValueActive: {
+    color: colors.surface
+  },
+  optionRail: {
     backgroundColor: "#FBFDFF",
     borderColor: colors.border,
-    borderRadius: radii.md,
+    borderRadius: 22,
     borderWidth: 1,
     gap: spacing.sm,
     padding: spacing.sm
   },
-  stepSelectorDisabled: {
-    opacity: 0.7
-  },
-  stepTopRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between"
-  },
-  stepLabel: {
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: "600"
-  },
-  stepValue: {
-    color: colors.navy,
+  optionRailTitle: {
+    color: colors.text,
     fontSize: 13,
-    fontWeight: "700"
+    fontWeight: "700",
+    paddingHorizontal: spacing.xs
   },
-  stepChips: {
+  optionChips: {
     gap: spacing.sm,
     paddingRight: spacing.sm
   },
-  stepChip: {
+  optionChip: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderRadius: radii.pill,
@@ -586,17 +700,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm
   },
-  stepChipActive: {
-    backgroundColor: colors.navy,
-    borderColor: colors.navy
+  optionChipActive: {
+    backgroundColor: colors.blue,
+    borderColor: colors.blue
   },
-  stepChipText: {
+  optionChipText: {
     color: colors.text,
     fontSize: 13,
     fontWeight: "600"
   },
-  stepChipTextActive: {
+  optionChipTextActive: {
     color: colors.surface
+  },
+  optionEmpty: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm
+  },
+  optionEmptyText: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: "600"
   },
   trimList: {
     gap: spacing.sm
