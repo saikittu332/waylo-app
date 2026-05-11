@@ -20,9 +20,8 @@ export default function SplashScreen({ navigation }) {
       <SafeAreaView style={styles.safe}>
         <View style={styles.container}>
           <View style={styles.logoBlock}>
-            <Logo size="lg" />
-            <Text style={styles.tagline}>Drive smart. Spend less.</Text>
-            <Text style={styles.introCopy}>Fuel, rest stops, and trip cost in one clean plan.</Text>
+            <Logo size="lg" image />
+            <Text style={styles.introCopy}>Plan smarter drives with fuel range, stop timing, and trip cost handled upfront.</Text>
           </View>
 
           <View style={styles.actions}>
@@ -64,13 +63,13 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 16,
     borderTopLeftRadius: 999,
     borderTopRightRadius: 999,
-    bottom: -36,
-    height: 390,
+    bottom: -54,
+    height: 430,
     overflow: "hidden",
     position: "absolute",
-    right: -8,
+    right: -22,
     transform: [{ rotate: "26deg" }],
-    width: 160
+    width: 172
   },
   roadStripeOne: {
     backgroundColor: colors.surface,
@@ -120,7 +119,7 @@ const styles = StyleSheet.create({
   },
   logoBlock: {
     alignItems: "center",
-    marginTop: 150
+    marginTop: 120
   },
   tagline: {
     color: colors.navy,

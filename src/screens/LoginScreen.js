@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { CommonActions } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import Logo from "../components/Logo";
 import PremiumCard from "../components/PremiumCard";
 import PrimaryButton from "../components/PrimaryButton";
 import { colors, radii, screen, spacing, typography } from "../constants/theme";
-import { normalizePhone } from "../services/api";
+import { getVehicles, normalizePhone } from "../services/api";
 import { completePhoneLogin, getAuthErrorMessage, logAuthDiagnostic, sendPhoneOtp, verifyOtp } from "../services/authService";
 
 function getUsPhoneDigits(value) {
@@ -113,7 +114,28 @@ export default function LoginScreen({ navigation }) {
 
       const firebaseUser = await verifyOtp(confirmation, code.join(""));
       const session = await completePhoneLogin(normalizedPhone, firebaseUser);
-      navigation.navigate("AssistantName", { user: session.user, accessToken: session.access_token });
+      const assistantName = session.user?.assistant_name || "Waylo";
+      try {
+        const vehicles = session.user?.id ? await getVehicles(session.user.id) : [];
+        if (vehicles.length > 0) {
+          const activeVehicleId = session.user?.activeVehicleId || session.user?.active_vehicle_id;
+          const selectedVehicle = vehicles.find((item) => item.id === activeVehicleId) || vehicles[0];
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: "Home", params: { user: session.user, accessToken: session.access_token, assistantName, vehicle: selectedVehicle, vehicles } }]
+            })
+          );
+          return;
+        }
+      } catch (loadError) {
+        console.warn("Waylo vehicle lookup after login unavailable:", loadError.message);
+      }
+      if (session.user?.assistant_name) {
+        navigation.navigate("VehicleSetup", { user: session.user, accessToken: session.access_token, assistantName });
+      } else {
+        navigation.navigate("AssistantName", { user: session.user, accessToken: session.access_token });
+      }
     } catch (authError) {
       console.warn("Waylo phone auth failed:", authError);
       logAuthDiagnostic(authError);

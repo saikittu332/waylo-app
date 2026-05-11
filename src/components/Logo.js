@@ -1,56 +1,18 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 import { colors } from "../constants/theme";
+import brandLogo from "../../assets/waylo-brand-logo.png";
 
 export default function Logo({ size = "md", light = false, showText = true, image = false }) {
   if (image) {
-    const markSize = size === "lg" ? 132 : size === "sm" ? 64 : 94;
-    const pinSize = markSize * 0.28;
+    const imageSize = size === "lg" ? 210 : size === "sm" ? 96 : 148;
     return (
-      <View accessibilityLabel="Waylo logo" style={styles.brandLockup}>
-        <View style={[styles.logoMark, { height: markSize, width: markSize }]}>
-          <Text style={[styles.markW, { fontSize: markSize * 0.7, lineHeight: markSize * 0.74 }]}>W</Text>
-          <View
-            style={[
-              styles.roadSweep,
-              {
-                bottom: markSize * 0.08,
-                height: markSize * 0.46,
-                right: markSize * 0.18,
-                width: markSize * 0.13
-              }
-            ]}
-          />
-          <View
-            style={[
-              styles.roadStripe,
-              {
-                bottom: markSize * 0.19,
-                height: markSize * 0.2,
-                right: markSize * 0.245,
-                width: Math.max(4, markSize * 0.036)
-              }
-            ]}
-          />
-          <View
-            style={[
-              styles.pin,
-              {
-                height: pinSize,
-                right: markSize * 0.07,
-                top: markSize * 0.02,
-                width: pinSize
-              }
-            ]}
-          >
-            <View style={[styles.pinHole, { height: pinSize * 0.42, width: pinSize * 0.42 }]} />
-          </View>
-        </View>
-        <Text style={[styles.wordmark, { fontSize: size === "lg" ? 38 : 28 }]}>
-          Wayl<Text style={styles.tealText}>o</Text>
-        </Text>
-        <Text style={styles.tagline}>Drive smart. Spend less.</Text>
-      </View>
+      <Image
+        accessibilityLabel="Waylo logo"
+        resizeMode="contain"
+        source={brandLogo}
+        style={[styles.brandAsset, { height: imageSize, width: imageSize }]}
+      />
     );
   }
 
@@ -76,6 +38,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center"
   },
+  brandImageWrap: {
+    alignItems: "center",
+    aspectRatio: 1,
+    justifyContent: "center"
+  },
+  brandAsset: {
+    flexShrink: 0
+  },
   logoMark: {
     alignItems: "center",
     justifyContent: "center",
@@ -84,7 +54,7 @@ const styles = StyleSheet.create({
   markW: {
     color: colors.blueDeep,
     fontWeight: "800",
-    letterSpacing: -4
+    letterSpacing: 0
   },
   roadSweep: {
     backgroundColor: colors.navyDeep,
